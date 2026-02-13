@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { trackEvent } from "@/lib/analytics";
+import { detectResume } from "@/lib/resume-detector";
 
 type InputMode = "upload" | "paste";
 
@@ -18,6 +19,7 @@ export default function AnalyzePage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<string>("");
+  const [resumeWarning, setResumeWarning] = useState<string | null>(null);
 
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -36,6 +38,14 @@ export default function AnalyzePage() {
         setFileName(null);
         setProgress("");
         return;
+      }
+
+      // Check if the content looks like a resume
+      const detection = detectResume(text);
+      if (!detection.isLikelyResume) {
+        setResumeWarning(detection.message || "This doesn't look like a resume. Please upload your resume.");
+      } else {
+        setResumeWarning(null);
       }
 
       setResumeText(text);
@@ -57,6 +67,12 @@ export default function AnalyzePage() {
     }
     if (resumeText.trim().length < 50) {
       setError("Resume seems too short. Please provide more content.");
+      return;
+    }
+
+    const detection = detectResume(resumeText);
+    if (!detection.isLikelyResume) {
+      setError(detection.message || "This doesn't look like a resume. Please provide your actual resume content.");
       return;
     }
     if (!jobDescription.trim()) {
@@ -120,6 +136,12 @@ export default function AnalyzePage() {
       {error && (
         <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
+        </div>
+      )}
+
+      {resumeWarning && !error && (
+        <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+          {resumeWarning}
         </div>
       )}
 
