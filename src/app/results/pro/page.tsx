@@ -298,7 +298,7 @@ function DownloadDropdown({ result }: { result: ProGenerationResult }) {
       result.summary,
     ].join("\n");
 
-    downloadFile(content, "resume-tailor-pro.txt", "text/plain");
+    downloadFile(content, "resumemate-ai-pro.txt", "text/plain");
     setOpen(false);
   };
 
@@ -310,7 +310,7 @@ function DownloadDropdown({ result }: { result: ProGenerationResult }) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "resume-tailor-pro.pdf";
+      a.download = "resumemate-ai-pro.pdf";
       a.click();
       URL.revokeObjectURL(url);
     } catch (error) {
@@ -329,7 +329,7 @@ function DownloadDropdown({ result }: { result: ProGenerationResult }) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "resume-tailor-pro.docx";
+      a.download = "resumemate-ai-pro.docx";
       a.click();
       URL.revokeObjectURL(url);
     } catch (error) {

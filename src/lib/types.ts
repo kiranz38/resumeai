@@ -1,4 +1,4 @@
-// Core domain types for Resume Tailor
+// Core domain types for ResumeMate AI
 
 export interface CandidateProfile {
   name?: string;

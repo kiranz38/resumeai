@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nMilestone 0: Initialize project and create planning documents\n\n- Fresh Next.js 16 + TypeScript + Tailwind 4 + App Router\n- Install zod, pdfjs-dist, mammoth, stripe, @stripe/stripe-js\n- Create PRODUCT_AUDIT.md with repo state and risk analysis\n- Create IMPLEMENTATION_PLAN.md with full architecture and milestones\n- Add .env.example with all required environment variables\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(dir:*)",
+      "Bash(npx next build:*)",
+      "Bash(git commit:*)",
+      "Bash(git remote add:*)",
+      "Bash(git remote set-url:*)",
+      "Bash(git push:*)"
+    ]
+  }
+}
