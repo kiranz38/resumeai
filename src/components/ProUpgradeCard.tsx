@@ -16,6 +16,7 @@ const PRO_FEATURES = [
   "All bullet rewrites (12-20)",
   "Experience gap analysis with suggestions",
   "Downloadable PDF, DOCX, and TXT exports",
+  "Email delivery of your report",
 ];
 
 export default function ProUpgradeCard({ onUpgrade }: ProUpgradeCardProps) {
@@ -28,56 +29,73 @@ export default function ProUpgradeCard({ onUpgrade }: ProUpgradeCardProps) {
     trackEvent("pro_generate_clicked");
     onUpgrade?.();
 
-    // Check if Stripe is configured
     const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-    if (!stripeKey) {
-      // Dev mode: generate Pro output for free
-      setIsGenerating(true);
+
+    if (stripeKey) {
+      // Stripe is configured — save resume data, then redirect to checkout
+      // After payment success, the /results/pro page will trigger generation
       try {
         const resumeText = sessionStorage.getItem("rt_resume_text");
         const jdText = sessionStorage.getItem("rt_jd_text");
 
         if (!resumeText || !jdText) {
           setError("Resume data not found. Please re-analyze your resume first.");
-          setIsGenerating(false);
           return;
         }
 
-        const response = await fetch("/api/generate-pro", {
+        // Mark that we need to generate after payment
+        sessionStorage.setItem("rt_pending_pro", "true");
+
+        const response = await fetch("/api/checkout", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ resumeText, jobDescriptionText: jdText }),
         });
 
         if (!response.ok) {
           const data = await response.json().catch(() => ({}));
-          throw new Error(data.error || "Generation failed");
+          throw new Error(data.error || "Checkout failed");
         }
 
-        const result = await response.json();
-        sessionStorage.setItem("rt_pro_result", JSON.stringify(result));
-        setIsUnlocked(true);
-
-        // Redirect to pro results
-        window.location.href = "/results/pro";
+        const { url } = await response.json();
+        if (url) {
+          window.location.href = url;
+        }
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to generate Pro results.");
-        setIsGenerating(false);
+        setError(err instanceof Error ? err.message : "Unable to start checkout. Please try again.");
       }
       return;
     }
 
-    // Stripe is configured - redirect to checkout
+    // No Stripe — dev mode, generate for free
+    setIsGenerating(true);
     try {
-      const response = await fetch("/api/checkout", {
-        method: "POST",
-      });
-      const { url } = await response.json();
-      if (url) {
-        window.location.href = url;
+      const resumeText = sessionStorage.getItem("rt_resume_text");
+      const jdText = sessionStorage.getItem("rt_jd_text");
+
+      if (!resumeText || !jdText) {
+        setError("Resume data not found. Please re-analyze your resume first.");
+        setIsGenerating(false);
+        return;
       }
-    } catch {
-      setError("Unable to start checkout. Please try again.");
+
+      const response = await fetch("/api/generate-pro", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resumeText, jobDescriptionText: jdText }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Generation failed");
+      }
+
+      const result = await response.json();
+      sessionStorage.setItem("rt_pro_result", JSON.stringify(result));
+      setIsUnlocked(true);
+
+      window.location.href = "/results/pro";
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to generate Pro results.");
+      setIsGenerating(false);
     }
   };
 
@@ -92,7 +110,7 @@ export default function ProUpgradeCard({ onUpgrade }: ProUpgradeCardProps) {
 
       <div className="relative">
         <div className="mb-2 inline-block rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold text-white">
-          {process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? "Pro" : "Pro Preview Mode"}
+          Pro
         </div>
 
         <h3 className="mb-2 text-2xl font-bold text-gray-900">
@@ -141,11 +159,6 @@ export default function ProUpgradeCard({ onUpgrade }: ProUpgradeCardProps) {
               </>
             )}
           </button>
-          {!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY && (
-            <span className="text-xs text-gray-400">
-              Stripe not configured — free in dev mode
-            </span>
-          )}
         </div>
       </div>
     </div>

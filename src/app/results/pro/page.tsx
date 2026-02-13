@@ -1,31 +1,143 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import type { ProGenerationResult } from "@/lib/types";
 import { trackEvent } from "@/lib/analytics";
 
-export default function ProResultsPage() {
+export default function ProResultsPageWrapper() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <div className="text-center">
+          <svg className="mx-auto h-8 w-8 animate-spin text-blue-600" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          </svg>
+          <p className="mt-3 text-sm text-gray-500">Loading Pro results...</p>
+        </div>
+      </div>
+    }>
+      <ProResultsPage />
+    </Suspense>
+  );
+}
+
+function ProResultsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [result, setResult] = useState<ProGenerationResult | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMessage, setLoadingMessage] = useState("Loading Pro results...");
   const [activeTab, setActiveTab] = useState<"resume" | "cover" | "keywords" | "feedback">("resume");
+  const [emailSent, setEmailSent] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [emailInput, setEmailInput] = useState("");
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   useEffect(() => {
-    const data = sessionStorage.getItem("rt_pro_result");
-    if (data) {
-      try {
-        setResult(JSON.parse(data));
-        setLoading(false);
-        trackEvent("pro_viewed");
-        return;
-      } catch {
-        // Fall through
+    async function init() {
+      // Check if we already have results cached
+      const cached = sessionStorage.getItem("rt_pro_result");
+      if (cached) {
+        try {
+          setResult(JSON.parse(cached));
+          setLoading(false);
+          trackEvent("pro_viewed");
+          return;
+        } catch { /* fall through */ }
       }
+
+      // Check if returning from Stripe payment or pending generation
+      const sessionId = searchParams.get("session_id");
+      const pendingPro = sessionStorage.getItem("rt_pending_pro");
+
+      if (sessionId || pendingPro) {
+        // User paid (or was already marked for generation) — generate Pro results now
+        const resumeText = sessionStorage.getItem("rt_resume_text");
+        const jdText = sessionStorage.getItem("rt_jd_text");
+
+        if (!resumeText || !jdText) {
+          router.push("/analyze");
+          return;
+        }
+
+        sessionStorage.removeItem("rt_pending_pro");
+        setLoadingMessage("Generating your tailored resume with AI...");
+
+        try {
+          const response = await fetch("/api/generate-pro", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ resumeText, jobDescriptionText: jdText }),
+          });
+
+          if (!response.ok) {
+            throw new Error("Generation failed");
+          }
+
+          const data = await response.json();
+          sessionStorage.setItem("rt_pro_result", JSON.stringify(data));
+          setResult(data);
+          setLoading(false);
+          trackEvent("pro_viewed");
+        } catch {
+          setLoadingMessage("Generation failed. Redirecting...");
+          setTimeout(() => router.push("/results"), 2000);
+        }
+        return;
+      }
+
+      // No data at all
+      router.push("/results");
     }
-    router.push("/results");
-  }, [router]);
+
+    init();
+  }, [router, searchParams]);
+
+  const handleSendEmail = async () => {
+    if (!emailInput || !result) return;
+    setSendingEmail(true);
+    setEmailError(null);
+
+    try {
+      const reportText = [
+        "=== TAILORED RESUME ===",
+        result.tailoredResume,
+        "",
+        "=== COVER LETTER ===",
+        result.coverLetter,
+        "",
+        "=== SKILLS SECTION ===",
+        result.skillsSectionRewrite,
+        "",
+        "=== NEXT ACTIONS ===",
+        ...result.nextActions.map((a, i) => `${i + 1}. ${a}`),
+        "",
+        "=== SUMMARY ===",
+        result.summary,
+      ].join("\n");
+
+      const response = await fetch("/api/send-report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: emailInput, reportText }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to send email");
+      }
+
+      setEmailSent(true);
+      trackEvent("email_report_sent");
+    } catch (err) {
+      setEmailError(err instanceof Error ? err.message : "Failed to send email.");
+    } finally {
+      setSendingEmail(false);
+    }
+  };
 
   if (loading || !result) {
     return (
@@ -35,7 +147,7 @@ export default function ProResultsPage() {
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
           </svg>
-          <p className="mt-3 text-sm text-gray-500">Loading Pro results...</p>
+          <p className="mt-3 text-sm text-gray-500">{loadingMessage}</p>
         </div>
       </div>
     );
@@ -262,6 +374,38 @@ export default function ProResultsPage() {
           </ol>
         </div>
       )}
+
+      {/* Email delivery */}
+      <div className="mt-8 rounded-xl border border-gray-200 bg-white p-6">
+        <h2 className="mb-2 text-lg font-semibold text-gray-900">Email Your Report</h2>
+        <p className="mb-4 text-sm text-gray-500">Get a copy of your full report delivered to your inbox.</p>
+
+        {emailSent ? (
+          <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+            Report sent! Check your inbox.
+          </div>
+        ) : (
+          <div className="flex gap-3">
+            <input
+              type="email"
+              value={emailInput}
+              onChange={(e) => setEmailInput(e.target.value)}
+              placeholder="your@email.com"
+              className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+            <button
+              onClick={handleSendEmail}
+              disabled={sendingEmail || !emailInput.includes("@")}
+              className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            >
+              {sendingEmail ? "Sending..." : "Send"}
+            </button>
+          </div>
+        )}
+        {emailError && (
+          <p className="mt-2 text-sm text-red-600">{emailError}</p>
+        )}
+      </div>
 
       {/* Navigation */}
       <div className="mt-8 flex items-center justify-between">
