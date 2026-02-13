@@ -1,17 +1,12 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
-import { checkRateLimit, getClientIP } from "@/lib/rate-limiter";
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+import { rateLimitRoute } from "@/lib/rate-limiter";
 
 export async function POST(request: Request) {
   try {
     // Rate limit
-    const ip = getClientIP(request);
-    const { allowed } = checkRateLimit(ip, { maxRequests: 5, windowMs: 60_000 });
-    if (!allowed) {
-      return NextResponse.json({ error: "Too many requests." }, { status: 429 });
-    }
+    const { response: rateLimited } = rateLimitRoute(request, "checkout");
+    if (rateLimited) return rateLimited;
 
     if (!process.env.STRIPE_SECRET_KEY) {
       return NextResponse.json(
@@ -20,7 +15,18 @@ export async function POST(request: Request) {
       );
     }
 
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
     const priceAmount = parseInt(process.env.NEXT_PUBLIC_PRICE_VARIANT || "5", 10) * 100; // cents
+    // Enforce server-side price floor to prevent manipulation
+    if (priceAmount < 100 || priceAmount > 10000) {
+      console.error("[checkout] Invalid price amount:", priceAmount);
+      return NextResponse.json(
+        { error: "Invalid price configuration." },
+        { status: 500 }
+      );
+    }
+
     const origin = request.headers.get("origin") || "http://localhost:3001";
 
     const session = await stripe.checkout.sessions.create({

@@ -2,23 +2,17 @@ import { NextResponse } from "next/server";
 import { parseResume } from "@/lib/resume-parser";
 import { parseJobDescription } from "@/lib/jd-parser";
 import { generateProResult } from "@/lib/llm";
-import { checkRateLimit, getClientIP } from "@/lib/rate-limiter";
+import { rateLimitRoute, acquireLLMSlot, releaseLLMSlot } from "@/lib/rate-limiter";
+import { parseAndValidate, GenerateProRequestSchema } from "@/lib/sanitizer";
+import { preprocessResume, preprocessJobDescription } from "@/lib/input-preprocessor";
+import { proCache, hashInputs } from "@/lib/cache";
+import { verifyEntitlementToken } from "@/lib/entitlement";
 
 export async function POST(request: Request) {
   try {
-    // Rate limiting - stricter for Pro generation
-    const ip = getClientIP(request);
-    const { allowed } = checkRateLimit(ip, {
-      maxRequests: 5,
-      windowMs: 60_000,
-    });
-
-    if (!allowed) {
-      return NextResponse.json(
-        { error: "Too many requests. Please wait a moment and try again." },
-        { status: 429 }
-      );
-    }
+    // Rate limiting
+    const { response: rateLimited } = rateLimitRoute(request, "generate-pro");
+    if (rateLimited) return rateLimited;
 
     // Check if Pro is enabled
     if (process.env.NEXT_PUBLIC_PRO_ENABLED === "false") {
@@ -28,48 +22,67 @@ export async function POST(request: Request) {
       );
     }
 
-    const body = await request.json();
-    const { resumeText, jobDescriptionText } = body;
+    // Parse + validate + sanitize input
+    const { data, error } = await parseAndValidate(request, GenerateProRequestSchema, "generate-pro");
+    if (error) return error;
 
-    if (!resumeText || typeof resumeText !== "string") {
+    // Verify entitlement token if ENFORCE_ENTITLEMENT is set
+    if (process.env.ENFORCE_ENTITLEMENT === "true") {
+      const authHeader = request.headers.get("authorization");
+      const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+      if (!token || !verifyEntitlementToken(token)) {
+        return NextResponse.json(
+          { error: "Valid entitlement token required. Please complete payment first." },
+          { status: 403 }
+        );
+      }
+    }
+
+    // Preprocess inputs
+    const resumeText = preprocessResume(data.resumeText);
+    const jobDescriptionText = preprocessJobDescription(data.jobDescriptionText);
+
+    // Check cache
+    const cacheKey = hashInputs("pro", resumeText, jobDescriptionText);
+    const cached = proCache.get(cacheKey);
+    if (cached) {
+      console.log("[generate-pro] Cache hit");
+      return NextResponse.json(cached, { headers: { "X-Cache": "HIT" } });
+    }
+
+    // Concurrency guard for LLM
+    if (!acquireLLMSlot()) {
       return NextResponse.json(
-        { error: "Resume text is required." },
-        { status: 400 }
+        { error: "Server is busy. Please try again in a moment." },
+        { status: 503 }
       );
     }
 
-    if (!jobDescriptionText || typeof jobDescriptionText !== "string") {
-      return NextResponse.json(
-        { error: "Job description text is required." },
-        { status: 400 }
+    try {
+      // Parse inputs
+      const candidateProfile = parseResume(resumeText);
+      const jobProfile = parseJobDescription(jobDescriptionText);
+
+      // Generate Pro result (mock or real LLM)
+      const result = await generateProResult(
+        candidateProfile,
+        jobProfile,
+        resumeText,
+        jobDescriptionText
       );
+
+      // Store in cache
+      proCache.set(cacheKey, result);
+
+      console.log("[generate-pro] Pro generation complete", {
+        bulletRewrites: result.bulletRewrites.length,
+        keywords: result.keywordChecklist.length,
+      });
+
+      return NextResponse.json(result, { headers: { "X-Cache": "MISS" } });
+    } finally {
+      releaseLLMSlot();
     }
-
-    if (resumeText.length > 50_000 || jobDescriptionText.length > 30_000) {
-      return NextResponse.json(
-        { error: "Input too long." },
-        { status: 400 }
-      );
-    }
-
-    // Parse inputs
-    const candidateProfile = parseResume(resumeText);
-    const jobProfile = parseJobDescription(jobDescriptionText);
-
-    // Generate Pro result (mock or real LLM)
-    const result = await generateProResult(
-      candidateProfile,
-      jobProfile,
-      resumeText,
-      jobDescriptionText
-    );
-
-    console.log("[generate-pro] Pro generation complete", {
-      bulletRewrites: result.bulletRewrites.length,
-      keywords: result.keywordChecklist.length,
-    });
-
-    return NextResponse.json(result);
   } catch (error) {
     console.error("[generate-pro] Error:", error instanceof Error ? error.message : "Unknown error");
     return NextResponse.json(

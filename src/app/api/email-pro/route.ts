@@ -1,18 +1,15 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
-import { checkRateLimit, getClientIP } from "@/lib/rate-limiter";
+import { rateLimitRoute } from "@/lib/rate-limiter";
+import { parseAndValidate, EmailProRequestSchema } from "@/lib/sanitizer";
 import { ProOutputSchema, type ProOutput } from "@/lib/schema";
-
-const MAX_INPUT_SIZE = 500_000; // 500KB
+import { validateEmailForDelivery } from "@/lib/email-validator";
 
 export async function POST(request: Request) {
   try {
     // Rate limit
-    const ip = getClientIP(request);
-    const { allowed } = checkRateLimit(ip, { maxRequests: 3, windowMs: 60_000 });
-    if (!allowed) {
-      return NextResponse.json({ error: "Too many requests." }, { status: 429 });
-    }
+    const { response: rateLimited } = rateLimitRoute(request, "email-pro");
+    if (rateLimited) return rateLimited;
 
     if (!process.env.RESEND_API_KEY) {
       return NextResponse.json(
@@ -21,20 +18,19 @@ export async function POST(request: Request) {
       );
     }
 
-    const rawBody = await request.text();
-    if (rawBody.length > MAX_INPUT_SIZE) {
-      return NextResponse.json({ error: "Request too large." }, { status: 413 });
+    // Parse + validate + sanitize input
+    const { data, error } = await parseAndValidate(request, EmailProRequestSchema, "email-pro");
+    if (error) return error;
+
+    const { email, proOutput, stripeSessionId } = data;
+
+    // Validate email (disposable domain blocking)
+    const emailCheck = validateEmailForDelivery(email);
+    if (!emailCheck.valid) {
+      return NextResponse.json({ error: emailCheck.reason }, { status: 400 });
     }
 
-    const body = JSON.parse(rawBody);
-    const { email, proOutput, stripeSessionId } = body;
-
-    // Validate email
-    if (!email || typeof email !== "string" || !email.includes("@") || email.length > 320) {
-      return NextResponse.json({ error: "Valid email is required." }, { status: 400 });
-    }
-
-    // Validate ProOutput with Zod
+    // Validate ProOutput with canonical Zod schema
     const parsed = ProOutputSchema.safeParse(proOutput);
     if (!parsed.success) {
       return NextResponse.json({ error: "Invalid report data." }, { status: 400 });
@@ -52,11 +48,10 @@ export async function POST(request: Request) {
         }
       } catch (err) {
         console.error("[email-pro] Stripe verification failed:", err instanceof Error ? err.message : "Unknown");
-        // Don't block email if Stripe lookup fails (session might have expired)
       }
     }
 
-    // Generate PDF and DOCX attachments server-side
+    // Generate PDF attachment server-side
     const { generateServerPDF } = await import("@/lib/export-pdf-server");
     const pdfBuffer = await generateServerPDF(validOutput);
 
@@ -67,7 +62,7 @@ export async function POST(request: Request) {
     const { Resend } = await import("resend");
     const resend = new Resend(process.env.RESEND_API_KEY);
 
-    const { error } = await resend.emails.send({
+    const { error: sendError } = await resend.emails.send({
       from: "ResumeMate AI <reports@resumemate.ai>",
       to: email,
       subject: "Your ResumeMate AI Pro Report",
@@ -80,8 +75,8 @@ export async function POST(request: Request) {
       ],
     });
 
-    if (error) {
-      console.error("[email-pro] Resend error:", error);
+    if (sendError) {
+      console.error("[email-pro] Resend error:", sendError);
       return NextResponse.json(
         { error: "Failed to send email. Please try again." },
         { status: 500 }
@@ -105,7 +100,7 @@ function buildTextReport(output: ProOutput): string {
   const lines: string[] = [];
 
   lines.push("TAILORED RESUME");
-  lines.push("─".repeat(40));
+  lines.push("\u2500".repeat(40));
   lines.push(output.tailoredResume.name.toUpperCase());
   lines.push(output.tailoredResume.headline);
   lines.push("");
@@ -116,7 +111,7 @@ function buildTextReport(output: ProOutput): string {
   for (const exp of output.tailoredResume.experience) {
     lines.push(`${exp.title} — ${exp.company}${exp.period ? ` (${exp.period})` : ""}`);
     for (const b of exp.bullets) {
-      lines.push(`  • ${b}`);
+      lines.push(`  \u2022 ${b}`);
     }
     lines.push("");
   }
@@ -128,14 +123,14 @@ function buildTextReport(output: ProOutput): string {
   lines.push("");
 
   lines.push("COVER LETTER");
-  lines.push("─".repeat(40));
+  lines.push("\u2500".repeat(40));
   for (const p of output.coverLetter.paragraphs) {
     lines.push(p);
     lines.push("");
   }
 
   lines.push("NEXT ACTIONS");
-  lines.push("─".repeat(40));
+  lines.push("\u2500".repeat(40));
   output.nextActions.forEach((a: string, i: number) => {
     lines.push(`${i + 1}. ${a}`);
   });

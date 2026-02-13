@@ -2,58 +2,37 @@ import { NextResponse } from "next/server";
 import { parseResume } from "@/lib/resume-parser";
 import { parseJobDescription } from "@/lib/jd-parser";
 import { scoreATS, generateStrengths, generateGaps, generateRewritePreviews } from "@/lib/ats-scorer";
-import { checkRateLimit, getClientIP } from "@/lib/rate-limiter";
+import { rateLimitRoute } from "@/lib/rate-limiter";
+import { parseAndValidate, AnalyzeRequestSchema } from "@/lib/sanitizer";
+import { preprocessResume, preprocessJobDescription } from "@/lib/input-preprocessor";
+import { analysisCache, hashInputs } from "@/lib/cache";
 import type { FreeAnalysisResult } from "@/lib/types";
 
 export async function POST(request: Request) {
   try {
     // Rate limiting
-    const ip = getClientIP(request);
-    const { allowed, remaining } = checkRateLimit(ip, {
-      maxRequests: 20,
-      windowMs: 60_000,
-    });
+    const { response: rateLimited, result: rlResult } = rateLimitRoute(request, "analyze");
+    if (rateLimited) return rateLimited;
 
-    if (!allowed) {
-      return NextResponse.json(
-        { error: "Too many requests. Please wait a moment and try again." },
-        {
-          status: 429,
-          headers: { "X-RateLimit-Remaining": "0" },
-        }
-      );
-    }
+    // Parse + validate + sanitize input
+    const { data, error } = await parseAndValidate(request, AnalyzeRequestSchema, "analyze");
+    if (error) return error;
 
-    const body = await request.json();
-    const { resumeText, jobDescriptionText } = body;
+    // Preprocess inputs (normalize, truncate)
+    const resumeText = preprocessResume(data.resumeText);
+    const jobDescriptionText = preprocessJobDescription(data.jobDescriptionText);
 
-    if (!resumeText || typeof resumeText !== "string") {
-      return NextResponse.json(
-        { error: "Resume text is required." },
-        { status: 400 }
-      );
-    }
-
-    if (!jobDescriptionText || typeof jobDescriptionText !== "string") {
-      return NextResponse.json(
-        { error: "Job description text is required." },
-        { status: 400 }
-      );
-    }
-
-    // Validate lengths (prevent abuse)
-    if (resumeText.length > 50_000) {
-      return NextResponse.json(
-        { error: "Resume text is too long. Please limit to 50,000 characters." },
-        { status: 400 }
-      );
-    }
-
-    if (jobDescriptionText.length > 30_000) {
-      return NextResponse.json(
-        { error: "Job description is too long. Please limit to 30,000 characters." },
-        { status: 400 }
-      );
+    // Check cache
+    const cacheKey = hashInputs(resumeText, jobDescriptionText);
+    const cached = analysisCache.get(cacheKey);
+    if (cached) {
+      console.log("[analyze] Cache hit");
+      return NextResponse.json(cached, {
+        headers: {
+          "X-RateLimit-Remaining": rlResult.remaining.toString(),
+          "X-Cache": "HIT",
+        },
+      });
     }
 
     // Parse inputs
@@ -77,7 +56,9 @@ export async function POST(request: Request) {
       rewritePreviews,
     };
 
-    // Do NOT log raw resume or JD content
+    // Store in cache
+    analysisCache.set(cacheKey, result);
+
     console.log("[analyze] Analysis complete", {
       score: atsResult.score,
       matchedKeywords: atsResult.matchedKeywords.length,
@@ -86,7 +67,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json(result, {
       headers: {
-        "X-RateLimit-Remaining": remaining.toString(),
+        "X-RateLimit-Remaining": rlResult.remaining.toString(),
+        "X-Cache": "MISS",
       },
     });
   } catch (error) {

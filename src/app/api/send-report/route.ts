@@ -1,14 +1,11 @@
 import { NextResponse } from "next/server";
-import { checkRateLimit, getClientIP } from "@/lib/rate-limiter";
+import { rateLimitRoute } from "@/lib/rate-limiter";
 
 export async function POST(request: Request) {
   try {
     // Rate limit
-    const ip = getClientIP(request);
-    const { allowed } = checkRateLimit(ip, { maxRequests: 3, windowMs: 60_000 });
-    if (!allowed) {
-      return NextResponse.json({ error: "Too many requests." }, { status: 429 });
-    }
+    const { response: rateLimited } = rateLimitRoute(request, "email-pro");
+    if (rateLimited) return rateLimited;
 
     if (!process.env.RESEND_API_KEY) {
       return NextResponse.json(
