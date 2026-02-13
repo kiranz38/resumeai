@@ -91,6 +91,10 @@ export function proOutputToDocument(output: ProOutput): ProDocument {
     resume: {
       name: r.name || "Your Name",
       headline: r.headline || undefined,
+      email: r.email || undefined,
+      phone: r.phone || undefined,
+      location: r.location || undefined,
+      links: r.links || undefined,
       summary: r.summary || undefined,
       skills: {
         groups: r.skills.map((s) => ({
@@ -105,11 +109,17 @@ export function proOutputToDocument(output: ProOutput): ProDocument {
         end: parsePeriodEnd(exp.period),
         bullets: exp.bullets,
       })),
+      projects: r.projects?.map((p) => ({
+        name: p.name,
+        bullets: p.bullets,
+        tech: p.tech || undefined,
+      })),
       education: r.education.map((edu) => ({
         school: edu.school,
         degree: edu.degree || undefined,
         end: edu.year || undefined,
       })),
+      certifications: r.certifications || undefined,
       keywordsChecklist: output.keywordChecklist.map((k) => ({
         keyword: k.keyword,
         status: k.found ? ("present" as const) : ("missing" as const),

@@ -95,6 +95,12 @@ export function mergeProOutput(base: ProOutput, edits: Partial<ProOutput> | null
           skills: edits.tailoredResume.skills ?? base.tailoredResume.skills,
           experience: edits.tailoredResume.experience ?? base.tailoredResume.experience,
           education: edits.tailoredResume.education ?? base.tailoredResume.education,
+          projects: edits.tailoredResume.projects ?? base.tailoredResume.projects,
+          certifications: edits.tailoredResume.certifications ?? base.tailoredResume.certifications,
+          email: edits.tailoredResume.email ?? base.tailoredResume.email,
+          phone: edits.tailoredResume.phone ?? base.tailoredResume.phone,
+          location: edits.tailoredResume.location ?? base.tailoredResume.location,
+          links: edits.tailoredResume.links ?? base.tailoredResume.links,
         }
       : base.tailoredResume,
     coverLetter: edits.coverLetter ?? base.coverLetter,

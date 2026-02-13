@@ -70,6 +70,12 @@ export const ResumeEducationEntrySchema = z.object({
   year: z.string().optional(),
 });
 
+export const ResumeProjectEntrySchema = z.object({
+  name: z.string(),
+  bullets: z.array(z.string()),
+  tech: z.array(z.string()).optional(),
+});
+
 export const TailoredResumeSchema = z.object({
   name: z.string(),
   headline: z.string(),
@@ -77,6 +83,13 @@ export const TailoredResumeSchema = z.object({
   skills: z.array(ResumeSkillGroupSchema),
   experience: z.array(ResumeExperienceEntrySchema),
   education: z.array(ResumeEducationEntrySchema),
+  // Optional fields populated from parsed resume (not LLM-generated)
+  projects: z.array(ResumeProjectEntrySchema).optional(),
+  certifications: z.array(z.string()).optional(),
+  email: z.string().optional(),
+  phone: z.string().optional(),
+  location: z.string().optional(),
+  links: z.array(z.string()).optional(),
 });
 
 export const CoverLetterSchema = z.object({

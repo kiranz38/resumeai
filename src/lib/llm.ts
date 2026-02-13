@@ -129,7 +129,7 @@ const IMPROVEMENTS_TOOL = {
             bullets: {
               type: "array",
               items: { type: "string" },
-              description: "4-6 improved bullet points for this role",
+              description: "Improved bullet points for this role. Include AT LEAST as many bullets as the original — never reduce content. Improve existing bullets and add new ones where relevant.",
             },
           },
         },
@@ -260,17 +260,41 @@ function mergeWithParsed(
       headline: llm.headline,
       summary: llm.professionalSummary,
       skills: llm.skills,
-      experience: candidate.experience.map((exp, i) => ({
-        company: exp.company || "",
-        title: exp.title || "",
-        period: [exp.start, exp.end].filter(Boolean).join(" – "),
-        bullets: llm.bulletsByRole[i]?.bullets || exp.bullets,
-      })),
+      experience: candidate.experience.map((exp, i) => {
+        const llmBullets = llm.bulletsByRole[i]?.bullets || [];
+        // Never reduce content: if LLM returned fewer bullets than original,
+        // append remaining originals to preserve resume length
+        let bullets: string[];
+        if (llmBullets.length === 0) {
+          bullets = exp.bullets;
+        } else if (llmBullets.length < exp.bullets.length) {
+          // LLM improved some but returned fewer — append originals not covered
+          bullets = [...llmBullets, ...exp.bullets.slice(llmBullets.length)];
+        } else {
+          bullets = llmBullets;
+        }
+        return {
+          company: exp.company || "",
+          title: exp.title || "",
+          period: [exp.start, exp.end].filter(Boolean).join(" – "),
+          bullets,
+        };
+      }),
       education: candidate.education.map((edu) => ({
         school: edu.school || "",
         degree: edu.degree || "",
         year: edu.end || edu.start,
       })),
+      // Pass through parsed data the LLM doesn't generate
+      projects: candidate.projects.length > 0
+        ? candidate.projects.map((p) => ({
+            name: p.name || "Project",
+            bullets: p.bullets,
+          }))
+        : undefined,
+      email: candidate.email || undefined,
+      phone: candidate.phone || undefined,
+      location: candidate.location || undefined,
     },
     coverLetter: llm.coverLetter,
     keywordChecklist: llm.keywordChecklist,
@@ -420,15 +444,16 @@ async function callClaude(
 CRITICAL: You provide IMPROVEMENTS ONLY. You do NOT provide factual data like company names, job titles, dates, or education details — those come from the parsed resume and will be merged separately.
 
 YOUR RESPONSIBILITIES:
-- Write 4-6 strong, tailored bullet points for each experience role (returned in bulletsByRole, matching the numbered order provided)
+- Write strong, tailored bullet points for each experience role (returned in bulletsByRole, matching the numbered order provided). You MUST include AT LEAST as many bullets as the original resume has for each role — never reduce content. Improve every original bullet and add new ones that align with the job description.
 - Write an improved professional headline tailored to the target role
 - Write a polished professional summary (3-4 sentences)
-- Group and categorize skills (original + JD-relevant)
+- Group and categorize skills (original + JD-relevant). Include ALL skills from the resume plus relevant ones from the job description.
 - Write a professional cover letter (3-4 paragraphs)
 - Provide keyword analysis, recruiter feedback, bullet rewrites, gap analysis, and next actions
 
 RULES:
 - bulletsByRole MUST have one entry per experience role, in the SAME ORDER as the numbered list provided
+- NEVER reduce the number of bullets per role — always match or exceed the original count
 - Never use bracket placeholders like [X]%, [Company Name], [Start Date], etc.
 - If the resume doesn't have a specific metric, write the bullet WITHOUT a number (e.g. "Significantly improved performance" NOT "Improved performance by [X]%")
 - Keep suggestions specific and actionable

@@ -547,6 +547,26 @@ function ProResultsPage() {
               ))}
             </div>
 
+            {/* Projects */}
+            {result.tailoredResume.projects && result.tailoredResume.projects.length > 0 && (
+              <div>
+                <h3 className="mb-3 text-sm font-semibold text-gray-700 uppercase tracking-wide">Projects</h3>
+                {result.tailoredResume.projects.map((proj, projIdx) => (
+                  <div key={projIdx} className="mb-4 rounded-lg border border-gray-100 bg-gray-50/50 p-4">
+                    <div className="mb-2 text-sm font-semibold text-gray-900">{proj.name}</div>
+                    <div className="space-y-1">
+                      {proj.bullets.map((bullet, bulletIdx) => (
+                        <div key={bulletIdx} className="flex gap-2 text-sm text-gray-700">
+                          <span className="mt-0.5 text-gray-400 shrink-0">-</span>
+                          <span>{bullet}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* Education */}
             <div>
               <h3 className="mb-3 text-sm font-semibold text-gray-700 uppercase tracking-wide">Education</h3>
