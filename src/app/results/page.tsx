@@ -17,40 +17,46 @@ export default function ResultsPage() {
   const [result, setResult] = useState<FreeAnalysisResult | null>(null);
   const [isDemo, setIsDemo] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [noData, setNoData] = useState(false);
 
   useEffect(() => {
-    // Check for demo data first
-    const demoData = sessionStorage.getItem("rt_demo");
-    if (demoData) {
-      try {
-        const parsed = JSON.parse(demoData);
-        // Convert demo format to FreeAnalysisResult
-        setResult(convertDemoToFreeResult(parsed));
-        setIsDemo(true);
-        sessionStorage.removeItem("rt_demo");
-        setLoading(false);
-        return;
-      } catch {
-        // Fall through to analysis data
+    // Small delay to ensure sessionStorage writes from /demo are flushed
+    const timer = setTimeout(() => {
+      // Check for demo data first
+      const demoData = sessionStorage.getItem("rt_demo");
+      if (demoData) {
+        try {
+          const parsed = JSON.parse(demoData);
+          setResult(convertDemoToFreeResult(parsed));
+          setIsDemo(true);
+          sessionStorage.removeItem("rt_demo");
+          setLoading(false);
+          return;
+        } catch {
+          // Fall through to analysis data
+        }
       }
-    }
 
-    // Check for analysis data
-    const analysisData = sessionStorage.getItem("rt_analysis");
-    if (analysisData) {
-      try {
-        const parsed = JSON.parse(analysisData);
-        setResult(parsed);
-        setLoading(false);
-        return;
-      } catch {
-        // Fall through
+      // Check for analysis data
+      const analysisData = sessionStorage.getItem("rt_analysis");
+      if (analysisData) {
+        try {
+          const parsed = JSON.parse(analysisData);
+          setResult(parsed);
+          setLoading(false);
+          return;
+        } catch {
+          // Fall through
+        }
       }
-    }
 
-    // No data found, redirect to analyze
-    router.push("/analyze");
-  }, [router]);
+      // No data found — show message instead of silent redirect
+      setLoading(false);
+      setNoData(true);
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   if (loading) {
     return (
@@ -61,6 +67,31 @@ export default function ResultsPage() {
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
           </svg>
           <p className="mt-3 text-sm text-gray-500">Loading results...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (noData) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center px-4">
+        <div className="text-center">
+          <h2 className="text-xl font-bold text-gray-900">No results yet</h2>
+          <p className="mt-2 text-sm text-gray-600">Analyze your resume first to see results here.</p>
+          <div className="mt-6 flex gap-3 justify-center">
+            <button
+              onClick={() => router.push("/analyze")}
+              className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+            >
+              Analyze My Resume
+            </button>
+            <button
+              onClick={() => router.push("/demo")}
+              className="rounded-lg border border-gray-300 px-6 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+            >
+              See a Demo
+            </button>
+          </div>
         </div>
       </div>
     );

@@ -64,10 +64,9 @@ export async function POST(request: Request) {
       jobDescriptionText
     );
 
-    // Do NOT log raw content
     console.log("[generate-pro] Pro generation complete", {
       bulletRewrites: result.bulletRewrites.length,
-      keywordChecklist: result.keywordChecklist.length,
+      keywords: result.keywordChecklist.length,
     });
 
     return NextResponse.json(result);

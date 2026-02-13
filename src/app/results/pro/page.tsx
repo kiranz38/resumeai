@@ -1,33 +1,85 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import type { ProGenerationResult } from "@/lib/types";
+import type { ProOutput } from "@/lib/schema";
+import {
+  loadBaseProOutput,
+  saveBaseProOutput,
+  loadEdits,
+  saveEdits,
+  clearEdits,
+  mergeProOutput,
+  isDirty,
+  proOutputToText,
+} from "@/lib/pro-store";
 import { trackEvent } from "@/lib/analytics";
 
 export default function ProResultsPageWrapper() {
   return (
-    <Suspense fallback={
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <div className="text-center">
-          <svg className="mx-auto h-8 w-8 animate-spin text-blue-600" viewBox="0 0 24 24" fill="none">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-          </svg>
-          <p className="mt-3 text-sm text-gray-500">Loading Pro results...</p>
+    <Suspense
+      fallback={
+        <div className="flex min-h-[50vh] items-center justify-center">
+          <div className="text-center">
+            <svg className="mx-auto h-8 w-8 animate-spin text-blue-600" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+            <p className="mt-3 text-sm text-gray-500">Loading Pro results...</p>
+          </div>
         </div>
-      </div>
-    }>
+      }
+    >
       <ProResultsPage />
     </Suspense>
   );
 }
 
+// ── Editable text area component ──
+
+function EditableText({
+  value,
+  onChange,
+  label,
+  multiline = false,
+  className = "",
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  label?: string;
+  multiline?: boolean;
+  className?: string;
+}) {
+  if (multiline) {
+    return (
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        aria-label={label}
+        rows={Math.max(3, value.split("\n").length + 1)}
+        className={`w-full resize-y rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400 ${className}`}
+      />
+    );
+  }
+  return (
+    <input
+      type="text"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      aria-label={label}
+      className={`w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400 ${className}`}
+    />
+  );
+}
+
+// ── Main page ──
+
 function ProResultsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [result, setResult] = useState<ProGenerationResult | null>(null);
+  const [base, setBase] = useState<ProOutput | null>(null);
+  const [edits, setEdits] = useState<Partial<ProOutput> | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingMessage, setLoadingMessage] = useState("Loading Pro results...");
   const [activeTab, setActiveTab] = useState<"resume" | "cover" | "keywords" | "feedback">("resume");
@@ -35,26 +87,119 @@ function ProResultsPage() {
   const [emailError, setEmailError] = useState<string | null>(null);
   const [emailInput, setEmailInput] = useState("");
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+
+  const autosaveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // Compute current merged output
+  const result = base ? mergeProOutput(base, edits) : null;
+  const dirty = base ? isDirty(base, edits) : false;
+
+  // Autosave edits to localStorage
+  const scheduleAutosave = useCallback(
+    (newEdits: Partial<ProOutput>) => {
+      if (!base) return;
+      if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+      autosaveTimer.current = setTimeout(() => {
+        saveEdits(base, newEdits);
+      }, 500);
+    },
+    [base]
+  );
+
+  const updateEdits = useCallback(
+    (updater: (prev: Partial<ProOutput>) => Partial<ProOutput>) => {
+      setEdits((prev) => {
+        const next = updater(prev || {});
+        scheduleAutosave(next);
+        return next;
+      });
+    },
+    [scheduleAutosave]
+  );
+
+  // ── Update helpers ──
+
+  const updateResumeSummary = (v: string) =>
+    updateEdits((prev) => ({
+      ...prev,
+      tailoredResume: { ...(result?.tailoredResume || base!.tailoredResume), summary: v },
+    }));
+
+  const updateResumeName = (v: string) =>
+    updateEdits((prev) => ({
+      ...prev,
+      tailoredResume: { ...(result?.tailoredResume || base!.tailoredResume), name: v },
+    }));
+
+  const updateResumeHeadline = (v: string) =>
+    updateEdits((prev) => ({
+      ...prev,
+      tailoredResume: { ...(result?.tailoredResume || base!.tailoredResume), headline: v },
+    }));
+
+  const updateExperienceBullet = (expIdx: number, bulletIdx: number, v: string) => {
+    updateEdits((prev) => {
+      const current = result?.tailoredResume || base!.tailoredResume;
+      const experience = current.experience.map((exp, i) => {
+        if (i !== expIdx) return exp;
+        return {
+          ...exp,
+          bullets: exp.bullets.map((b, j) => (j === bulletIdx ? v : b)),
+        };
+      });
+      return {
+        ...prev,
+        tailoredResume: { ...current, experience },
+      };
+    });
+  };
+
+  const updateSkillItem = (groupIdx: number, itemIdx: number, v: string) => {
+    updateEdits((prev) => {
+      const current = result?.tailoredResume || base!.tailoredResume;
+      const skills = current.skills.map((group, i) => {
+        if (i !== groupIdx) return group;
+        return {
+          ...group,
+          items: group.items.map((item, j) => (j === itemIdx ? v : item)),
+        };
+      });
+      return {
+        ...prev,
+        tailoredResume: { ...current, skills },
+      };
+    });
+  };
+
+  const updateCoverParagraph = (idx: number, v: string) => {
+    updateEdits((prev) => {
+      const paragraphs = [...(result?.coverLetter.paragraphs || base!.coverLetter.paragraphs)];
+      paragraphs[idx] = v;
+      return { ...prev, coverLetter: { paragraphs } };
+    });
+  };
+
+  // ── Initialization ──
 
   useEffect(() => {
     async function init() {
-      // Check if we already have results cached
-      const cached = sessionStorage.getItem("rt_pro_result");
+      // Check for cached results
+      const cached = loadBaseProOutput();
       if (cached) {
-        try {
-          setResult(JSON.parse(cached));
-          setLoading(false);
-          trackEvent("pro_viewed");
-          return;
-        } catch { /* fall through */ }
+        setBase(cached);
+        const savedEdits = loadEdits(cached);
+        if (savedEdits) setEdits(savedEdits);
+        setLoading(false);
+        trackEvent("pro_viewed");
+        return;
       }
 
-      // Check if returning from Stripe payment or pending generation
+      // Check if returning from Stripe payment
       const sessionId = searchParams.get("session_id");
       const pendingPro = sessionStorage.getItem("rt_pending_pro");
 
       if (sessionId || pendingPro) {
-        // User paid (or was already marked for generation) — generate Pro results now
         const resumeText = sessionStorage.getItem("rt_resume_text");
         const jdText = sessionStorage.getItem("rt_jd_text");
 
@@ -73,13 +218,11 @@ function ProResultsPage() {
             body: JSON.stringify({ resumeText, jobDescriptionText: jdText }),
           });
 
-          if (!response.ok) {
-            throw new Error("Generation failed");
-          }
+          if (!response.ok) throw new Error("Generation failed");
 
-          const data = await response.json();
-          sessionStorage.setItem("rt_pro_result", JSON.stringify(data));
-          setResult(data);
+          const data: ProOutput = await response.json();
+          saveBaseProOutput(data);
+          setBase(data);
           setLoading(false);
           trackEvent("pro_viewed");
         } catch {
@@ -89,46 +232,40 @@ function ProResultsPage() {
         return;
       }
 
-      // No data at all
+      // No data
       router.push("/results");
     }
 
     init();
   }, [router, searchParams]);
 
+  // ── Reset handler ──
+  const handleReset = () => {
+    if (!base) return;
+    clearEdits(base);
+    setEdits(null);
+    setShowResetConfirm(false);
+  };
+
+  // ── Email handler ──
   const handleSendEmail = async () => {
     if (!emailInput || !result) return;
     setSendingEmail(true);
     setEmailError(null);
 
     try {
-      const reportText = [
-        "=== TAILORED RESUME ===",
-        result.tailoredResume,
-        "",
-        "=== COVER LETTER ===",
-        result.coverLetter,
-        "",
-        "=== SKILLS SECTION ===",
-        result.skillsSectionRewrite,
-        "",
-        "=== NEXT ACTIONS ===",
-        ...result.nextActions.map((a, i) => `${i + 1}. ${a}`),
-        "",
-        "=== SUMMARY ===",
-        result.summary,
-      ].join("\n");
-
-      const response = await fetch("/api/send-report", {
+      const response = await fetch("/api/email-pro", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: emailInput, reportText }),
+        body: JSON.stringify({
+          email: emailInput,
+          proOutput: result,
+          stripeSessionId: searchParams.get("session_id") || undefined,
+        }),
       });
 
       const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to send email");
-      }
+      if (!response.ok) throw new Error(data.error || "Failed to send email");
 
       setEmailSent(true);
       trackEvent("email_report_sent");
@@ -139,7 +276,7 @@ function ProResultsPage() {
     }
   };
 
-  if (loading || !result) {
+  if (loading || !result || !base) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <div className="text-center">
@@ -156,22 +293,46 @@ function ProResultsPage() {
   const tabs = [
     { id: "resume" as const, label: "Tailored Resume" },
     { id: "cover" as const, label: "Cover Letter" },
-    { id: "keywords" as const, label: "Keyword Checklist" },
-    { id: "feedback" as const, label: "Recruiter Feedback" },
+    { id: "keywords" as const, label: "Keywords" },
+    { id: "feedback" as const, label: "Feedback" },
   ];
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <div className="mb-1 inline-block rounded-full bg-blue-600 px-3 py-0.5 text-xs font-semibold text-white">
-            Pro
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900">Your Full Tailor Pack</h1>
-          <p className="mt-1 text-gray-600">{result.summary.slice(0, 150)}...</p>
+    <div className="mx-auto max-w-5xl px-4 pb-28 pt-10">
+      {/* Header */}
+      <div className="mb-6">
+        <div className="mb-1 inline-block rounded-full bg-blue-600 px-3 py-0.5 text-xs font-semibold text-white">
+          Pro
         </div>
-        <DownloadDropdown result={result} />
+        <h1 className="text-3xl font-bold text-gray-900">Your Full Tailor Pack</h1>
+        <p className="mt-1 text-sm text-gray-600">{result.summary.slice(0, 150)}...</p>
+        {dirty && (
+          <p className="mt-2 text-xs text-amber-600">
+            You have unsaved edits.{" "}
+            <button onClick={() => setShowResetConfirm(true)} className="underline hover:text-amber-800">
+              Reset to generated
+            </button>
+          </p>
+        )}
       </div>
+
+      {/* Reset confirmation modal */}
+      {showResetConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="mx-4 max-w-sm rounded-xl bg-white p-6 shadow-xl">
+            <h3 className="text-lg font-semibold text-gray-900">Reset all edits?</h3>
+            <p className="mt-2 text-sm text-gray-600">This will discard all your changes and revert to the AI-generated version.</p>
+            <div className="mt-4 flex gap-3 justify-end">
+              <button onClick={() => setShowResetConfirm(false)} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                Cancel
+              </button>
+              <button onClick={handleReset} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700">
+                Reset
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tab navigation */}
       <div className="mb-6 flex gap-1 rounded-lg border border-gray-200 bg-gray-50 p-1">
@@ -192,44 +353,112 @@ function ProResultsPage() {
 
       {/* Tab content */}
       <div className="rounded-xl border border-gray-200 bg-white">
+        {/* ── Resume Tab ── */}
         {activeTab === "resume" && (
-          <div className="p-6">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">Tailored Resume</h2>
-              <button
-                onClick={() => copyToClipboard(result.tailoredResume)}
-                className="text-sm text-blue-600 hover:underline"
-              >
-                Copy to clipboard
-              </button>
+          <div className="p-6 space-y-6">
+            {/* Name & Headline */}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-500 uppercase tracking-wide">Name</label>
+                <EditableText value={result.tailoredResume.name} onChange={updateResumeName} label="Name" />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-500 uppercase tracking-wide">Headline</label>
+                <EditableText value={result.tailoredResume.headline} onChange={updateResumeHeadline} label="Headline" />
+              </div>
             </div>
-            <pre className="whitespace-pre-wrap rounded-lg bg-gray-50 p-4 font-mono text-sm text-gray-800 leading-relaxed">
-              {result.tailoredResume}
-            </pre>
-          </div>
-        )}
 
-        {activeTab === "cover" && (
-          <div className="p-6">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">Cover Letter</h2>
-              <button
-                onClick={() => copyToClipboard(result.coverLetter)}
-                className="text-sm text-blue-600 hover:underline"
-              >
-                Copy to clipboard
-              </button>
+            {/* Professional Summary */}
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-500 uppercase tracking-wide">Professional Summary</label>
+              <EditableText value={result.tailoredResume.summary} onChange={updateResumeSummary} label="Professional Summary" multiline />
             </div>
-            <div className="rounded-lg bg-gray-50 p-6">
-              {result.coverLetter.split("\n\n").map((paragraph, i) => (
-                <p key={i} className="mb-4 text-sm text-gray-800 leading-relaxed last:mb-0">
-                  {paragraph}
-                </p>
+
+            {/* Experience */}
+            <div>
+              <h3 className="mb-3 text-sm font-semibold text-gray-700 uppercase tracking-wide">Experience</h3>
+              {result.tailoredResume.experience.map((exp, expIdx) => (
+                <div key={expIdx} className="mb-4 rounded-lg border border-gray-100 bg-gray-50/50 p-4">
+                  <div className="mb-2 flex items-baseline gap-2">
+                    <span className="text-sm font-semibold text-gray-900">{exp.title}</span>
+                    <span className="text-sm text-gray-500">{exp.company}</span>
+                    {exp.period && <span className="text-xs text-gray-400">{exp.period}</span>}
+                  </div>
+                  <div className="space-y-2">
+                    {exp.bullets.map((bullet, bulletIdx) => (
+                      <div key={bulletIdx} className="flex gap-2">
+                        <span className="mt-2.5 text-gray-400 text-xs shrink-0">{bulletIdx + 1}.</span>
+                        <EditableText
+                          value={bullet}
+                          onChange={(v) => updateExperienceBullet(expIdx, bulletIdx, v)}
+                          label={`Bullet ${bulletIdx + 1} for ${exp.title}`}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Education */}
+            <div>
+              <h3 className="mb-3 text-sm font-semibold text-gray-700 uppercase tracking-wide">Education</h3>
+              {result.tailoredResume.education.map((edu, i) => (
+                <div key={i} className="mb-2 text-sm text-gray-700">
+                  {edu.degree} &mdash; {edu.school}{edu.year ? `, ${edu.year}` : ""}
+                </div>
+              ))}
+            </div>
+
+            {/* Skills */}
+            <div>
+              <h3 className="mb-3 text-sm font-semibold text-gray-700 uppercase tracking-wide">Skills</h3>
+              {result.tailoredResume.skills.map((group, groupIdx) => (
+                <div key={groupIdx} className="mb-3">
+                  <label className="mb-1 block text-xs font-medium text-gray-500">{group.category}</label>
+                  <div className="flex flex-wrap gap-2">
+                    {group.items.map((item, itemIdx) => (
+                      <input
+                        key={itemIdx}
+                        type="text"
+                        value={item}
+                        onChange={(e) => updateSkillItem(groupIdx, itemIdx, e.target.value)}
+                        className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs text-gray-700 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                        style={{ width: Math.max(60, item.length * 8 + 24) + "px" }}
+                      />
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           </div>
         )}
 
+        {/* ── Cover Letter Tab ── */}
+        {activeTab === "cover" && (
+          <div className="p-6 space-y-4">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-lg font-semibold text-gray-900">Cover Letter</h2>
+              <button
+                onClick={() => copyToClipboard(result.coverLetter.paragraphs.join("\n\n"))}
+                className="text-sm text-blue-600 hover:underline"
+              >
+                Copy to clipboard
+              </button>
+            </div>
+            {result.coverLetter.paragraphs.map((paragraph, i) => (
+              <EditableText
+                key={i}
+                value={paragraph}
+                onChange={(v) => updateCoverParagraph(i, v)}
+                label={`Cover letter paragraph ${i + 1}`}
+                multiline
+              />
+            ))}
+          </div>
+        )}
+
+        {/* ── Keywords Tab ── */}
         {activeTab === "keywords" && (
           <div className="p-6">
             <h2 className="mb-4 text-lg font-semibold text-gray-900">Keyword Checklist</h2>
@@ -256,7 +485,7 @@ function ProResultsPage() {
                     </span>
                   </div>
                   {item.suggestion && (
-                    <span className="text-xs text-gray-500">{item.suggestion}</span>
+                    <span className="text-xs text-gray-500 max-w-xs text-right">{item.suggestion}</span>
                   )}
                 </div>
               ))}
@@ -264,22 +493,21 @@ function ProResultsPage() {
           </div>
         )}
 
+        {/* ── Feedback Tab ── */}
         {activeTab === "feedback" && (
           <div className="p-6">
             <h2 className="mb-4 text-lg font-semibold text-gray-900">Recruiter Feedback</h2>
-            <div className="prose prose-sm max-w-none rounded-lg bg-gray-50 p-6">
-              {result.recruiterFeedback.split("\n").map((line, i) => {
-                if (line.startsWith("**") && line.endsWith("**")) {
-                  return <h3 key={i} className="mt-4 mb-2 text-base font-semibold text-gray-900">{line.replace(/\*\*/g, "")}</h3>;
-                }
-                if (line.startsWith("- ")) {
-                  return <li key={i} className="ml-4 text-sm text-gray-700">{line.slice(2)}</li>;
-                }
-                if (line.trim()) {
-                  return <p key={i} className="mb-2 text-sm text-gray-700">{line.replace(/\*\*/g, "")}</p>;
-                }
-                return <br key={i} />;
-              })}
+            <div className="space-y-2">
+              {result.recruiterFeedback.map((item, i) => (
+                <div key={i} className="flex items-start gap-2 rounded-lg bg-gray-50 px-4 py-3">
+                  <span className="mt-0.5 text-blue-500 shrink-0">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </span>
+                  <p className="text-sm text-gray-700">{item}</p>
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -340,24 +568,6 @@ function ProResultsPage() {
         </div>
       )}
 
-      {/* Skills Section Rewrite */}
-      {result.skillsSectionRewrite && (
-        <div className="mt-8 rounded-xl border border-gray-200 bg-white p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Skills Section Rewrite</h2>
-            <button
-              onClick={() => copyToClipboard(result.skillsSectionRewrite)}
-              className="text-sm text-blue-600 hover:underline"
-            >
-              Copy
-            </button>
-          </div>
-          <pre className="whitespace-pre-wrap rounded-lg bg-gray-50 p-4 font-mono text-sm text-gray-800">
-            {result.skillsSectionRewrite}
-          </pre>
-        </div>
-      )}
-
       {/* Next Actions */}
       {result.nextActions.length > 0 && (
         <div className="mt-8 rounded-xl border border-blue-200 bg-blue-50 p-6">
@@ -378,7 +588,7 @@ function ProResultsPage() {
       {/* Email delivery */}
       <div className="mt-8 rounded-xl border border-gray-200 bg-white p-6">
         <h2 className="mb-2 text-lg font-semibold text-gray-900">Email Your Report</h2>
-        <p className="mb-4 text-sm text-gray-500">Get a copy of your full report delivered to your inbox.</p>
+        <p className="mb-4 text-sm text-gray-500">Get a copy with PDF and DOCX attachments delivered to your inbox.</p>
 
         {emailSent ? (
           <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
@@ -402,9 +612,7 @@ function ProResultsPage() {
             </button>
           </div>
         )}
-        {emailError && (
-          <p className="mt-2 text-sm text-red-600">{emailError}</p>
-        )}
+        {emailError && <p className="mt-2 text-sm text-red-600">{emailError}</p>}
       </div>
 
       {/* Navigation */}
@@ -416,34 +624,23 @@ function ProResultsPage() {
           Analyze another resume
         </Link>
       </div>
+
+      {/* ── Sticky Action Bar ── */}
+      <StickyActionBar result={result} />
     </div>
   );
 }
 
-function DownloadDropdown({ result }: { result: ProGenerationResult }) {
-  const [open, setOpen] = useState(false);
+// ── Sticky Action Bar ──
+
+function StickyActionBar({ result }: { result: ProOutput }) {
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const handleExportTXT = () => {
     trackEvent("export_txt_clicked");
-    const content = [
-      "=== TAILORED RESUME ===",
-      result.tailoredResume,
-      "",
-      "=== COVER LETTER ===",
-      result.coverLetter,
-      "",
-      "=== SKILLS SECTION ===",
-      result.skillsSectionRewrite,
-      "",
-      "=== NEXT ACTIONS ===",
-      ...result.nextActions.map((a, i) => `${i + 1}. ${a}`),
-      "",
-      "=== SUMMARY ===",
-      result.summary,
-    ].join("\n");
-
+    const content = proOutputToText(result);
     downloadFile(content, "resumemate-ai-pro.txt", "text/plain");
-    setOpen(false);
+    setDropdownOpen(false);
   };
 
   const handleExportPDF = async () => {
@@ -459,10 +656,9 @@ function DownloadDropdown({ result }: { result: ProGenerationResult }) {
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error("PDF export failed:", error);
-      // Fallback to TXT
       handleExportTXT();
     }
-    setOpen(false);
+    setDropdownOpen(false);
   };
 
   const handleExportDOCX = async () => {
@@ -480,56 +676,64 @@ function DownloadDropdown({ result }: { result: ProGenerationResult }) {
       console.error("DOCX export failed:", error);
       handleExportTXT();
     }
-    setOpen(false);
+    setDropdownOpen(false);
   };
 
   return (
-    <div className="relative">
-      <button
-        onClick={() => setOpen(!open)}
-        className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-      >
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-        Download
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
+    <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200 bg-white/95 backdrop-blur-sm shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+      <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
+        <p className="text-xs text-gray-500 hidden sm:block">
+          Edit your resume above, then download or email the final version.
+        </p>
+        <div className="relative ml-auto flex items-center gap-3">
+          <button
+            onClick={() => copyToClipboard(proOutputToText(result))}
+            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Copy All
+          </button>
 
-      {open && (
-        <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 z-20 mt-2 w-48 rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
+          <div className="relative">
             <button
-              onClick={handleExportPDF}
-              className="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              onClick={() => setDropdownOpen(!dropdownOpen)}
+              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
             >
-              PDF
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Download
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
             </button>
-            <button
-              onClick={handleExportDOCX}
-              className="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-            >
-              DOCX
-            </button>
-            <button
-              onClick={handleExportTXT}
-              className="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-            >
-              Plain Text
-            </button>
+
+            {dropdownOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(false)} />
+                <div className="absolute bottom-full right-0 z-20 mb-2 w-48 rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
+                  <button onClick={handleExportPDF} className="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                    PDF
+                  </button>
+                  <button onClick={handleExportDOCX} className="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                    DOCX
+                  </button>
+                  <button onClick={handleExportTXT} className="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                    Plain Text
+                  </button>
+                </div>
+              </>
+            )}
           </div>
-        </>
-      )}
+        </div>
+      </div>
     </div>
   );
 }
 
+// ── Helpers ──
+
 function copyToClipboard(text: string) {
   navigator.clipboard.writeText(text).catch(() => {
-    // Fallback
     const textarea = document.createElement("textarea");
     textarea.value = text;
     document.body.appendChild(textarea);

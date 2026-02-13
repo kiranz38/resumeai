@@ -1,9 +1,10 @@
 import type { ProOutput } from "./schema";
 
 /**
- * Generate a PDF from ProOutput using jsPDF.
+ * Server-side PDF generation using jsPDF (works in Node.js).
+ * Returns a Buffer suitable for email attachments.
  */
-export async function generatePDF(result: ProOutput): Promise<Blob> {
+export async function generateServerPDF(result: ProOutput): Promise<Buffer> {
   const { jsPDF } = await import("jspdf");
 
   const doc = new jsPDF({
@@ -61,9 +62,7 @@ export async function generatePDF(result: ProOutput): Promise<Blob> {
     const bulletLines = doc.splitTextToSize(text, contentWidth - 8);
     for (let i = 0; i < bulletLines.length; i++) {
       checkPageBreak(4);
-      if (i === 0) {
-        doc.text("\u2022", margin + 2, y);
-      }
+      if (i === 0) doc.text("\u2022", margin + 2, y);
       doc.text(bulletLines[i], margin + 6, y);
       y += 4;
     }
@@ -83,33 +82,24 @@ export async function generatePDF(result: ProOutput): Promise<Blob> {
   // Tailored Resume
   addSectionHeader("Tailored Resume");
   const r = result.tailoredResume;
-
-  // Name & headline
   addWrappedText(r.name.toUpperCase(), 13, true);
   addWrappedText(r.headline, 10);
-
-  // Professional summary
   addWrappedText("PROFESSIONAL SUMMARY", 11, true);
   addWrappedText(r.summary);
 
-  // Experience
   addWrappedText("EXPERIENCE", 11, true);
   for (const exp of r.experience) {
     checkPageBreak(10);
     addWrappedText(`${exp.title.toUpperCase()} \u2014 ${exp.company}${exp.period ? ` (${exp.period})` : ""}`, 10, true);
-    for (const bullet of exp.bullets) {
-      addBullet(bullet);
-    }
+    for (const bullet of exp.bullets) addBullet(bullet);
     y += 2;
   }
 
-  // Education
   addWrappedText("EDUCATION", 11, true);
   for (const edu of r.education) {
     addWrappedText(`${edu.degree} \u2014 ${edu.school}${edu.year ? `, ${edu.year}` : ""}`, 10);
   }
 
-  // Skills
   addWrappedText("SKILLS", 11, true);
   for (const group of r.skills) {
     addWrappedText(`${group.category}: ${group.items.join(", ")}`, 9);
@@ -124,7 +114,7 @@ export async function generatePDF(result: ProOutput): Promise<Blob> {
     }
   }
 
-  // Keyword Checklist
+  // Keywords
   if (result.keywordChecklist.length > 0) {
     addSectionHeader("Keyword Checklist");
     for (const item of result.keywordChecklist) {
@@ -134,12 +124,6 @@ export async function generatePDF(result: ProOutput): Promise<Blob> {
       doc.setFont("helvetica", item.found ? "normal" : "bold");
       doc.setTextColor(item.found ? 22 : 185, item.found ? 163 : 28, item.found ? 74 : 28);
       doc.text(`${prefix} ${item.keyword}`, margin, y);
-      if (item.suggestion) {
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(107, 114, 128);
-        const suggLines = doc.splitTextToSize(item.suggestion, contentWidth - 65);
-        doc.text(suggLines[0], margin + 60, y);
-      }
       y += 4.5;
     }
   }
@@ -152,7 +136,7 @@ export async function generatePDF(result: ProOutput): Promise<Blob> {
     });
   }
 
-  // Footer on each page
+  // Footer
   const totalPages = doc.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
@@ -167,5 +151,7 @@ export async function generatePDF(result: ProOutput): Promise<Blob> {
     );
   }
 
-  return doc.output("blob");
+  // Convert to Buffer for email attachment
+  const arrayBuffer = doc.output("arraybuffer");
+  return Buffer.from(arrayBuffer);
 }

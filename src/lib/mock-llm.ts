@@ -1,4 +1,5 @@
-import type { CandidateProfile, JobProfile, ProGenerationResult } from "./types";
+import type { CandidateProfile, JobProfile } from "./types";
+import type { ProOutput } from "./schema";
 
 /**
  * Mock LLM generator - produces realistic Pro results without calling any API.
@@ -7,54 +8,36 @@ import type { CandidateProfile, JobProfile, ProGenerationResult } from "./types"
 export function generateMockProResult(
   candidate: CandidateProfile,
   job: JobProfile,
-  resumeText: string
-): ProGenerationResult {
+  _resumeText: string
+): ProOutput {
   const candidateName = candidate.name || "the candidate";
   const jobTitle = job.title || "the target role";
   const company = job.company || "the company";
 
-  // Generate bullet rewrites from actual candidate experience
   const bulletRewrites = generateBulletRewrites(candidate);
-
-  // Generate keyword checklist
   const keywordChecklist = generateKeywordChecklist(candidate, job);
-
-  // Generate experience gaps
   const experienceGaps = generateExperienceGaps(candidate, job);
-
-  // Generate cover letter
   const coverLetter = generateCoverLetter(candidate, job);
-
-  // Generate tailored resume
-  const tailoredResume = generateTailoredResume(candidate, job, resumeText);
-
-  // Generate skills section rewrite
-  const skillsSectionRewrite = generateSkillsRewrite(candidate, job);
-
-  // Generate recruiter feedback
+  const tailoredResume = generateTailoredResume(candidate, job);
   const recruiterFeedback = generateRecruiterFeedback(candidate, job);
-
-  // Next actions
   const nextActions = generateNextActions(candidate, job);
 
-  // Summary
   const summary = `${candidateName}'s resume shows solid experience but needs optimization for the ${jobTitle} role at ${company}. Key gaps include missing technologies and insufficient system-level impact in bullet points. The tailored version addresses these by rewriting bullets with stronger metrics, adding missing keywords, and restructuring the skills section to match the job requirements. Focus areas: add missing tech skills, quantify impact, and lead with architecture-level accomplishments.`;
 
   return {
+    summary,
     tailoredResume,
     coverLetter,
     keywordChecklist,
     recruiterFeedback,
     bulletRewrites,
-    skillsSectionRewrite,
     experienceGaps,
     nextActions,
-    summary,
   };
 }
 
-function generateBulletRewrites(candidate: CandidateProfile): ProGenerationResult["bulletRewrites"] {
-  const rewrites: ProGenerationResult["bulletRewrites"] = [];
+function generateBulletRewrites(candidate: CandidateProfile): ProOutput["bulletRewrites"] {
+  const rewrites: ProOutput["bulletRewrites"] = [];
 
   for (const exp of candidate.experience) {
     const section = `${exp.title || ""} at ${exp.company || ""}`.trim();
@@ -72,7 +55,6 @@ function generateBulletRewrites(candidate: CandidateProfile): ProGenerationResul
     }
   }
 
-  // Ensure at least 5 rewrites (add generic suggestions if needed)
   if (rewrites.length < 5 && candidate.experience.length > 0) {
     for (const exp of candidate.experience) {
       if (rewrites.length >= 12) break;
@@ -96,7 +78,6 @@ function generateBulletRewrites(candidate: CandidateProfile): ProGenerationResul
 function rewriteBullet(bullet: string): string {
   let improved = bullet;
 
-  // Replace weak openers
   const replacements: [RegExp, string][] = [
     [/^Responsible for\s+/i, "Spearheaded "],
     [/^Helped\s+/i, "Collaborated to "],
@@ -119,7 +100,6 @@ function rewriteBullet(bullet: string): string {
     }
   }
 
-  // Add metrics hint if none present
   if (!/\d/.test(improved) && !improved.includes("[")) {
     improved = improved.replace(/\.$/, "");
     if (improved.length < 120) {
@@ -133,12 +113,10 @@ function rewriteBullet(bullet: string): string {
 function enhanceBullet(bullet: string): string {
   let enhanced = bullet;
 
-  // Capitalize and strengthen
   if (/^[a-z]/.test(enhanced)) {
     enhanced = enhanced.charAt(0).toUpperCase() + enhanced.slice(1);
   }
 
-  // Add scope and impact
   if (!enhanced.includes("team") && !enhanced.includes("cross-functional")) {
     enhanced = enhanced.replace(/\.$/, "") + " in cross-functional collaboration with stakeholders";
   }
@@ -168,13 +146,13 @@ function generateRewriteNotes(original: string, rewritten: string): string {
 function generateKeywordChecklist(
   candidate: CandidateProfile,
   job: JobProfile
-): ProGenerationResult["keywordChecklist"] {
+): ProOutput["keywordChecklist"] {
   const candidateText = [
     ...candidate.skills,
     ...candidate.experience.flatMap((e) => [e.title || "", ...e.bullets]),
   ].join(" ").toLowerCase();
 
-  const checklist: ProGenerationResult["keywordChecklist"] = [];
+  const checklist: ProOutput["keywordChecklist"] = [];
 
   for (const keyword of job.keywords) {
     const found = candidateText.includes(keyword.toLowerCase());
@@ -186,7 +164,6 @@ function generateKeywordChecklist(
     });
   }
 
-  // Add keywords from requirements
   for (const req of [...job.requiredSkills, ...job.preferredSkills]) {
     const words = req.match(/\b[A-Z][a-z]+(?:\.\w+)?|[A-Z]{2,}\b/g) || [];
     for (const word of words) {
@@ -207,17 +184,15 @@ function generateKeywordChecklist(
 function generateExperienceGaps(
   candidate: CandidateProfile,
   job: JobProfile
-): ProGenerationResult["experienceGaps"] {
-  const gaps: ProGenerationResult["experienceGaps"] = [];
+): ProOutput["experienceGaps"] {
+  const gaps: ProOutput["experienceGaps"] = [];
 
   const candidateText = [
     ...candidate.skills,
     ...candidate.experience.flatMap((e) => e.bullets),
   ].join(" ").toLowerCase();
 
-  // Check each requirement
   for (const req of job.requiredSkills.slice(0, 8)) {
-    const reqLower = req.toLowerCase();
     const keyTerms = req.match(/\b[A-Z][a-z]+(?:\.\w+)?|[A-Z]{2,}\b/g) || [];
     const found = keyTerms.some((t) => candidateText.includes(t.toLowerCase()));
 
@@ -246,7 +221,7 @@ function generateExperienceGaps(
   return gaps.slice(0, 10);
 }
 
-function generateCoverLetter(candidate: CandidateProfile, job: JobProfile): string {
+function generateCoverLetter(candidate: CandidateProfile, job: JobProfile): ProOutput["coverLetter"] {
   const name = candidate.name || "[Your Name]";
   const title = job.title || "the open position";
   const company = job.company || "[Company Name]";
@@ -256,71 +231,60 @@ function generateCoverLetter(candidate: CandidateProfile, job: JobProfile): stri
   const topBullet = experience?.bullets[0] || "delivering high-impact projects";
   const years = candidate.experience.length > 0 ? Math.max(candidate.experience.length * 2, 3) : 3;
 
-  return `Dear Hiring Manager,
-
-I am writing to express my strong interest in the ${title} position at ${company}. With ${years}+ years of experience in software development and a background in ${topSkills}, I am confident in my ability to contribute meaningfully to your team.
-
-In ${recentRole}, I have ${topBullet.charAt(0).toLowerCase()}${topBullet.slice(1).replace(/\.$/, "")}. This experience has given me a solid foundation in building scalable solutions and collaborating with cross-functional teams to deliver results.
-
-What excites me most about this opportunity is the chance to apply my skills to ${company}'s mission. ${job.responsibilities.length > 0 ? `I am particularly drawn to the focus on ${job.responsibilities[0].toLowerCase().replace(/\.$/, "")}.` : "I am eager to contribute to meaningful technical challenges and grow alongside talented engineers."}
-
-I would welcome the opportunity to discuss how my experience and skills align with your team's needs. I am excited about the possibility of contributing to ${company} and would be glad to share more details about my background.
-
-Best regards,
-${name}`;
+  return {
+    paragraphs: [
+      "Dear Hiring Manager,",
+      `I am writing to express my strong interest in the ${title} position at ${company}. With ${years}+ years of experience in software development and a background in ${topSkills}, I am confident in my ability to contribute meaningfully to your team.`,
+      `In ${recentRole}, I have ${topBullet.charAt(0).toLowerCase()}${topBullet.slice(1).replace(/\.$/, "")}. This experience has given me a solid foundation in building scalable solutions and collaborating with cross-functional teams to deliver results.`,
+      `What excites me most about this opportunity is the chance to apply my skills to ${company}'s mission. ${job.responsibilities.length > 0 ? `I am particularly drawn to the focus on ${job.responsibilities[0].toLowerCase().replace(/\.$/, "")}.` : "I am eager to contribute to meaningful technical challenges and grow alongside talented engineers."}`,
+      `I would welcome the opportunity to discuss how my experience and skills align with your team's needs. I am excited about the possibility of contributing to ${company} and would be glad to share more details about my background.`,
+      `Best regards,\n${name}`,
+    ],
+  };
 }
 
 function generateTailoredResume(
   candidate: CandidateProfile,
-  job: JobProfile,
-  _resumeText: string
-): string {
+  job: JobProfile
+): ProOutput["tailoredResume"] {
   const name = candidate.name || "[YOUR NAME]";
   const headline = job.title || candidate.headline || "Software Engineer";
-  const email = candidate.email || "[email]";
-  const location = candidate.location || "[City, State]";
+  const years = estimateYears(candidate);
 
-  // Build skills grouped by category
-  const allSkills = new Set([...candidate.skills, ...job.keywords.filter((k) => k.length < 25).slice(0, 5)]);
-  const skillsList = Array.from(allSkills).join(", ");
+  // Build structured skills
+  const skills = buildSkillGroups(candidate, job);
 
-  let resume = `${name.toUpperCase()}
-${headline} | ${location}
-${email}
+  // Build structured experience
+  const experience = candidate.experience.map((exp) => ({
+    company: exp.company || "",
+    title: exp.title || "",
+    period: exp.start ? `${exp.start} – ${exp.end || "Present"}` : "",
+    bullets: exp.bullets.map((b) => rewriteBullet(b)),
+  }));
 
-PROFESSIONAL SUMMARY
-Results-driven ${headline} with ${candidate.experience.length > 0 ? estimateYears(candidate) + "+" : "N"} years of experience building scalable applications and leading technical initiatives. Skilled in ${candidate.skills.slice(0, 5).join(", ")}. Seeking to leverage expertise in ${job.keywords.slice(0, 3).join(", ")} to drive impact as ${job.title || "an engineer"} at ${job.company || "your organization"}.
+  // Build structured education
+  const education = candidate.education.map((edu) => ({
+    school: edu.school || "University",
+    degree: edu.degree || "Degree",
+    year: edu.end,
+  }));
 
-EXPERIENCE
-`;
+  const summary = `Results-driven ${headline} with ${years > 0 ? years + "+" : "N"} years of experience building scalable applications and leading technical initiatives. Skilled in ${candidate.skills.slice(0, 5).join(", ")}. Seeking to leverage expertise in ${job.keywords.slice(0, 3).join(", ")} to drive impact as ${job.title || "an engineer"} at ${job.company || "your organization"}.`;
 
-  for (const exp of candidate.experience) {
-    resume += `\n${(exp.title || "").toUpperCase()} — ${exp.company || ""}`;
-    if (exp.start) resume += ` (${exp.start}–${exp.end || "Present"})`;
-    resume += "\n";
-
-    for (const bullet of exp.bullets) {
-      const improved = rewriteBullet(bullet);
-      resume += `  - ${improved}\n`;
-    }
-  }
-
-  resume += `\nEDUCATION\n`;
-  for (const edu of candidate.education) {
-    resume += `${edu.degree || "Degree"} — ${edu.school || "University"}`;
-    if (edu.end) resume += `, ${edu.end}`;
-    resume += "\n";
-  }
-  if (candidate.education.length === 0) {
-    resume += "[Your Education]\n";
-  }
-
-  resume += `\nSKILLS\n${skillsList}\n`;
-
-  return resume;
+  return {
+    name,
+    headline,
+    summary,
+    skills,
+    experience,
+    education,
+  };
 }
 
-function generateSkillsRewrite(candidate: CandidateProfile, job: JobProfile): string {
+function buildSkillGroups(
+  candidate: CandidateProfile,
+  job: JobProfile
+): Array<{ category: string; items: string[] }> {
   const categories: Record<string, string[]> = {
     "Languages": [],
     "Frontend": [],
@@ -349,36 +313,31 @@ function generateSkillsRewrite(candidate: CandidateProfile, job: JobProfile): st
     }
   }
 
-  const lines: string[] = ["SKILLS\n"];
-  for (const [category, skills] of Object.entries(categories)) {
-    if (skills.length > 0) {
-      lines.push(`${category}: ${skills.join(", ")}`);
-    }
-  }
-
-  return lines.join("\n");
+  return Object.entries(categories)
+    .filter(([, items]) => items.length > 0)
+    .map(([category, items]) => ({ category, items }));
 }
 
-function generateRecruiterFeedback(candidate: CandidateProfile, job: JobProfile): string {
+function generateRecruiterFeedback(candidate: CandidateProfile, job: JobProfile): string[] {
   const name = candidate.name || "This candidate";
   const years = estimateYears(candidate);
   const title = job.title || "this role";
 
-  return `**Recruiter Assessment for ${title}**
-
-**Overall Fit:** ${years >= 5 ? "Strong" : years >= 3 ? "Moderate" : "Developing"} candidate with relevant foundation.
-
-**Strengths:**
-- ${years}+ years of progressive experience showing career growth
-- ${candidate.skills.length > 5 ? "Diverse" : "Focused"} technical skill set with ${candidate.skills.slice(0, 3).join(", ")}
-- ${candidate.experience.flatMap((e) => e.bullets).filter((b) => /\d/.test(b)).length > 0 ? "Good use of metrics in experience bullets" : "Experience bullets show clear responsibilities"}
-
-**Concerns:**
-- Some key technologies from the job requirements are not reflected in the resume
-- Could benefit from more quantifiable achievements and scope indicators
-- ${candidate.summary ? "Summary could be more targeted to this specific role" : "Missing a professional summary section"}
-
-**Recommendation:** ${name} should tailor their resume to emphasize ${job.keywords.slice(0, 3).join(", ")} experience and add quantified impact to their bullet points. ${years >= 4 ? "The experience level is appropriate for this role." : "May need to demonstrate depth beyond years of experience."}`;
+  return [
+    `Recruiter Assessment for ${title}`,
+    `Overall Fit: ${years >= 5 ? "Strong" : years >= 3 ? "Moderate" : "Developing"} candidate with relevant foundation.`,
+    `${years}+ years of progressive experience showing career growth`,
+    `${candidate.skills.length > 5 ? "Diverse" : "Focused"} technical skill set with ${candidate.skills.slice(0, 3).join(", ")}`,
+    candidate.experience.flatMap((e) => e.bullets).filter((b) => /\d/.test(b)).length > 0
+      ? "Good use of metrics in experience bullets"
+      : "Experience bullets show clear responsibilities",
+    "Some key technologies from the job requirements are not reflected in the resume",
+    "Could benefit from more quantifiable achievements and scope indicators",
+    candidate.summary
+      ? "Summary could be more targeted to this specific role"
+      : "Missing a professional summary section",
+    `${name} should tailor their resume to emphasize ${job.keywords.slice(0, 3).join(", ")} experience and add quantified impact to their bullet points. ${years >= 4 ? "The experience level is appropriate for this role." : "May need to demonstrate depth beyond years of experience."}`,
+  ];
 }
 
 function generateNextActions(candidate: CandidateProfile, job: JobProfile): string[] {

@@ -312,7 +312,7 @@ function computeImpactStrength(candidate: CandidateProfile): number {
   if (allBullets.length === 0) return 20;
 
   let score = 0;
-  let total = allBullets.length;
+  const total = allBullets.length;
 
   for (const bullet of allBullets) {
     let bulletScore = 0;

@@ -1,9 +1,9 @@
-import type { ProGenerationResult } from "./types";
+import type { ProOutput } from "./schema";
 
 /**
- * Generate a DOCX file from Pro results.
+ * Generate a DOCX file from ProOutput.
  */
-export async function generateDOCX(result: ProGenerationResult): Promise<Blob> {
+export async function generateDOCX(result: ProOutput): Promise<Blob> {
   const docx = await import("docx");
 
   const {
@@ -55,35 +55,98 @@ export async function generateDOCX(result: ProGenerationResult): Promise<Blob> {
     })
   );
 
-  for (const line of result.tailoredResume.split("\n")) {
-    if (!line.trim()) {
-      children.push(new Paragraph({ text: "", spacing: { after: 100 } }));
-      continue;
-    }
-    if (line === line.toUpperCase() && line.length > 2 && line.length < 40) {
+  const r = result.tailoredResume;
+
+  // Name & headline
+  children.push(
+    new Paragraph({
+      children: [new TextRun({ text: r.name.toUpperCase(), bold: true, size: 28 })],
+      spacing: { after: 60 },
+    })
+  );
+  children.push(
+    new Paragraph({
+      children: [new TextRun({ text: r.headline, size: 22 })],
+      spacing: { after: 200 },
+    })
+  );
+
+  // Professional summary
+  children.push(
+    new Paragraph({
+      children: [new TextRun({ text: "PROFESSIONAL SUMMARY", bold: true, size: 24 })],
+      spacing: { before: 200, after: 100 },
+    })
+  );
+  children.push(
+    new Paragraph({
+      children: [new TextRun({ text: r.summary, size: 22 })],
+      spacing: { after: 200 },
+    })
+  );
+
+  // Experience
+  children.push(
+    new Paragraph({
+      children: [new TextRun({ text: "EXPERIENCE", bold: true, size: 24 })],
+      spacing: { before: 200, after: 100 },
+    })
+  );
+
+  for (const exp of r.experience) {
+    children.push(
+      new Paragraph({
+        children: [
+          new TextRun({ text: `${exp.title.toUpperCase()} \u2014 ${exp.company}`, bold: true, size: 22 }),
+          ...(exp.period ? [new TextRun({ text: ` (${exp.period})`, size: 20, color: "6B7280" })] : []),
+        ],
+        spacing: { before: 150, after: 60 },
+      })
+    );
+    for (const bullet of exp.bullets) {
       children.push(
         new Paragraph({
-          children: [new TextRun({ text: line, bold: true, size: 24 })],
-          spacing: { before: 200, after: 100 },
-        })
-      );
-    } else if (line.trimStart().startsWith("-") || line.trimStart().startsWith("*")) {
-      const text = line.replace(/^\s*[-*]\s*/, "");
-      children.push(
-        new Paragraph({
-          children: [new TextRun({ text, size: 22 })],
+          children: [new TextRun({ text: bullet, size: 22 })],
           bullet: { level: 0 },
           spacing: { after: 60 },
         })
       );
-    } else {
-      children.push(
-        new Paragraph({
-          children: [new TextRun({ text: line, size: 22 })],
-          spacing: { after: 60 },
-        })
-      );
     }
+  }
+
+  // Education
+  children.push(
+    new Paragraph({
+      children: [new TextRun({ text: "EDUCATION", bold: true, size: 24 })],
+      spacing: { before: 200, after: 100 },
+    })
+  );
+  for (const edu of r.education) {
+    children.push(
+      new Paragraph({
+        children: [new TextRun({ text: `${edu.degree} \u2014 ${edu.school}${edu.year ? `, ${edu.year}` : ""}`, size: 22 })],
+        spacing: { after: 60 },
+      })
+    );
+  }
+
+  // Skills
+  children.push(
+    new Paragraph({
+      children: [new TextRun({ text: "SKILLS", bold: true, size: 24 })],
+      spacing: { before: 200, after: 100 },
+    })
+  );
+  for (const group of r.skills) {
+    children.push(
+      new Paragraph({
+        children: [
+          new TextRun({ text: `${group.category}: `, bold: true, size: 22 }),
+          new TextRun({ text: group.items.join(", "), size: 22 }),
+        ],
+        spacing: { after: 60 },
+      })
+    );
   }
 
   // Cover Letter
@@ -96,7 +159,7 @@ export async function generateDOCX(result: ProGenerationResult): Promise<Blob> {
     })
   );
 
-  for (const paragraph of result.coverLetter.split("\n\n")) {
+  for (const paragraph of result.coverLetter.paragraphs) {
     if (paragraph.trim()) {
       children.push(
         new Paragraph({
@@ -104,28 +167,6 @@ export async function generateDOCX(result: ProGenerationResult): Promise<Blob> {
           spacing: { after: 200 },
         })
       );
-    }
-  }
-
-  // Skills Section
-  if (result.skillsSectionRewrite) {
-    children.push(
-      new Paragraph({
-        text: "Skills Section (Recommended)",
-        heading: HeadingLevel.HEADING_1,
-        spacing: { before: 400, after: 200 },
-        border: { bottom: { style: BorderStyle.SINGLE, size: 1, color: "1E40AF" } },
-      })
-    );
-    for (const line of result.skillsSectionRewrite.split("\n")) {
-      if (line.trim()) {
-        children.push(
-          new Paragraph({
-            children: [new TextRun({ text: line, size: 22 })],
-            spacing: { after: 60 },
-          })
-        );
-      }
     }
   }
 

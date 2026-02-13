@@ -1,4 +1,6 @@
-import type { CandidateProfile, JobProfile, ProGenerationResult } from "./types";
+import type { CandidateProfile, JobProfile } from "./types";
+import type { ProOutput } from "./schema";
+import { ProOutputSchema } from "./schema";
 import { generateMockProResult } from "./mock-llm";
 
 const MAX_RETRIES = 2;
@@ -12,7 +14,7 @@ export async function generateProResult(
   job: JobProfile,
   resumeText: string,
   jobDescriptionText: string
-): Promise<ProGenerationResult> {
+): Promise<ProOutput> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   const useMock = process.env.MOCK_LLM === "true" || !apiKey;
 
@@ -48,7 +50,7 @@ async function callClaude(
   jobDescriptionText: string,
   apiKey: string,
   strict: boolean
-): Promise<ProGenerationResult> {
+): Promise<ProOutput> {
   const systemPrompt = `You are an expert resume consultant and career coach. You analyze resumes against job descriptions and provide detailed, actionable feedback.
 
 CRITICAL: You must respond with ONLY valid JSON matching the exact schema below. No markdown, no explanation, no code fences - ONLY the JSON object.
@@ -56,23 +58,33 @@ ${strict ? "\nThis is a RETRY because your previous response was not valid JSON.
 
 Response JSON schema:
 {
-  "tailoredResume": "string - the full rewritten resume as plain text",
-  "coverLetter": "string - a tailored cover letter",
+  "summary": "string - executive summary of the analysis",
+  "tailoredResume": {
+    "name": "string - candidate name",
+    "headline": "string - professional headline/title",
+    "summary": "string - professional summary paragraph",
+    "skills": [{"category": "string", "items": ["string"]}],
+    "experience": [{"company": "string", "title": "string", "period": "string", "bullets": ["string"]}],
+    "education": [{"school": "string", "degree": "string", "year": "string or omit"}]
+  },
+  "coverLetter": {
+    "paragraphs": ["string - each paragraph of the cover letter"]
+  },
   "keywordChecklist": [{"keyword": "string", "found": boolean, "section": "string or null", "suggestion": "string or null"}],
-  "recruiterFeedback": "string - markdown formatted recruiter assessment",
+  "recruiterFeedback": ["string - each bullet point of recruiter feedback"],
   "bulletRewrites": [{"original": "string", "rewritten": "string", "section": "string", "notes": "string"}],
-  "skillsSectionRewrite": "string - reformatted skills section",
   "experienceGaps": [{"gap": "string", "suggestion": "string", "severity": "high|medium|low"}],
-  "nextActions": ["string - actionable next step"],
-  "summary": "string - executive summary of the analysis"
+  "nextActions": ["string - actionable next step"]
 }
 
 Rules:
 - Do NOT invent metrics or achievements - use [X] placeholders for numbers the candidate should fill in
 - Do NOT include any content outside the JSON
 - Keep suggestions specific and actionable
-- Cover letter should be professional but not generic
-- Bullet rewrites should use strong action verbs and quantify impact where possible`;
+- Cover letter paragraphs should be professional but not generic
+- Bullet rewrites should use strong action verbs and quantify impact where possible
+- Skills should be grouped by category (e.g. Languages, Frontend, Backend, Cloud & DevOps, Databases, Tools)
+- Recruiter feedback should be an array of bullet strings, not markdown`;
 
   const userPrompt = `Analyze this resume against the job description and provide a complete Pro analysis.
 
@@ -132,21 +144,41 @@ Respond with ONLY the JSON object.`;
 
   const parsed = JSON.parse(jsonStr);
 
-  // Validate required fields
-  if (!parsed.tailoredResume || !parsed.coverLetter || !parsed.summary) {
-    throw new Error("Missing required fields in LLM response");
+  // Validate with Zod schema
+  const validated = ProOutputSchema.safeParse(parsed);
+  if (validated.success) {
+    return validated.data;
   }
 
-  // Ensure arrays exist
+  // If Zod validation fails, try to coerce the data
+  console.warn("[llm] Zod validation failed, attempting coercion:", validated.error.message);
+
+  // Coerce into valid shape
   return {
-    tailoredResume: String(parsed.tailoredResume),
-    coverLetter: String(parsed.coverLetter),
+    summary: String(parsed.summary || ""),
+    tailoredResume: {
+      name: String(parsed.tailoredResume?.name || candidate.name || ""),
+      headline: String(parsed.tailoredResume?.headline || job.title || ""),
+      summary: String(parsed.tailoredResume?.summary || ""),
+      skills: Array.isArray(parsed.tailoredResume?.skills) ? parsed.tailoredResume.skills : [],
+      experience: Array.isArray(parsed.tailoredResume?.experience) ? parsed.tailoredResume.experience : [],
+      education: Array.isArray(parsed.tailoredResume?.education) ? parsed.tailoredResume.education : [],
+    },
+    coverLetter: {
+      paragraphs: Array.isArray(parsed.coverLetter?.paragraphs)
+        ? parsed.coverLetter.paragraphs
+        : typeof parsed.coverLetter === "string"
+          ? parsed.coverLetter.split("\n\n").filter(Boolean)
+          : [],
+    },
     keywordChecklist: Array.isArray(parsed.keywordChecklist) ? parsed.keywordChecklist : [],
-    recruiterFeedback: String(parsed.recruiterFeedback || ""),
+    recruiterFeedback: Array.isArray(parsed.recruiterFeedback)
+      ? parsed.recruiterFeedback
+      : typeof parsed.recruiterFeedback === "string"
+        ? parsed.recruiterFeedback.split("\n").filter(Boolean)
+        : [],
     bulletRewrites: Array.isArray(parsed.bulletRewrites) ? parsed.bulletRewrites : [],
-    skillsSectionRewrite: String(parsed.skillsSectionRewrite || ""),
     experienceGaps: Array.isArray(parsed.experienceGaps) ? parsed.experienceGaps : [],
     nextActions: Array.isArray(parsed.nextActions) ? parsed.nextActions : [],
-    summary: String(parsed.summary),
   };
 }

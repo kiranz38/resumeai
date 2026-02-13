@@ -70,28 +70,27 @@ export interface FreeAnalysisResult {
   }>;
 }
 
-export interface ProGenerationResult {
-  tailoredResume: string;
-  coverLetter: string;
-  keywordChecklist: Array<{
-    keyword: string;
-    found: boolean;
-    section?: string;
-    suggestion?: string;
-  }>;
-  recruiterFeedback: string;
-  bulletRewrites: Array<{
-    original: string;
-    rewritten: string;
-    section: string;
-    notes: string;
-  }>;
-  skillsSectionRewrite: string;
-  experienceGaps: Array<{
-    gap: string;
-    suggestion: string;
-    severity: "high" | "medium" | "low";
-  }>;
-  nextActions: string[];
+// Re-export the canonical ProOutput from schema
+export type { ProOutput } from "./schema";
+
+export interface TailoredResume {
+  name: string;
+  headline: string;
   summary: string;
+  skills: Array<{ category: string; items: string[] }>;
+  experience: Array<{
+    company: string;
+    title: string;
+    period: string;
+    bullets: string[];
+  }>;
+  education: Array<{
+    school: string;
+    degree: string;
+    year?: string;
+  }>;
+}
+
+export interface CoverLetter {
+  paragraphs: string[];
 }

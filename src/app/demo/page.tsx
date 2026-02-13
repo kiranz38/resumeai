@@ -1,19 +1,20 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { DEMO_RESULT } from "@/lib/demo-data";
+import { DEMO_RESULT, DEMO_RESUME_TEXT, DEMO_JD_TEXT } from "@/lib/demo-data";
 import { trackEvent } from "@/lib/analytics";
 
 export default function DemoPage() {
-  const router = useRouter();
-
   useEffect(() => {
     trackEvent("demo_clicked");
-    // Store demo data in sessionStorage and redirect to results
+    // Store demo data in sessionStorage, then hard-navigate
     sessionStorage.setItem("rt_demo", JSON.stringify(DEMO_RESULT));
-    router.push("/results");
-  }, [router]);
+    sessionStorage.setItem("rt_resume_text", DEMO_RESUME_TEXT);
+    sessionStorage.setItem("rt_jd_text", DEMO_JD_TEXT);
+    // Use window.location for a hard nav so the results page
+    // reads sessionStorage on a fresh mount (no race condition)
+    window.location.href = "/results";
+  }, []);
 
   return (
     <div className="flex min-h-[50vh] items-center justify-center">
