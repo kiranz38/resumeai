@@ -100,10 +100,10 @@ function rewriteBullet(bullet: string): string {
     }
   }
 
-  if (!/\d/.test(improved) && !improved.includes("[")) {
+  if (!/\d/.test(improved)) {
     improved = improved.replace(/\.$/, "");
     if (improved.length < 120) {
-      improved += ", resulting in measurable improvements in [key metric]";
+      improved += ", resulting in measurable performance improvements";
     }
   }
 
@@ -130,8 +130,8 @@ function generateRewriteNotes(original: string, rewritten: string): string {
   if (/^(Responsible|Helped|Assisted|Worked|Participated|Involved)/i.test(original)) {
     notes.push("Replaced weak opening with a strong action verb");
   }
-  if (!/\d/.test(original) && /\d|\[/.test(rewritten)) {
-    notes.push("Added quantifiable impact placeholder");
+  if (!/\d/.test(original) && /\d/.test(rewritten)) {
+    notes.push("Added quantifiable impact metric");
   }
   if (rewritten.length > original.length + 20) {
     notes.push("Expanded with scope and results context");
@@ -222,9 +222,9 @@ function generateExperienceGaps(
 }
 
 function generateCoverLetter(candidate: CandidateProfile, job: JobProfile): ProOutput["coverLetter"] {
-  const name = candidate.name || "[Your Name]";
+  const name = candidate.name || "the candidate";
   const title = job.title || "the open position";
-  const company = job.company || "[Company Name]";
+  const company = job.company || "the company";
   const topSkills = candidate.skills.slice(0, 5).join(", ");
   const experience = candidate.experience[0];
   const recentRole = experience ? `${experience.title || "my current role"} at ${experience.company || "my current company"}` : "my recent experience";
@@ -247,7 +247,7 @@ function generateTailoredResume(
   candidate: CandidateProfile,
   job: JobProfile
 ): ProOutput["tailoredResume"] {
-  const name = candidate.name || "[YOUR NAME]";
+  const name = candidate.name || "Your Name";
   const headline = job.title || candidate.headline || "Software Engineer";
   const years = estimateYears(candidate);
 

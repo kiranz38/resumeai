@@ -1,6 +1,7 @@
 "use client";
 
 import type { ProOutput } from "./schema";
+import { proOutputToDocument, proDocumentToText } from "./pro-document";
 
 const SESSION_KEY = "rt_pro_result";
 const EDIT_PREFIX = "rt_pro_edits_";
@@ -115,61 +116,9 @@ export function isDirty(base: ProOutput, edits: Partial<ProOutput> | null): bool
 
 /**
  * Convert a structured ProOutput to plain text for TXT export.
+ * Delegates to the canonical proDocumentToText formatter.
  */
 export function proOutputToText(output: ProOutput): string {
-  const lines: string[] = [];
-
-  // Resume
-  lines.push("=== TAILORED RESUME ===");
-  lines.push(output.tailoredResume.name.toUpperCase());
-  lines.push(`${output.tailoredResume.headline}`);
-  lines.push("");
-  lines.push("PROFESSIONAL SUMMARY");
-  lines.push(output.tailoredResume.summary);
-  lines.push("");
-  lines.push("EXPERIENCE");
-  for (const exp of output.tailoredResume.experience) {
-    lines.push(`${exp.title.toUpperCase()} — ${exp.company}${exp.period ? ` (${exp.period})` : ""}`);
-    for (const bullet of exp.bullets) {
-      lines.push(`  - ${bullet}`);
-    }
-    lines.push("");
-  }
-  lines.push("EDUCATION");
-  for (const edu of output.tailoredResume.education) {
-    lines.push(`${edu.degree} — ${edu.school}${edu.year ? `, ${edu.year}` : ""}`);
-  }
-  lines.push("");
-  lines.push("SKILLS");
-  for (const group of output.tailoredResume.skills) {
-    lines.push(`${group.category}: ${group.items.join(", ")}`);
-  }
-  lines.push("");
-
-  // Cover letter
-  lines.push("=== COVER LETTER ===");
-  for (const p of output.coverLetter.paragraphs) {
-    lines.push(p);
-    lines.push("");
-  }
-
-  // Recruiter feedback
-  lines.push("=== RECRUITER FEEDBACK ===");
-  for (const fb of output.recruiterFeedback) {
-    lines.push(`- ${fb}`);
-  }
-  lines.push("");
-
-  // Next actions
-  lines.push("=== NEXT ACTIONS ===");
-  output.nextActions.forEach((a, i) => {
-    lines.push(`${i + 1}. ${a}`);
-  });
-  lines.push("");
-
-  // Summary
-  lines.push("=== SUMMARY ===");
-  lines.push(output.summary);
-
-  return lines.join("\n");
+  const doc = proOutputToDocument(output);
+  return proDocumentToText(doc);
 }

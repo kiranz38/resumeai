@@ -212,7 +212,7 @@ export default function ResultsPage() {
       <div className="mt-8 text-center">
         <Link
           href="/analyze"
-          className="text-sm text-blue-600 hover:underline"
+          className="text-base font-medium text-blue-600 hover:underline"
         >
           Analyze another resume
         </Link>

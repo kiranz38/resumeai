@@ -17,3 +17,54 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
 }
+
+/* ── Print styles for ATS resume / cover letter templates ── */
+@media print {
+  /* Hide all UI chrome */
+  nav,
+  footer,
+  .print\:hidden,
+  [data-print-hide] {
+    display: none !important;
+  }
+
+  /* Reset page */
+  @page {
+    size: letter;
+    margin: 0.5in 0.6in;
+  }
+
+  body {
+    background: white;
+    color: black;
+    font-size: 12pt;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Resume template */
+  .ats-resume,
+  .ats-cover-letter {
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  .ats-resume * ,
+  .ats-cover-letter * {
+    color: black !important;
+    border-color: #666 !important;
+  }
+
+  /* Ensure page breaks don't split sections badly */
+  .ats-resume section {
+    break-inside: avoid;
+  }
+
+  .ats-resume h1,
+  .ats-resume h2 {
+    break-after: avoid;
+  }
+}

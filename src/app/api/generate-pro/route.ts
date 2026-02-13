@@ -84,9 +84,13 @@ export async function POST(request: Request) {
       releaseLLMSlot();
     }
   } catch (error) {
-    console.error("[generate-pro] Error:", error instanceof Error ? error.message : "Unknown error");
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error("[generate-pro] Error:", message);
     return NextResponse.json(
-      { error: "An error occurred during Pro generation. Please try again." },
+      { error: message.includes("Claude") || message.includes("AI ") || message.includes("timed out")
+          ? message
+          : "An error occurred during Pro generation. Please try again."
+      },
       { status: 500 }
     );
   }

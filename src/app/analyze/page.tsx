@@ -190,13 +190,13 @@ export default function AnalyzePage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <p className="mt-2 text-sm font-medium text-gray-700">{fileName}</p>
-                  <p className="text-xs text-gray-500">{resumeText.length.toLocaleString()} characters extracted</p>
+                  <p className="text-sm text-gray-500">{resumeText.length.toLocaleString()} characters extracted</p>
                   <button
                     onClick={() => {
                       setFileName(null);
                       setResumeText("");
                     }}
-                    className="mt-2 text-xs text-blue-600 hover:underline"
+                    className="mt-2 text-sm text-blue-600 hover:underline"
                   >
                     Remove
                   </button>
@@ -209,7 +209,7 @@ export default function AnalyzePage() {
                   <p className="mt-2 text-sm text-gray-600">
                     <span className="font-medium text-blue-600">Click to upload</span> or drag and drop
                   </p>
-                  <p className="mt-1 text-xs text-gray-400">PDF, DOCX, or TXT</p>
+                  <p className="mt-1 text-sm text-gray-400">PDF, DOCX, or TXT</p>
                   <input
                     type="file"
                     accept=".pdf,.docx,.doc,.txt"
@@ -223,7 +223,7 @@ export default function AnalyzePage() {
           )}
 
           {resumeText && (
-            <p className="mt-2 text-xs text-gray-400">
+            <p className="mt-2 text-sm text-gray-400">
               {resumeText.length.toLocaleString()} characters
             </p>
           )}
@@ -246,7 +246,7 @@ export default function AnalyzePage() {
             disabled={isAnalyzing}
           />
           {jobDescription && (
-            <p className="mt-2 text-xs text-gray-400">
+            <p className="mt-2 text-sm text-gray-400">
               {jobDescription.length.toLocaleString()} characters
             </p>
           )}
@@ -279,7 +279,7 @@ export default function AnalyzePage() {
       </div>
 
       {/* Privacy note */}
-      <p className="mt-6 text-center text-xs text-gray-400">
+      <p className="mt-6 text-center text-sm text-gray-400">
         Your resume and job description are processed in memory only. Nothing is stored on our servers.
       </p>
     </div>

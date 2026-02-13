@@ -51,7 +51,7 @@ export default function ScoreCard({ label, score, description }: ScoreCardProps)
         </div>
         <div>
           <h3 className="text-sm font-semibold text-gray-900">{label}</h3>
-          <p className="mt-0.5 text-xs text-gray-500">{description}</p>
+          <p className="mt-0.5 text-sm text-gray-500">{description}</p>
         </div>
       </div>
     </div>

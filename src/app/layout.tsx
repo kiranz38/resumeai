@@ -1,7 +1,14 @@
 import type { Metadata } from "next";
+import { Caveat } from "next/font/google";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import "./globals.css";
+
+const caveat = Caveat({
+  subsets: ["latin"],
+  weight: ["600", "700"],
+  variable: "--font-caveat",
+});
 
 export const metadata: Metadata = {
   title: {
@@ -43,7 +50,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className="antialiased flex min-h-screen flex-col font-sans"
+        className={`${caveat.variable} antialiased flex min-h-screen flex-col font-sans`}
       >
         <Header />
         <main className="flex-1">{children}</main>

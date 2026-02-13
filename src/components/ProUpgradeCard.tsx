@@ -30,8 +30,9 @@ export default function ProUpgradeCard({ onUpgrade }: ProUpgradeCardProps) {
     onUpgrade?.();
 
     const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+    const isDev = process.env.NODE_ENV === "development";
 
-    if (stripeKey) {
+    if (stripeKey && !isDev) {
       // Stripe is configured — save resume data, then redirect to checkout
       // After payment success, the /results/pro page will trigger generation
       try {
@@ -65,38 +66,18 @@ export default function ProUpgradeCard({ onUpgrade }: ProUpgradeCardProps) {
       return;
     }
 
-    // No Stripe — dev mode, generate for free
-    setIsGenerating(true);
-    try {
-      const resumeText = sessionStorage.getItem("rt_resume_text");
-      const jdText = sessionStorage.getItem("rt_jd_text");
+    // No Stripe (or dev mode) — skip payment, go directly to Pro page
+    const resumeText = sessionStorage.getItem("rt_resume_text");
+    const jdText = sessionStorage.getItem("rt_jd_text");
 
-      if (!resumeText || !jdText) {
-        setError("Resume data not found. Please re-analyze your resume first.");
-        setIsGenerating(false);
-        return;
-      }
-
-      const response = await fetch("/api/generate-pro", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resumeText, jobDescriptionText: jdText }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.error || "Generation failed");
-      }
-
-      const result = await response.json();
-      sessionStorage.setItem("rt_pro_result", JSON.stringify(result));
-      setIsUnlocked(true);
-
-      window.location.href = "/results/pro";
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to generate Pro results.");
-      setIsGenerating(false);
+    if (!resumeText || !jdText) {
+      setError("Resume data not found. Please re-analyze your resume first.");
+      return;
     }
+
+    // Set pending flag so the Pro page triggers generation with progress bar
+    sessionStorage.setItem("rt_pending_pro", "true");
+    window.location.href = "/results/pro";
   };
 
   if (isUnlocked) {

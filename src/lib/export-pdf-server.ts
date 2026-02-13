@@ -1,157 +1,37 @@
 import type { ProOutput } from "./schema";
+import { proOutputToDocument } from "./pro-document";
+import { renderResumePdf, renderCoverLetterPdf, renderInsightsPdf } from "./pdf-helpers";
 
 /**
- * Server-side PDF generation using jsPDF (works in Node.js).
- * Returns a Buffer suitable for email attachments.
+ * Generate a Resume PDF server-side (returns Buffer for email attachments).
+ */
+export async function generateServerResumePDF(result: ProOutput): Promise<Buffer> {
+  const doc = proOutputToDocument(result);
+  const pdf = await renderResumePdf(doc);
+  return Buffer.from(pdf.output("arraybuffer"));
+}
+
+/**
+ * Generate a Cover Letter PDF server-side (returns Buffer for email attachments).
+ */
+export async function generateServerCoverLetterPDF(result: ProOutput): Promise<Buffer> {
+  const doc = proOutputToDocument(result);
+  const pdf = await renderCoverLetterPdf(doc);
+  return Buffer.from(pdf.output("arraybuffer"));
+}
+
+/**
+ * Generate an Insights PDF server-side (returns Buffer for email attachments).
+ */
+export async function generateServerInsightsPDF(result: ProOutput): Promise<Buffer> {
+  const pdf = await renderInsightsPdf(result);
+  return Buffer.from(pdf.output("arraybuffer"));
+}
+
+/**
+ * Legacy combined PDF for backwards compatibility.
+ * @deprecated Use the individual generators.
  */
 export async function generateServerPDF(result: ProOutput): Promise<Buffer> {
-  const { jsPDF } = await import("jspdf");
-
-  const doc = new jsPDF({
-    orientation: "portrait",
-    unit: "mm",
-    format: "a4",
-  });
-
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const margin = 20;
-  const contentWidth = pageWidth - margin * 2;
-  let y = margin;
-
-  const checkPageBreak = (neededSpace: number) => {
-    const pageHeight = doc.internal.pageSize.getHeight();
-    if (y + neededSpace > pageHeight - margin) {
-      doc.addPage();
-      y = margin;
-    }
-  };
-
-  const addSectionHeader = (title: string) => {
-    checkPageBreak(15);
-    y += 5;
-    doc.setFontSize(14);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(30, 64, 175);
-    doc.text(title, margin, y);
-    y += 2;
-    doc.setDrawColor(30, 64, 175);
-    doc.setLineWidth(0.5);
-    doc.line(margin, y, margin + contentWidth, y);
-    y += 6;
-  };
-
-  const addWrappedText = (text: string, fontSize: number = 10, isBold: boolean = false) => {
-    doc.setFontSize(fontSize);
-    doc.setFont("helvetica", isBold ? "bold" : "normal");
-    doc.setTextColor(31, 41, 55);
-
-    const lines = doc.splitTextToSize(text, contentWidth);
-    for (const line of lines) {
-      checkPageBreak(5);
-      doc.text(line, margin, y);
-      y += fontSize * 0.4 + 1;
-    }
-    y += 2;
-  };
-
-  const addBullet = (text: string) => {
-    checkPageBreak(5);
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(55, 65, 81);
-    const bulletLines = doc.splitTextToSize(text, contentWidth - 8);
-    for (let i = 0; i < bulletLines.length; i++) {
-      checkPageBreak(4);
-      if (i === 0) doc.text("\u2022", margin + 2, y);
-      doc.text(bulletLines[i], margin + 6, y);
-      y += 4;
-    }
-  };
-
-  // Title
-  doc.setFontSize(20);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(17, 24, 39);
-  doc.text("ResumeMate AI Pro Report", margin, y);
-  y += 10;
-
-  // Summary
-  addSectionHeader("Executive Summary");
-  addWrappedText(result.summary);
-
-  // Tailored Resume
-  addSectionHeader("Tailored Resume");
-  const r = result.tailoredResume;
-  addWrappedText(r.name.toUpperCase(), 13, true);
-  addWrappedText(r.headline, 10);
-  addWrappedText("PROFESSIONAL SUMMARY", 11, true);
-  addWrappedText(r.summary);
-
-  addWrappedText("EXPERIENCE", 11, true);
-  for (const exp of r.experience) {
-    checkPageBreak(10);
-    addWrappedText(`${exp.title.toUpperCase()} \u2014 ${exp.company}${exp.period ? ` (${exp.period})` : ""}`, 10, true);
-    for (const bullet of exp.bullets) addBullet(bullet);
-    y += 2;
-  }
-
-  addWrappedText("EDUCATION", 11, true);
-  for (const edu of r.education) {
-    addWrappedText(`${edu.degree} \u2014 ${edu.school}${edu.year ? `, ${edu.year}` : ""}`, 10);
-  }
-
-  addWrappedText("SKILLS", 11, true);
-  for (const group of r.skills) {
-    addWrappedText(`${group.category}: ${group.items.join(", ")}`, 9);
-  }
-
-  // Cover Letter
-  addSectionHeader("Cover Letter");
-  for (const paragraph of result.coverLetter.paragraphs) {
-    if (paragraph.trim()) {
-      addWrappedText(paragraph.trim());
-      y += 2;
-    }
-  }
-
-  // Keywords
-  if (result.keywordChecklist.length > 0) {
-    addSectionHeader("Keyword Checklist");
-    for (const item of result.keywordChecklist) {
-      checkPageBreak(5);
-      const prefix = item.found ? "[FOUND]" : "[MISSING]";
-      doc.setFontSize(9);
-      doc.setFont("helvetica", item.found ? "normal" : "bold");
-      doc.setTextColor(item.found ? 22 : 185, item.found ? 163 : 28, item.found ? 74 : 28);
-      doc.text(`${prefix} ${item.keyword}`, margin, y);
-      y += 4.5;
-    }
-  }
-
-  // Next Actions
-  if (result.nextActions.length > 0) {
-    addSectionHeader("Next Actions");
-    result.nextActions.forEach((action, i) => {
-      addWrappedText(`${i + 1}. ${action}`, 10);
-    });
-  }
-
-  // Footer
-  const totalPages = doc.getNumberOfPages();
-  for (let i = 1; i <= totalPages; i++) {
-    doc.setPage(i);
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(156, 163, 175);
-    const pageHeight = doc.internal.pageSize.getHeight();
-    doc.text(
-      `Generated by ResumeMate AI | Page ${i} of ${totalPages}`,
-      margin,
-      pageHeight - 10
-    );
-  }
-
-  // Convert to Buffer for email attachment
-  const arrayBuffer = doc.output("arraybuffer");
-  return Buffer.from(arrayBuffer);
+  return generateServerResumePDF(result);
 }

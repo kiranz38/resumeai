@@ -51,9 +51,14 @@ export async function POST(request: Request) {
       }
     }
 
-    // Generate PDF attachment server-side
-    const { generateServerPDF } = await import("@/lib/export-pdf-server");
-    const pdfBuffer = await generateServerPDF(validOutput);
+    // Generate all 3 PDF attachments server-side
+    const { generateServerResumePDF, generateServerCoverLetterPDF, generateServerInsightsPDF } =
+      await import("@/lib/export-pdf-server");
+    const [resumeBuffer, coverLetterBuffer, insightsBuffer] = await Promise.all([
+      generateServerResumePDF(validOutput),
+      generateServerCoverLetterPDF(validOutput),
+      generateServerInsightsPDF(validOutput),
+    ]);
 
     // Build text report for HTML body
     const textReport = buildTextReport(validOutput);
@@ -65,13 +70,12 @@ export async function POST(request: Request) {
     const { error: sendError } = await resend.emails.send({
       from: "ResumeMate AI <reports@resumemate.ai>",
       to: email,
-      subject: "Your ResumeMate AI Pro Report",
+      subject: "Your ResumeMate AI Pro Pack",
       html: buildEmailHTML(textReport),
       attachments: [
-        {
-          filename: "resumemate-ai-pro-report.pdf",
-          content: pdfBuffer,
-        },
+        { filename: "Resume.pdf", content: resumeBuffer },
+        { filename: "Cover-Letter.pdf", content: coverLetterBuffer },
+        { filename: "Insights.pdf", content: insightsBuffer },
       ],
     });
 
@@ -141,8 +145,8 @@ function buildTextReport(output: ProOutput): string {
 function buildEmailHTML(textReport: string): string {
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <h1 style="color: #1e40af; font-size: 24px;">Your ResumeMate AI Pro Report</h1>
-      <p style="color: #6b7280; font-size: 14px;">Thank you for using ResumeMate AI. Your full report is attached as a PDF.</p>
+      <h1 style="color: #1e40af; font-size: 24px;">Your ResumeMate AI Pro Pack</h1>
+      <p style="color: #6b7280; font-size: 14px;">Thank you for using ResumeMate AI. Your Resume, Cover Letter, and Insights PDFs are attached.</p>
       <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;" />
       <pre style="white-space: pre-wrap; font-family: monospace; font-size: 13px; color: #374151; background: #f9fafb; padding: 16px; border-radius: 8px;">${escapeHtml(textReport.slice(0, 50_000))}</pre>
       <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;" />
