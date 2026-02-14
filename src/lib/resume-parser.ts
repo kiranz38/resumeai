@@ -41,6 +41,7 @@ function detectSections(lines: string[]): SectionMap {
     "work experience",
     "professional experience",
     "employment",
+    "employment history",
     "work history",
     "education",
     "skills",
@@ -93,6 +94,10 @@ function detectSections(lines: string[]): SectionMap {
 }
 
 function isLikelySectionHeader(line: string, normalized: string): boolean {
+  // Lines containing years or date-like patterns are never section headers
+  if (/\b(19|20)\d{2}\b/.test(line)) return false;
+  if (/\b(present|current)\b/i.test(line)) return false;
+
   // All caps short line likely a section header
   if (line === line.toUpperCase() && line.length < 40 && line.length > 2 && /^[A-Z\s&]+$/.test(line)) {
     return true;
@@ -105,7 +110,10 @@ function isLikelySectionHeader(line: string, normalized: string): boolean {
   if (/^(#{1,3})\s+/.test(line)) {
     return true;
   }
-  return normalized.length < 30 && /^[a-z\s]+$/.test(normalized) && normalized.split(" ").length <= 4;
+  // Short, alpha-only, few words — likely a section header
+  // Require <= 3 words, no digits in original, to avoid matching date/content lines
+  return normalized.length < 25 && /^[a-z\s]+$/.test(normalized) && normalized.split(" ").length <= 3
+    && !/\d/.test(line);
 }
 
 function extractName(lines: string[]): string | null {
@@ -133,9 +141,10 @@ function extractContactInfo(text: string): { email?: string; phone?: string; loc
   const emailMatch = text.match(/[\w.+-]+@[\w-]+\.[\w.]+/);
   const phoneMatch = text.match(/(?:\+?\d{1,3}[\s-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/);
 
-  // Location patterns: "City, ST" or "City, State"
-  const locationMatch = text.match(
-    /(?:^|\||\n)\s*([A-Z][a-zA-Z\s]+,\s*[A-Z]{2}(?:\s+\d{5})?)/m
+  // Location patterns: "City, ST" or "City, State" — only match near the top (first 500 chars)
+  const headerArea = text.slice(0, 500);
+  const locationMatch = headerArea.match(
+    /(?:^|\||\n)\s*([A-Z][a-zA-Z\s]+,\s*(?:[A-Z]{2,3}|Australia|NSW|VIC|QLD|SA|WA|TAS|ACT|NT)(?:\s+\d{4,5})?)\s*(?:\||$|\n)/m
   );
 
   return {
@@ -238,12 +247,14 @@ function extractSkills(sections: SectionMap, fullText: string): string[] {
 
 function extractExperience(sections: SectionMap): ExperienceEntry[] {
   const entries: ExperienceEntry[] = [];
-  const expKeys = ["experience", "work experience", "professional experience", "employment", "work history"];
+  const expKeys = ["experience", "work experience", "professional experience", "employment", "employment history", "work history"];
 
   let expLines: string[] = [];
+  const matchedSections = new Set<string>();
   for (const key of expKeys) {
     for (const sectionKey of Object.keys(sections)) {
-      if (sectionKey.toLowerCase().includes(key)) {
+      if (sectionKey.toLowerCase().includes(key) && !matchedSections.has(sectionKey)) {
+        matchedSections.add(sectionKey);
         expLines = [...expLines, ...sections[sectionKey]];
       }
     }
@@ -293,44 +304,37 @@ function extractExperience(sections: SectionMap): ExperienceEntry[] {
 }
 
 function parsePositionLine(line: string): ExperienceEntry | null {
+  // Skip date-like lines — these are dates, not position headers
+  if (/^(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\b/i.test(line)) return null;
+  if (/^\d{4}\s*[-–—]/.test(line)) return null;
+  // Skip "Project:" and "Tools & Technologies:" lines — these are descriptions, not positions
+  if (/^(project|tools\s*&?\s*technologies)\s*:/i.test(line)) return null;
+
   // Pattern: "Title — Company (dates)" or "Title at Company" or "Company — Title"
-  const patterns = [
-    // "Senior Engineer — Acme Corp (2021–Present)"
-    /^(.+?)\s*[—–\-|]\s*(.+?)\s*\((.+?)\)$/,
-    // "Senior Engineer — Acme Corp, 2021–Present"
-    /^(.+?)\s*[—–\-|]\s*(.+?),\s*(\d{4}.*)$/,
-    // "Senior Engineer at Acme Corp"
-    /^(.+?)\s+at\s+(.+)$/i,
-    // "Acme Corp — Senior Engineer"
-    /^(.+?)\s*[—–\-|]\s*(.+)$/,
-  ];
 
-  for (const pattern of patterns) {
-    const match = line.match(pattern);
-    if (match) {
-      let title = match[1].trim();
-      let company = match[2].trim();
-      const dateStr = match[3]?.trim();
+  // 1. "Senior Engineer — Acme Corp (2021–Present)"
+  const p1 = line.match(/^(.+?)\s*[—–\-|]\s*(.+?)\s*\((.+?)\)$/);
+  if (p1) return buildEntry(p1[1], p1[2], p1[3]);
 
-      // If company looks like a title and title looks like a company, swap
-      if (isLikelyTitle(company) && !isLikelyTitle(title)) {
-        [title, company] = [company, title];
-      }
+  // 2. "Senior Engineer — Acme Corp, 2021–Present"
+  const p2 = line.match(/^(.+?)\s*[—–\-|]\s*(.+?),\s*(\d{4}.*)$/);
+  if (p2) return buildEntry(p2[1], p2[2], p2[3]);
 
-      const dates = dateStr ? extractDates(dateStr) : { start: undefined, end: undefined };
+  // 3. "Senior Engineer at Acme Corp" — only if left side looks like a title
+  //    This avoids matching regular sentences containing " at "
+  const atMatch = line.match(/^(.+?)\s+at\s+(.+)$/i);
+  if (atMatch && isLikelyTitle(atMatch[1].trim())) {
+    return buildEntry(atMatch[1], atMatch[2], undefined);
+  }
 
-      return {
-        title: title || undefined,
-        company: company || undefined,
-        start: dates.start,
-        end: dates.end,
-        bullets: [],
-      };
-    }
+  // 4. "Acme Corp — Senior Engineer" (only if short enough to be a header, not a sentence)
+  if (line.length < 100) {
+    const p4 = line.match(/^(.+?)\s*[—–\-|]\s*(.+)$/);
+    if (p4) return buildEntry(p4[1], p4[2], undefined);
   }
 
   // Single line that looks like a position
-  if (isLikelyTitle(line) && !line.startsWith("•") && !line.startsWith("-")) {
+  if (isLikelyTitle(line) && !line.startsWith("•") && !line.startsWith("-") && line.length < 100) {
     const dates = extractDates(line);
     const cleanLine = line.replace(/\(.*?\)/g, "").replace(/\d{4}\s*[–\-]\s*\w+/g, "").trim();
     return {
@@ -342,6 +346,26 @@ function parsePositionLine(line: string): ExperienceEntry | null {
   }
 
   return null;
+}
+
+function buildEntry(rawTitle: string, rawCompany: string, dateStr: string | undefined): ExperienceEntry {
+  let title = rawTitle.trim();
+  let company = rawCompany.trim();
+
+  // If company looks like a title and title looks like a company, swap
+  if (isLikelyTitle(company) && !isLikelyTitle(title)) {
+    [title, company] = [company, title];
+  }
+
+  const dates = dateStr ? extractDates(dateStr) : { start: undefined, end: undefined };
+
+  return {
+    title: title || undefined,
+    company: company || undefined,
+    start: dates.start,
+    end: dates.end,
+    bullets: [],
+  };
 }
 
 function isLikelyTitle(text: string): boolean {
@@ -390,7 +414,7 @@ function extractEducation(sections: SectionMap): EducationEntry[] {
 
     const hasDegree = degreePatterns.some((p) => p.test(line));
 
-    if (hasDegree || /university|college|institute|school/i.test(line)) {
+    if (hasDegree || /university|college|institute|school|board|education/i.test(line)) {
       const dates = extractDates(line);
       const degreeMatch = line.match(/(B\.?S\.?|B\.?A\.?|M\.?S\.?|M\.?A\.?|Ph\.?D\.?|MBA|Bachelor'?s?|Master'?s?|Doctor\w*|Associate'?s?)\s*(of|in)?\s*(\w[\w\s]*?)(?:\s*[—–\-,]|\s*\d{4}|$)/i);
 
