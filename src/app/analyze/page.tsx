@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { trackEvent } from "@/lib/analytics";
 import { detectResume } from "@/lib/resume-detector";
+import { saveJobSession } from "@/lib/job-sessions";
 
 type InputMode = "upload" | "paste";
 
@@ -90,7 +91,7 @@ export default function AnalyzePage() {
     try {
       trackEvent("analysis_started");
 
-      setProgress("Running ATS analysis...");
+      setProgress("Computing your Radar Score...");
 
       const response = await fetch("/api/analyze", {
         method: "POST",
@@ -113,7 +114,22 @@ export default function AnalyzePage() {
       sessionStorage.setItem("rt_resume_text", resumeText);
       sessionStorage.setItem("rt_jd_text", jobDescription);
 
-      trackEvent("analysis_generated", { score: result.atsResult.score });
+      // Store radar score for before/after comparison on Pro page
+      if (result.radarResult) {
+        sessionStorage.setItem("rt_radar_before", JSON.stringify(result.radarResult));
+      }
+
+      trackEvent("analysis_generated", { score: result.radarResult?.score || result.atsResult.score });
+
+      // Save job session for recent roles tracking
+      const jobTitle = result.jobProfile?.title || "Untitled Role";
+      const company = result.jobProfile?.company || "";
+      const session = saveJobSession({
+        jobTitle,
+        company,
+        radarBefore: result.radarResult?.score || result.atsResult.score,
+      });
+      sessionStorage.setItem("rt_current_session_id", session.id);
 
       setProgress("Redirecting to results...");
       router.push("/results");
@@ -129,7 +145,7 @@ export default function AnalyzePage() {
       <div className="mb-8 text-center">
         <h1 className="text-3xl font-bold text-gray-900">Analyze Your Resume</h1>
         <p className="mt-2 text-gray-600">
-          Paste your resume and a job description to get your ATS match score, missing keywords, and actionable feedback.
+          Paste your resume and a job description to get your Radar Score, missing keywords, and actionable feedback.
         </p>
       </div>
 
@@ -269,7 +285,7 @@ export default function AnalyzePage() {
               Analyzing...
             </>
           ) : (
-            "Analyze My Resume"
+            "Check my resume"
           )}
         </button>
 

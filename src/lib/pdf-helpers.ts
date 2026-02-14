@@ -6,6 +6,7 @@
 import type { jsPDF } from "jspdf";
 import type { ProDocument, DocResume } from "./pro-document";
 import type { ProOutput } from "./schema";
+import type { RadarResult } from "./types";
 import { proOutputToDocument } from "./pro-document";
 
 // ── PDF Context ──
@@ -298,206 +299,587 @@ export async function renderCoverLetterPdf(proDoc: ProDocument): Promise<jsPDF> 
   return pdf;
 }
 
-// ── Insights Renderer ──
+// ── Insights PDF helper functions ──
 
-export async function renderInsightsPdf(result: ProOutput): Promise<jsPDF> {
+function drawGauge(ctx: PdfContext, score: number, label: string, centerX: number, topY: number) {
+  const { pdf } = ctx;
+  const radius = 28;
+  const lineWidth = 5;
+  const startAngle = Math.PI; // left (180°)
+  const endAngle = 0;        // right (0°)
+  const centerY = topY + radius + 4;
+
+  // Draw background arc (gray)
+  pdf.setDrawColor(229, 231, 235);
+  pdf.setLineWidth(lineWidth);
+  const segments = 40;
+  for (let i = 0; i < segments; i++) {
+    const a1 = startAngle + (endAngle - startAngle) * (i / segments);
+    const a2 = startAngle + (endAngle - startAngle) * ((i + 1) / segments);
+    pdf.line(
+      centerX + radius * Math.cos(a1),
+      centerY - radius * Math.sin(a1),
+      centerX + radius * Math.cos(a2),
+      centerY - radius * Math.sin(a2),
+    );
+  }
+
+  // Draw filled arc (colored based on score)
+  const fillPct = Math.max(0, Math.min(100, score)) / 100;
+  const fillEnd = startAngle + (endAngle - startAngle) * fillPct;
+  const color: [number, number, number] =
+    score >= 75 ? [22, 163, 74] : score >= 50 ? [202, 138, 4] : [220, 38, 38];
+  pdf.setDrawColor(...color);
+  pdf.setLineWidth(lineWidth);
+  const fillSegments = Math.round(segments * fillPct);
+  for (let i = 0; i < fillSegments; i++) {
+    const a1 = startAngle + (fillEnd - startAngle) * (i / fillSegments);
+    const a2 = startAngle + (fillEnd - startAngle) * ((i + 1) / fillSegments);
+    pdf.line(
+      centerX + radius * Math.cos(a1),
+      centerY - radius * Math.sin(a1),
+      centerX + radius * Math.cos(a2),
+      centerY - radius * Math.sin(a2),
+    );
+  }
+
+  // Score number
+  pdf.setFontSize(24);
+  pdf.setFont("helvetica", "bold");
+  pdf.setTextColor(...color);
+  const scoreText = String(score);
+  const scoreWidth = pdf.getTextWidth(scoreText);
+  pdf.text(scoreText, centerX - scoreWidth / 2, centerY - 2);
+
+  // Label
+  pdf.setFontSize(9);
+  pdf.setFont("helvetica", "normal");
+  pdf.setTextColor(107, 114, 128);
+  const labelWidth = pdf.getTextWidth(label);
+  pdf.text(label, centerX - labelWidth / 2, centerY + 8);
+}
+
+function drawCategoryBar(
+  ctx: PdfContext,
+  label: string,
+  score: number,
+  y: number,
+) {
+  const { pdf, margin, contentWidth } = ctx;
+  const labelAreaWidth = 34;
+  const scoreAreaWidth = 14;
+  const barX = margin + labelAreaWidth;
+  const barWidth = contentWidth - labelAreaWidth - scoreAreaWidth - 2;
+  const barHeight = 5;
+
+  // Label
+  pdf.setFontSize(8.5);
+  pdf.setFont("helvetica", "normal");
+  pdf.setTextColor(55, 65, 81);
+  pdf.text(label, margin, y + 3.5);
+
+  // Background bar
+  pdf.setFillColor(229, 231, 235);
+  pdf.roundedRect(barX, y, barWidth, barHeight, 1.5, 1.5, "F");
+
+  // Filled portion
+  const fillWidth = Math.max(2, (score / 100) * barWidth);
+  const color: [number, number, number] =
+    score >= 75 ? [22, 163, 74] : score >= 50 ? [59, 130, 246] : score >= 35 ? [202, 138, 4] : [220, 38, 38];
+  pdf.setFillColor(...color);
+  pdf.roundedRect(barX, y, fillWidth, barHeight, 1.5, 1.5, "F");
+
+  // Score text
+  pdf.setFontSize(8.5);
+  pdf.setFont("helvetica", "bold");
+  pdf.setTextColor(...color);
+  pdf.text(String(score), margin + contentWidth - scoreAreaWidth + 2, y + 3.5);
+}
+
+function drawBlockerCard(
+  ctx: PdfContext,
+  blocker: { title: string; why: string; how: string; beforeAfter?: { before: string; after: string } },
+  index: number,
+) {
+  const { pdf, margin, contentWidth } = ctx;
+  const cardPadding = 4;
+  const cardX = margin;
+
+  // Estimate card height
+  const whyLines = pdf.splitTextToSize(blocker.why, contentWidth - cardPadding * 2 - 4);
+  const howLines = pdf.splitTextToSize(blocker.how, contentWidth - cardPadding * 2 - 4);
+  let estimatedHeight = 18 + whyLines.length * 3.5 + howLines.length * 3.5;
+  if (blocker.beforeAfter) estimatedHeight += 20;
+
+  checkPageBreak(ctx, estimatedHeight + 4);
+
+  // Card border
+  pdf.setDrawColor(209, 213, 219);
+  pdf.setLineWidth(0.3);
+  pdf.roundedRect(cardX, ctx.y, contentWidth, estimatedHeight, 2, 2, "S");
+
+  // Orange left accent
+  pdf.setFillColor(251, 146, 60);
+  pdf.rect(cardX, ctx.y + 1, 1.5, estimatedHeight - 2, "F");
+
+  const innerX = cardX + cardPadding + 2;
+  const innerWidth = contentWidth - cardPadding * 2 - 4;
+  let innerY = ctx.y + cardPadding + 2;
+
+  // Title
+  pdf.setFontSize(10);
+  pdf.setFont("helvetica", "bold");
+  pdf.setTextColor(17, 24, 39);
+  pdf.text(`${index + 1}. ${blocker.title}`, innerX, innerY);
+  innerY += 5;
+
+  // Why
+  pdf.setFontSize(8.5);
+  pdf.setFont("helvetica", "normal");
+  pdf.setTextColor(107, 114, 128);
+  for (const line of whyLines) {
+    pdf.text(line, innerX, innerY);
+    innerY += 3.5;
+  }
+  innerY += 1;
+
+  // How
+  pdf.setFontSize(8.5);
+  pdf.setFont("helvetica", "bold");
+  pdf.setTextColor(37, 99, 235);
+  pdf.text("Fix:", innerX, innerY);
+  pdf.setFont("helvetica", "normal");
+  const fixX = innerX + pdf.getTextWidth("Fix: ");
+  const firstHowLine = howLines[0] || "";
+  pdf.text(firstHowLine, fixX, innerY);
+  innerY += 3.5;
+  for (let i = 1; i < howLines.length; i++) {
+    pdf.text(howLines[i], innerX, innerY);
+    innerY += 3.5;
+  }
+
+  // Before/After
+  if (blocker.beforeAfter) {
+    innerY += 2;
+    pdf.setFontSize(7.5);
+    pdf.setFont("helvetica", "bold");
+    pdf.setTextColor(220, 38, 38);
+    pdf.text("BEFORE:", innerX, innerY);
+    innerY += 3;
+    pdf.setFont("helvetica", "normal");
+    pdf.setTextColor(107, 114, 128);
+    const bLines = pdf.splitTextToSize(blocker.beforeAfter.before, innerWidth);
+    for (const l of bLines) { pdf.text(l, innerX, innerY); innerY += 3; }
+    innerY += 1;
+    pdf.setFont("helvetica", "bold");
+    pdf.setTextColor(22, 163, 74);
+    pdf.text("AFTER:", innerX, innerY);
+    innerY += 3;
+    pdf.setFont("helvetica", "normal");
+    pdf.setTextColor(17, 24, 39);
+    const aLines = pdf.splitTextToSize(blocker.beforeAfter.after, innerWidth);
+    for (const l of aLines) { pdf.text(l, innerX, innerY); innerY += 3; }
+  }
+
+  ctx.y += estimatedHeight + 4;
+}
+
+// ── Insights Renderer (Professional) ──
+
+export async function renderInsightsPdf(result: ProOutput, radar?: RadarResult): Promise<jsPDF> {
   const { jsPDF: JsPDF } = await import("jspdf");
   const pdf = new JsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const ctx = createPdfContext(pdf);
+  const dateStr = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
 
-  // Header
-  pdf.setFontSize(22);
+  // ════════════════════════════════════════
+  // PAGE 1: Radar Dashboard
+  // ════════════════════════════════════════
+
+  // Branded header band
+  pdf.setFillColor(17, 24, 39);
+  pdf.rect(0, 0, 210, 20, "F");
+  pdf.setFontSize(14);
+  pdf.setFont("helvetica", "bold");
+  pdf.setTextColor(255, 255, 255);
+  pdf.text("ResumeMate AI", ctx.margin, 13);
+  pdf.setFontSize(8);
+  pdf.setFont("helvetica", "normal");
+  const dateWidth = pdf.getTextWidth(dateStr);
+  pdf.text(dateStr, 210 - ctx.margin - dateWidth, 13);
+
+  ctx.y = 25;
+
+  // Candidate name + target role
+  pdf.setFontSize(16);
   pdf.setFont("helvetica", "bold");
   pdf.setTextColor(17, 24, 39);
-  pdf.text("Improvement Insights", ctx.margin, ctx.y);
-  ctx.y += 7;
+  pdf.text(result.tailoredResume.name, ctx.margin, ctx.y);
+  ctx.y += 6;
 
-  // Candidate name + date
-  pdf.setFontSize(10);
-  pdf.setFont("helvetica", "normal");
-  pdf.setTextColor(107, 114, 128);
-  const dateLine = `${result.tailoredResume.name}  |  ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}`;
-  pdf.text(dateLine, ctx.margin, ctx.y);
+  // Blue accent line
+  pdf.setDrawColor(59, 130, 246);
+  pdf.setLineWidth(0.8);
+  pdf.line(ctx.margin, ctx.y, ctx.margin + 40, ctx.y);
+  ctx.y += 5;
+
+  // Section title
+  pdf.setFontSize(12);
+  pdf.setFont("helvetica", "bold");
+  pdf.setTextColor(17, 24, 39);
+  pdf.text("Hiring Manager Radar", ctx.margin, ctx.y);
   ctx.y += 8;
 
-  // 1. Keyword Checklist
-  if (result.keywordChecklist.length > 0) {
-    addSectionHeader(ctx, "Keyword Checklist");
-    for (const kw of result.keywordChecklist) {
-      checkPageBreak(ctx, 5);
-      const icon = kw.found ? "\u2713" : "\u2717";
-      const color: [number, number, number] = kw.found ? [22, 163, 74] : [220, 38, 38];
-      pdf.setFontSize(9.5);
-      pdf.setFont("helvetica", "bold");
-      pdf.setTextColor(...color);
-      pdf.text(icon, ctx.margin, ctx.y);
-      pdf.setFont("helvetica", "normal");
-      pdf.setTextColor(55, 65, 81);
-      pdf.text(kw.keyword, ctx.margin + 6, ctx.y);
-      if (kw.suggestion) {
-        pdf.setFontSize(8.5);
-        pdf.setTextColor(107, 114, 128);
-        const suggLines = pdf.splitTextToSize(`\u2192 ${kw.suggestion}`, ctx.contentWidth - 10);
-        ctx.y += 4;
-        for (const line of suggLines) {
-          checkPageBreak(ctx, 4);
-          pdf.text(line, ctx.margin + 6, ctx.y);
-          ctx.y += 3.5;
-        }
-      } else {
-        ctx.y += 4.5;
-      }
+  if (radar) {
+    // Gauge
+    const gaugeCenter = 210 / 2;
+    drawGauge(ctx, radar.score, radar.label, gaugeCenter, ctx.y);
+    ctx.y += 68;
+
+    // Category breakdown bars
+    pdf.setFontSize(10);
+    pdf.setFont("helvetica", "bold");
+    pdf.setTextColor(17, 24, 39);
+    pdf.text("Signal Breakdown", ctx.margin, ctx.y);
+    ctx.y += 6;
+
+    const categories: Array<[string, number]> = [
+      ["Impact", radar.breakdown.impact],
+      ["Clarity", radar.breakdown.clarity],
+      ["Ownership", radar.breakdown.ownership],
+      ["Seniority", radar.breakdown.seniority],
+      ["Alignment", radar.breakdown.alignment],
+    ];
+
+    for (const [catLabel, catScore] of categories) {
+      drawCategoryBar(ctx, catLabel, catScore, ctx.y);
+      ctx.y += 9;
+    }
+    ctx.y += 4;
+  }
+
+  // Executive summary
+  if (result.summary) {
+    pdf.setFillColor(239, 246, 255);
+    const summaryLines = pdf.splitTextToSize(result.summary, ctx.contentWidth - 8);
+    const summaryHeight = summaryLines.length * 4 + 8;
+    checkPageBreak(ctx, summaryHeight);
+    pdf.roundedRect(ctx.margin, ctx.y, ctx.contentWidth, summaryHeight, 2, 2, "F");
+    pdf.setFontSize(9);
+    pdf.setFont("helvetica", "normal");
+    pdf.setTextColor(30, 64, 175);
+    let sy = ctx.y + 5;
+    for (const line of summaryLines) {
+      pdf.text(line, ctx.margin + 4, sy);
+      sy += 4;
+    }
+    ctx.y += summaryHeight + 4;
+  }
+
+  // ════════════════════════════════════════
+  // PAGE 2: Blockers & Keywords
+  // ════════════════════════════════════════
+
+  pdf.addPage();
+  ctx.y = ctx.margin;
+
+  // Blockers
+  if (radar && radar.blockers.length > 0) {
+    pdf.setFontSize(12);
+    pdf.setFont("helvetica", "bold");
+    pdf.setTextColor(17, 24, 39);
+    pdf.text("Top Blockers", ctx.margin, ctx.y);
+    ctx.y += 7;
+
+    for (let i = 0; i < radar.blockers.length; i++) {
+      drawBlockerCard(ctx, radar.blockers[i], i);
     }
     ctx.y += 2;
   }
 
-  // 2. Recruiter Feedback
-  if (result.recruiterFeedback.length > 0) {
-    addSectionHeader(ctx, "Recruiter Feedback");
-    result.recruiterFeedback.forEach((item, i) => {
+  // Keyword Checklist
+  if (result.keywordChecklist.length > 0) {
+    checkPageBreak(ctx, 12);
+    pdf.setFontSize(12);
+    pdf.setFont("helvetica", "bold");
+    pdf.setTextColor(17, 24, 39);
+    pdf.text("Keyword Checklist", ctx.margin, ctx.y);
+    ctx.y += 6;
+
+    let rowAlt = false;
+    for (const kw of result.keywordChecklist) {
       checkPageBreak(ctx, 6);
-      pdf.setFontSize(9.5);
+      // Alternating row backgrounds
+      if (rowAlt) {
+        pdf.setFillColor(249, 250, 251);
+        pdf.rect(ctx.margin, ctx.y - 3, ctx.contentWidth, 6, "F");
+      }
+      rowAlt = !rowAlt;
+
+      const icon = kw.found ? "\u2713" : "\u2717";
+      const iconColor: [number, number, number] = kw.found ? [22, 163, 74] : [220, 38, 38];
+      pdf.setFontSize(9);
       pdf.setFont("helvetica", "bold");
-      pdf.setTextColor(37, 99, 235);
-      pdf.text(`${i + 1}.`, ctx.margin, ctx.y);
+      pdf.setTextColor(...iconColor);
+      pdf.text(icon, ctx.margin + 2, ctx.y);
+
       pdf.setFont("helvetica", "normal");
       pdf.setTextColor(55, 65, 81);
-      const lines = pdf.splitTextToSize(item, ctx.contentWidth - 8);
-      for (let j = 0; j < lines.length; j++) {
-        checkPageBreak(ctx, 4);
-        pdf.text(lines[j], ctx.margin + 7, ctx.y);
-        ctx.y += 4;
+      pdf.text(kw.keyword, ctx.margin + 8, ctx.y);
+
+      if (kw.suggestion) {
+        pdf.setFontSize(7.5);
+        pdf.setTextColor(107, 114, 128);
+        const suggText = kw.suggestion.slice(0, 60) + (kw.suggestion.length > 60 ? "..." : "");
+        const suggW = pdf.getTextWidth(suggText);
+        pdf.text(suggText, ctx.margin + ctx.contentWidth - suggW, ctx.y);
       }
-      ctx.y += 1;
-    });
-    ctx.y += 2;
+      ctx.y += 5;
+    }
+    ctx.y += 4;
   }
 
-  // 3. Bullet Rewrites
+  // ════════════════════════════════════════
+  // PAGE 3: Bullet Rewrites
+  // ════════════════════════════════════════
+
   if (result.bulletRewrites.length > 0) {
-    addSectionHeader(ctx, "Bullet Rewrites");
+    pdf.addPage();
+    ctx.y = ctx.margin;
+
+    pdf.setFontSize(12);
+    pdf.setFont("helvetica", "bold");
+    pdf.setTextColor(17, 24, 39);
+    pdf.text("Bullet Rewrites", ctx.margin, ctx.y);
+    ctx.y += 7;
+
     for (const rw of result.bulletRewrites) {
-      checkPageBreak(ctx, 20);
+      // Estimate height for page break
+      const beforeLines = pdf.splitTextToSize(rw.original || "(new bullet)", ctx.contentWidth - 10);
+      const afterLines = pdf.splitTextToSize(rw.rewritten, ctx.contentWidth - 10);
+      const cardH = 12 + beforeLines.length * 3.5 + afterLines.length * 3.5 + (rw.notes ? 8 : 0);
+      checkPageBreak(ctx, cardH + 4);
 
       // Section label
-      pdf.setFontSize(8);
+      pdf.setFontSize(7.5);
       pdf.setFont("helvetica", "normal");
       pdf.setTextColor(107, 114, 128);
       pdf.text(rw.section, ctx.margin, ctx.y);
       ctx.y += 4;
 
-      // Before
-      pdf.setFontSize(8);
+      // Before card (light red bg)
+      const beforeH = beforeLines.length * 3.5 + 6;
+      pdf.setFillColor(254, 242, 242);
+      pdf.roundedRect(ctx.margin, ctx.y, ctx.contentWidth, beforeH, 1.5, 1.5, "F");
+      pdf.setFontSize(7);
       pdf.setFont("helvetica", "bold");
       pdf.setTextColor(220, 38, 38);
-      pdf.text("BEFORE:", ctx.margin, ctx.y);
-      ctx.y += 3.5;
+      pdf.text("BEFORE", ctx.margin + 3, ctx.y + 4);
+      let bY = ctx.y + 8;
+      pdf.setFontSize(8);
       pdf.setFont("helvetica", "normal");
       pdf.setTextColor(107, 114, 128);
-      const beforeLines = pdf.splitTextToSize(rw.original || "(new bullet)", ctx.contentWidth - 4);
       for (const line of beforeLines) {
-        checkPageBreak(ctx, 4);
-        pdf.text(line, ctx.margin + 2, ctx.y);
-        ctx.y += 3.5;
+        pdf.text(line, ctx.margin + 3, bY);
+        bY += 3.5;
       }
-      ctx.y += 1;
+      ctx.y += beforeH + 1;
 
-      // After
-      pdf.setFontSize(8);
+      // After card (light green bg)
+      const afterH = afterLines.length * 3.5 + 6;
+      pdf.setFillColor(240, 253, 244);
+      pdf.roundedRect(ctx.margin, ctx.y, ctx.contentWidth, afterH, 1.5, 1.5, "F");
+      pdf.setFontSize(7);
       pdf.setFont("helvetica", "bold");
       pdf.setTextColor(22, 163, 74);
-      pdf.text("AFTER:", ctx.margin, ctx.y);
-      ctx.y += 3.5;
+      pdf.text("AFTER", ctx.margin + 3, ctx.y + 4);
+      let aY = ctx.y + 8;
+      pdf.setFontSize(8);
       pdf.setFont("helvetica", "normal");
       pdf.setTextColor(17, 24, 39);
-      const afterLines = pdf.splitTextToSize(rw.rewritten, ctx.contentWidth - 4);
       for (const line of afterLines) {
-        checkPageBreak(ctx, 4);
-        pdf.text(line, ctx.margin + 2, ctx.y);
-        ctx.y += 3.5;
+        pdf.text(line, ctx.margin + 3, aY);
+        aY += 3.5;
       }
-      ctx.y += 1;
+      ctx.y += afterH + 1;
 
       // Notes
       if (rw.notes) {
-        pdf.setFontSize(8.5);
+        pdf.setFontSize(8);
         pdf.setTextColor(37, 99, 235);
-        const noteLines = pdf.splitTextToSize(rw.notes, ctx.contentWidth - 4);
+        const noteLines = pdf.splitTextToSize(rw.notes, ctx.contentWidth - 6);
         for (const line of noteLines) {
           checkPageBreak(ctx, 4);
-          pdf.text(line, ctx.margin + 2, ctx.y);
+          pdf.text(line, ctx.margin + 3, ctx.y);
           ctx.y += 3.5;
         }
       }
-      ctx.y += 3;
+      ctx.y += 5;
     }
   }
 
-  // 4. Experience Gaps
-  if (result.experienceGaps.length > 0) {
-    addSectionHeader(ctx, "Experience Gaps");
-    for (const gap of result.experienceGaps) {
-      checkPageBreak(ctx, 10);
+  // ════════════════════════════════════════
+  // PAGE 4: Gap Analysis & Actions
+  // ════════════════════════════════════════
 
-      // Severity badge
-      const sevColor: [number, number, number] =
-        gap.severity === "high" ? [220, 38, 38] :
-        gap.severity === "medium" ? [202, 138, 4] :
-        [107, 114, 128];
+  if (result.experienceGaps.length > 0 || result.nextActions.length > 0) {
+    pdf.addPage();
+    ctx.y = ctx.margin;
 
-      pdf.setFontSize(8);
-      pdf.setFont("helvetica", "bold");
-      pdf.setTextColor(...sevColor);
-      pdf.text(`[${gap.severity.toUpperCase()}]`, ctx.margin, ctx.y);
-      const badgeWidth = pdf.getTextWidth(`[${gap.severity.toUpperCase()}] `);
-
-      pdf.setFontSize(9.5);
+    // Experience Gaps
+    if (result.experienceGaps.length > 0) {
+      pdf.setFontSize(12);
       pdf.setFont("helvetica", "bold");
       pdf.setTextColor(17, 24, 39);
-      const gapLines = pdf.splitTextToSize(gap.gap, ctx.contentWidth - badgeWidth - 2);
-      pdf.text(gapLines[0], ctx.margin + badgeWidth, ctx.y);
-      ctx.y += 4;
-      for (let j = 1; j < gapLines.length; j++) {
-        checkPageBreak(ctx, 4);
-        pdf.text(gapLines[j], ctx.margin, ctx.y);
-        ctx.y += 4;
-      }
+      pdf.text("Experience Gaps", ctx.margin, ctx.y);
+      ctx.y += 7;
 
-      // Suggestion
-      pdf.setFontSize(9);
-      pdf.setFont("helvetica", "normal");
-      pdf.setTextColor(55, 65, 81);
-      const suggLines = pdf.splitTextToSize(gap.suggestion, ctx.contentWidth - 4);
-      for (const line of suggLines) {
-        checkPageBreak(ctx, 4);
-        pdf.text(line, ctx.margin + 2, ctx.y);
-        ctx.y += 3.8;
+      for (const gap of result.experienceGaps) {
+        const suggLines = pdf.splitTextToSize(gap.suggestion, ctx.contentWidth - 10);
+        const cardH = 10 + suggLines.length * 3.5;
+        checkPageBreak(ctx, cardH + 4);
+
+        // Severity-coded left border color
+        const borderColor: [number, number, number] =
+          gap.severity === "high" ? [220, 38, 38] :
+          gap.severity === "medium" ? [202, 138, 4] :
+          [156, 163, 175];
+
+        // Card
+        pdf.setDrawColor(...borderColor);
+        pdf.setLineWidth(0.4);
+        pdf.roundedRect(ctx.margin, ctx.y, ctx.contentWidth, cardH, 1.5, 1.5, "S");
+        pdf.setFillColor(...borderColor);
+        pdf.rect(ctx.margin, ctx.y + 1, 1.5, cardH - 2, "F");
+
+        // Severity badge + gap title
+        const innerX = ctx.margin + 5;
+        let gy = ctx.y + 4;
+        pdf.setFontSize(7);
+        pdf.setFont("helvetica", "bold");
+        pdf.setTextColor(...borderColor);
+        pdf.text(`[${gap.severity.toUpperCase()}]`, innerX, gy);
+        const badgeW = pdf.getTextWidth(`[${gap.severity.toUpperCase()}] `);
+        pdf.setFontSize(9);
+        pdf.setTextColor(17, 24, 39);
+        pdf.text(gap.gap, innerX + badgeW, gy);
+        gy += 5;
+
+        // Suggestion
+        pdf.setFontSize(8);
+        pdf.setFont("helvetica", "normal");
+        pdf.setTextColor(55, 65, 81);
+        for (const line of suggLines) {
+          pdf.text(line, innerX, gy);
+          gy += 3.5;
+        }
+
+        ctx.y += cardH + 4;
       }
-      ctx.y += 3;
+      ctx.y += 2;
+    }
+
+    // Next Actions
+    if (result.nextActions.length > 0) {
+      checkPageBreak(ctx, 12);
+      pdf.setFontSize(12);
+      pdf.setFont("helvetica", "bold");
+      pdf.setTextColor(17, 24, 39);
+      pdf.text("Next Actions", ctx.margin, ctx.y);
+      ctx.y += 7;
+
+      result.nextActions.forEach((action, i) => {
+        const lines = pdf.splitTextToSize(action, ctx.contentWidth - 12);
+        checkPageBreak(ctx, lines.length * 4 + 4);
+
+        // Blue accent circle with number
+        pdf.setFillColor(59, 130, 246);
+        pdf.circle(ctx.margin + 3.5, ctx.y, 3, "F");
+        pdf.setFontSize(8);
+        pdf.setFont("helvetica", "bold");
+        pdf.setTextColor(255, 255, 255);
+        const numStr = String(i + 1);
+        const numW = pdf.getTextWidth(numStr);
+        pdf.text(numStr, ctx.margin + 3.5 - numW / 2, ctx.y + 1);
+
+        // Action text
+        pdf.setFontSize(9);
+        pdf.setFont("helvetica", "normal");
+        pdf.setTextColor(55, 65, 81);
+        for (let j = 0; j < lines.length; j++) {
+          pdf.text(lines[j], ctx.margin + 10, ctx.y + 1 + j * 4);
+        }
+        ctx.y += Math.max(8, lines.length * 4 + 2);
+      });
+      ctx.y += 2;
+    }
+
+    // Diagnostics (if radar present)
+    if (radar && radar.diagnostics) {
+      const diag = radar.diagnostics;
+      const hasDiagContent =
+        diag.weakVerbs.length > 0 ||
+        diag.missingMetrics.length > 0 ||
+        diag.missingKeywordClusters.length > 0;
+
+      if (hasDiagContent) {
+        checkPageBreak(ctx, 20);
+        pdf.setFontSize(10);
+        pdf.setFont("helvetica", "bold");
+        pdf.setTextColor(17, 24, 39);
+        pdf.text("Diagnostics", ctx.margin, ctx.y);
+        ctx.y += 6;
+
+        if (diag.weakVerbs.length > 0) {
+          pdf.setFontSize(8.5);
+          pdf.setFont("helvetica", "bold");
+          pdf.setTextColor(202, 138, 4);
+          pdf.text("Weak Verbs Found:", ctx.margin, ctx.y);
+          ctx.y += 4;
+          pdf.setFont("helvetica", "normal");
+          pdf.setTextColor(107, 114, 128);
+          pdf.text(diag.weakVerbs.join(", "), ctx.margin + 2, ctx.y);
+          ctx.y += 5;
+        }
+
+        if (diag.missingKeywordClusters.length > 0) {
+          pdf.setFontSize(8.5);
+          pdf.setFont("helvetica", "bold");
+          pdf.setTextColor(220, 38, 38);
+          pdf.text("Missing Keyword Clusters:", ctx.margin, ctx.y);
+          ctx.y += 4;
+          for (const cluster of diag.missingKeywordClusters) {
+            checkPageBreak(ctx, 5);
+            pdf.setFontSize(8);
+            pdf.setFont("helvetica", "normal");
+            pdf.setTextColor(55, 65, 81);
+            pdf.text(`${cluster.cluster}: ${cluster.keywords.join(", ")}`, ctx.margin + 2, ctx.y);
+            ctx.y += 4;
+          }
+          ctx.y += 2;
+        }
+      }
     }
   }
 
-  // 5. Next Actions
-  if (result.nextActions.length > 0) {
-    addSectionHeader(ctx, "Next Actions");
-    result.nextActions.forEach((action, i) => {
-      checkPageBreak(ctx, 6);
-      pdf.setFontSize(9.5);
-      pdf.setFont("helvetica", "bold");
-      pdf.setTextColor(37, 99, 235);
-      pdf.text(`${i + 1}.`, ctx.margin, ctx.y);
-      pdf.setFont("helvetica", "normal");
-      pdf.setTextColor(55, 65, 81);
-      const lines = pdf.splitTextToSize(action, ctx.contentWidth - 8);
-      for (let j = 0; j < lines.length; j++) {
-        checkPageBreak(ctx, 4);
-        pdf.text(lines[j], ctx.margin + 7, ctx.y);
-        ctx.y += 4;
-      }
-      ctx.y += 1;
-    });
+  // Branded footer on every page
+  const totalPages = pdf.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    pdf.setPage(i);
+    // Footer line
+    pdf.setDrawColor(59, 130, 246);
+    pdf.setLineWidth(0.3);
+    pdf.line(ctx.margin, ctx.pageHeight() - 12, ctx.margin + ctx.contentWidth, ctx.pageHeight() - 12);
+    // Footer text
+    pdf.setFontSize(7);
+    pdf.setFont("helvetica", "normal");
+    pdf.setTextColor(156, 163, 175);
+    pdf.text(
+      `Generated by ResumeMate AI  |  Page ${i} of ${totalPages}  |  ${dateStr}`,
+      ctx.margin,
+      ctx.pageHeight() - 8,
+    );
   }
 
-  addFooter(ctx);
   return pdf;
 }

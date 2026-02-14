@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "How It Works",
-  description: "Upload your resume, paste a job description, and get instant ATS analysis with tailored rewrites.",
+  description: "Upload your resume, paste a job description, and get your Hiring Manager Radar Score with tailored fixes.",
 };
 
 const STEPS = [
@@ -17,19 +17,19 @@ const STEPS = [
     number: "2",
     title: "Paste the job description",
     description:
-      "Copy and paste the job listing you're targeting. Our AI analyzes both documents to find gaps, missing keywords, and opportunities.",
+      "Copy and paste the job listing you're targeting. Our engine analyzes both documents to compute your Radar Score across five signal dimensions.",
   },
   {
     number: "3",
-    title: "Get your results",
+    title: "Get your Radar Score",
     description:
-      "Instantly see your ATS Match Score, missing keywords, and sample bullet rewrites. Upgrade to unlock the full analysis with 12-20 rewrites, gap analysis, and a cover letter draft.",
+      "Instantly see your Hiring Manager Radar Score, signal breakdown, top blockers, and missing keywords. Upgrade to unlock the full analysis with 12-20 rewrites, gap analysis, and a cover letter draft.",
   },
   {
     number: "4",
     title: "Apply the changes",
     description:
-      "Use the copy buttons and downloadable report to update your resume. Each suggestion includes specific guidance on what to change and where.",
+      "Use the copy buttons and downloadable report to update your resume. Each suggestion includes specific guidance on what to change and where. Watch your Radar Score improve in real time as you edit.",
   },
 ];
 
@@ -41,7 +41,7 @@ export default function HowItWorksPage() {
           How it works
         </h1>
         <p className="mt-2 text-center text-gray-600">
-          Four simple steps to a tailored resume
+          Four simple steps to a stronger resume signal
         </p>
 
         <div className="mt-12 space-y-8">

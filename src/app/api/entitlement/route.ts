@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { rateLimitRoute } from "@/lib/rate-limiter";
-import { generateEntitlementToken } from "@/lib/entitlement";
+import { generateEntitlementToken, type EntitlementProduct } from "@/lib/entitlement";
 
 /**
  * Exchange a verified Stripe session ID for a short-lived entitlement token.
@@ -32,12 +32,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Payment not verified." }, { status: 403 });
     }
 
-    if (session.metadata?.product !== "full_tailor_pack") {
+    const metaProduct = session.metadata?.product;
+    if (!metaProduct || !["pro", "career_pass", "full_tailor_pack"].includes(metaProduct)) {
       return NextResponse.json({ error: "Invalid product." }, { status: 403 });
     }
 
+    // Map legacy "full_tailor_pack" to "pro"
+    const product: EntitlementProduct = metaProduct === "career_pass" ? "career_pass" : "pro";
+
     // Generate entitlement token
-    const token = generateEntitlementToken(sessionId);
+    const token = generateEntitlementToken(sessionId, product);
 
     return NextResponse.json({ token });
   } catch (error) {

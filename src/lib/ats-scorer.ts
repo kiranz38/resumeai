@@ -390,7 +390,7 @@ function generateSuggestions(
     );
     if (!hasMatch) {
       suggestions.push(
-        `Consider aligning your title/headline to match "${job.title}" for better ATS matching`
+        `Consider aligning your title/headline to match "${job.title}" for better keyword matching`
       );
     }
   }
@@ -413,7 +413,7 @@ function generateWarnings(candidate: CandidateProfile): string[] {
 
   // No summary
   if (!candidate.summary) {
-    warnings.push("Missing professional summary section — most ATS systems prioritize the top of the resume");
+    warnings.push("Missing professional summary — most reviewers prioritize the top of the resume");
   }
 
   // Very few skills listed
@@ -424,7 +424,7 @@ function generateWarnings(candidate: CandidateProfile): string[] {
   // Long bullets
   const longBullets = candidate.experience.flatMap((e) => e.bullets).filter((b) => b.length > 200);
   if (longBullets.length > 0) {
-    warnings.push("Some bullets exceed 200 characters — keep bullets concise for ATS readability");
+    warnings.push("Some bullets exceed 200 characters — keep bullets concise for readability");
   }
 
   // Too few experience entries

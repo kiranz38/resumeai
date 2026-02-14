@@ -18,6 +18,9 @@ import { proOutputToDocument } from "@/lib/pro-document";
 import ModernAtsResume from "@/components/templates/ModernAtsResume";
 import ProfessionalCoverLetter from "@/components/templates/ProfessionalCoverLetter";
 import { trackEvent } from "@/lib/analytics";
+import type { RadarResult } from "@/lib/types";
+import { scoreRadar, tailoredToCandidateProfile } from "@/lib/radar-scorer";
+import { updateSessionRadarAfter } from "@/lib/job-sessions";
 
 export default function ProResultsPageWrapper() {
   return (
@@ -95,7 +98,12 @@ function ProResultsPage() {
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [viewMode, setViewMode] = useState<"edit" | "preview">("edit");
 
+  const [radarBefore, setRadarBefore] = useState<RadarResult | null>(null);
+  const [radarAfter, setRadarAfter] = useState<RadarResult | null>(null);
+  const [liveRadarScore, setLiveRadarScore] = useState<number | null>(null);
+
   const autosaveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const liveScoreTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const initStarted = useRef(false);
 
   // Compute current merged output
@@ -187,6 +195,36 @@ function ProResultsPage() {
     });
   };
 
+  // ── Live radar recomputation (debounced 500ms) ──
+
+  const recomputeLiveRadar = useCallback(() => {
+    if (!result) return;
+    if (liveScoreTimer.current) clearTimeout(liveScoreTimer.current);
+    liveScoreTimer.current = setTimeout(() => {
+      try {
+        const analysisStr = sessionStorage.getItem("rt_analysis");
+        if (!analysisStr) return;
+        const analysis = JSON.parse(analysisStr);
+        const jobProfile = analysis.jobProfile;
+        if (!jobProfile) return;
+
+        const candidateProfile = tailoredToCandidateProfile(result.tailoredResume);
+        const newRadar = scoreRadar(candidateProfile, jobProfile);
+        setLiveRadarScore(newRadar.score);
+        setRadarAfter(newRadar);
+      } catch {
+        // Silently fail — non-critical
+      }
+    }, 500);
+  }, [result]);
+
+  // Trigger live radar recomputation when edits change
+  useEffect(() => {
+    if (dirty && result) {
+      recomputeLiveRadar();
+    }
+  }, [dirty, result, recomputeLiveRadar]);
+
   // ── Initialization ──
 
   useEffect(() => {
@@ -271,6 +309,36 @@ function ProResultsPage() {
           setLoadingProgress(100);
           setLoading(false);
           trackEvent("pro_viewed");
+
+          // Compute radar delta
+          try {
+            let beforeScore = 0;
+            const beforeStr = sessionStorage.getItem("rt_radar_before");
+            if (beforeStr) {
+              const beforeData = JSON.parse(beforeStr);
+              setRadarBefore(beforeData);
+              beforeScore = beforeData.score || 0;
+            }
+            const analysisStr = sessionStorage.getItem("rt_analysis");
+            if (analysisStr) {
+              const analysis = JSON.parse(analysisStr);
+              const candidateProfile = tailoredToCandidateProfile(data.tailoredResume);
+              const after = scoreRadar(candidateProfile, analysis.jobProfile);
+              setRadarAfter(after);
+              setLiveRadarScore(after.score);
+              trackEvent("radar_improvement_shown", {
+                before: beforeScore,
+                after: after.score,
+              });
+              // Update job session with after score
+              const sessionId = sessionStorage.getItem("rt_current_session_id");
+              if (sessionId) {
+                updateSessionRadarAfter(sessionId, after.score);
+              }
+            }
+          } catch {
+            // Non-critical
+          }
         } catch (err) {
           clearInterval(progressInterval);
           clearTimeout(messageTimeout1);
@@ -427,6 +495,33 @@ function ProResultsPage() {
           </p>
         )}
       </div>
+
+      {/* Radar delta banner */}
+      {radarBefore && radarAfter && (
+        <div className="mb-6 rounded-xl border border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 p-4">
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="text-sm text-gray-600">
+              Before: <span className="font-bold text-gray-900">{radarBefore.score}</span>
+            </div>
+            <svg className="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
+            <div className="text-sm">
+              New Radar: <span className="text-2xl font-bold text-green-700">{radarAfter.score}</span>
+              {radarAfter.score > radarBefore.score && (
+                <span className="ml-2 rounded-full bg-green-100 px-2 py-0.5 text-sm font-semibold text-green-700">
+                  +{radarAfter.score - radarBefore.score}
+                </span>
+              )}
+            </div>
+            <span className={`ml-2 text-sm font-semibold ${
+              radarAfter.score >= 75 ? "text-green-700" : radarAfter.score >= 50 ? "text-yellow-700" : "text-red-700"
+            }`}>
+              {radarAfter.label}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Reset confirmation modal */}
       {showResetConfirm && (
@@ -800,15 +895,49 @@ function ProResultsPage() {
         </Link>
       </div>
 
+      {/* Optimize another job (return trigger) */}
+      <div className="mt-8 rounded-xl border border-blue-200 bg-blue-50 p-6 text-center" data-print-hide>
+        <h3 className="text-lg font-semibold text-blue-900">Applying elsewhere?</h3>
+        <p className="mt-1 text-sm text-blue-700">Optimize another role in seconds.</p>
+        <button
+          onClick={() => {
+            trackEvent("optimize_another_job_clicked");
+            sessionStorage.removeItem("rt_jd_text");
+            window.location.href = "/analyze";
+          }}
+          className="mt-3 rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+        >
+          Optimize another job
+        </button>
+      </div>
+
+      {/* Coming soon badges */}
+      <div className="mt-8 grid gap-4 md:grid-cols-2" data-print-hide>
+        <div className="rounded-xl border border-gray-200 bg-gray-50 p-5 opacity-70">
+          <div className="mb-2 inline-block rounded-full bg-gray-200 px-3 py-0.5 text-xs font-semibold text-gray-600">
+            Coming soon
+          </div>
+          <h4 className="text-sm font-semibold text-gray-900">LinkedIn Profile Rewrite</h4>
+          <p className="mt-1 text-sm text-gray-500">Get a tailored headline, about section, and experience bullets for LinkedIn.</p>
+        </div>
+        <div className="rounded-xl border border-gray-200 bg-gray-50 p-5 opacity-70">
+          <div className="mb-2 inline-block rounded-full bg-gray-200 px-3 py-0.5 text-xs font-semibold text-gray-600">
+            Coming soon
+          </div>
+          <h4 className="text-sm font-semibold text-gray-900">Interview Prep Bullets</h4>
+          <p className="mt-1 text-sm text-gray-500">STAR-format talking points for each experience entry, tailored to the role.</p>
+        </div>
+      </div>
+
       {/* ── Sticky Action Bar ── */}
-      <StickyActionBar result={result} />
+      <StickyActionBar result={result} liveRadarScore={liveRadarScore} radarBefore={radarBefore} />
     </div>
   );
 }
 
 // ── Sticky Action Bar ──
 
-function StickyActionBar({ result }: { result: ProOutput }) {
+function StickyActionBar({ result, liveRadarScore, radarBefore }: { result: ProOutput; liveRadarScore?: number | null; radarBefore?: RadarResult | null }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [downloading, setDownloading] = useState(false);
 
@@ -874,7 +1003,13 @@ function StickyActionBar({ result }: { result: ProOutput }) {
     trackEvent("export_insights_pdf_clicked");
     try {
       const { generateInsightsPDF } = await import("@/lib/export-pdf");
-      const blob = await generateInsightsPDF(result);
+      // Try to get radar data from sessionStorage
+      let radar;
+      try {
+        const radarStr = sessionStorage.getItem("rt_radar_before");
+        if (radarStr) radar = JSON.parse(radarStr);
+      } catch { /* ignore */ }
+      const blob = await generateInsightsPDF(result, radar);
       downloadBlob(blob, "Insights.pdf");
     } catch (error) {
       console.error("Insights PDF export failed:", error);
@@ -899,9 +1034,23 @@ function StickyActionBar({ result }: { result: ProOutput }) {
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200 bg-white/95 backdrop-blur-sm shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-        <p className="text-sm text-gray-500 hidden sm:block">
-          Edit your resume above, then download or email the final version.
-        </p>
+        <div className="hidden sm:flex sm:items-center sm:gap-3">
+          {liveRadarScore != null && (
+            <span className={`rounded-full px-3 py-1 text-sm font-bold ${
+              liveRadarScore >= 75 ? "bg-green-100 text-green-700" :
+              liveRadarScore >= 50 ? "bg-yellow-100 text-yellow-700" :
+              "bg-red-100 text-red-700"
+            }`}>
+              Radar: {liveRadarScore}
+              {radarBefore && liveRadarScore > radarBefore.score && (
+                <span className="ml-1 text-green-600">(+{liveRadarScore - radarBefore.score})</span>
+              )}
+            </span>
+          )}
+          <p className="text-sm text-gray-500">
+            Edit above, then download.
+          </p>
+        </div>
         <div className="relative ml-auto flex items-center gap-3">
           <button
             onClick={() => copyToClipboard(proOutputToText(result))}

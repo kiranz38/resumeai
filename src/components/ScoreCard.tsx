@@ -1,23 +1,86 @@
+import type { RadarLabel } from "@/lib/types";
+
 interface ScoreCardProps {
   label: string;
   score: number;
   description: string;
+  variant?: "default" | "primary" | "breakdown";
+  radarLabel?: RadarLabel;
 }
 
-function getScoreColor(score: number): { bg: string; text: string; ring: string } {
-  if (score >= 75) return { bg: "bg-green-50", text: "text-green-700", ring: "stroke-green-500" };
-  if (score >= 50) return { bg: "bg-yellow-50", text: "text-yellow-700", ring: "stroke-yellow-500" };
-  return { bg: "bg-red-50", text: "text-red-700", ring: "stroke-red-500" };
+function getScoreColor(score: number): { bg: string; text: string; ring: string; fill: string } {
+  if (score >= 75) return { bg: "bg-green-50", text: "text-green-700", ring: "stroke-green-500", fill: "bg-green-500" };
+  if (score >= 50) return { bg: "bg-yellow-50", text: "text-yellow-700", ring: "stroke-yellow-500", fill: "bg-yellow-500" };
+  return { bg: "bg-red-50", text: "text-red-700", ring: "stroke-red-500", fill: "bg-red-500" };
 }
 
-export default function ScoreCard({ label, score, description }: ScoreCardProps) {
+export default function ScoreCard({ label, score, description, variant = "default", radarLabel }: ScoreCardProps) {
   const clampedScore = Math.max(0, Math.min(100, Math.round(score)));
   const colors = getScoreColor(clampedScore);
 
-  // SVG circle parameters
+  // ── Primary variant: Large gauge with radar label ──
+  if (variant === "primary") {
+    const radius = 50;
+    const circumference = Math.PI * radius; // semicircle
+    const offset = circumference - (clampedScore / 100) * circumference;
+
+    return (
+      <div className="rounded-xl border border-gray-200 bg-white p-6 text-center">
+        <div className="relative mx-auto h-28 w-44">
+          <svg className="h-28 w-44" viewBox="0 0 120 70">
+            {/* Background arc */}
+            <path
+              d="M 10 60 A 50 50 0 0 1 110 60"
+              fill="none"
+              stroke="#e5e7eb"
+              strokeWidth="8"
+              strokeLinecap="round"
+            />
+            {/* Filled arc */}
+            <path
+              d="M 10 60 A 50 50 0 0 1 110 60"
+              fill="none"
+              className={colors.ring}
+              strokeWidth="8"
+              strokeLinecap="round"
+              strokeDasharray={circumference}
+              strokeDashoffset={offset}
+              style={{ transition: "stroke-dashoffset 1s ease-out" }}
+            />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-end pb-1">
+            <span className={`text-4xl font-bold ${colors.text}`}>{clampedScore}</span>
+          </div>
+        </div>
+        {radarLabel && (
+          <p className={`mt-1 text-sm font-semibold ${colors.text}`}>{radarLabel}</p>
+        )}
+        <h3 className="mt-2 text-base font-semibold text-gray-900">{label}</h3>
+        <p className="mt-0.5 text-sm text-gray-500">{description}</p>
+      </div>
+    );
+  }
+
+  // ── Breakdown variant: Horizontal bar ──
+  if (variant === "breakdown") {
+    return (
+      <div className="flex items-center gap-3 py-1.5">
+        <span className="w-24 shrink-0 text-sm font-medium text-gray-700">{label}</span>
+        <div className="flex-1 h-3 rounded-full bg-gray-100 overflow-hidden">
+          <div
+            className={`h-full rounded-full ${colors.fill} transition-all duration-700 ease-out`}
+            style={{ width: `${clampedScore}%` }}
+          />
+        </div>
+        <span className={`w-8 text-right text-sm font-bold ${colors.text}`}>{clampedScore}</span>
+      </div>
+    );
+  }
+
+  // ── Default variant: Circle + text (original) ──
   const radius = 36;
   const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (clampedScore / 100) * circumference;
+  const circOffset = circumference - (clampedScore / 100) * circumference;
 
   return (
     <div className={`rounded-xl border border-gray-200 ${colors.bg} p-5`}>
@@ -41,7 +104,7 @@ export default function ScoreCard({ label, score, description }: ScoreCardProps)
               strokeWidth="6"
               strokeLinecap="round"
               strokeDasharray={circumference}
-              strokeDashoffset={offset}
+              strokeDashoffset={circOffset}
               style={{ transition: "stroke-dashoffset 0.8s ease-out" }}
             />
           </svg>

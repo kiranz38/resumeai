@@ -1,6 +1,6 @@
 import Link from "next/link";
 import FAQ from "@/components/FAQ";
-import { PRICE_DISPLAY } from "@/lib/constants";
+import { PRO_PRICE_DISPLAY } from "@/lib/constants";
 
 const FAQ_ITEMS = [
   {
@@ -9,9 +9,9 @@ const FAQ_ITEMS = [
       "No. Your resume and job description are processed in memory and never stored on our servers. We use anonymous analytics only — no personal data is retained.",
   },
   {
-    question: "How does ATS matching work?",
+    question: "How does the Radar Score work?",
     answer:
-      "We compare your resume against the job description to identify missing keywords, skills gaps, and formatting issues that could prevent your resume from passing Applicant Tracking Systems. Our dual-score system rates both ATS compatibility and interview readiness.",
+      "We analyze your resume across five dimensions — Impact, Clarity, Ownership, Seniority, and Alignment — to compute how strongly your resume signals to hiring managers. Each category uses deterministic heuristics: metrics density, verb strength, keyword overlap, and more.",
   },
   {
     question: "How accurate are the results?",
@@ -32,9 +32,9 @@ const FAQ_ITEMS = [
 
 const BENEFITS = [
   {
-    title: "ATS Match + Keyword Map",
+    title: "Signal Score + Keyword Map",
     description:
-      "See your ATS compatibility score and get a categorized map of missing keywords with specific placement suggestions.",
+      "See your Hiring Manager Radar Score and get a categorized map of missing keywords with specific placement suggestions.",
     icon: (
       <svg className="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -66,7 +66,9 @@ const BENEFITS = [
 const TRUST_ITEMS = [
   "No signup required",
   "Privacy-first — nothing stored",
-  "One-time payment, no subscription",
+  "One-time payment",
+  "No auto-renew",
+  "Clear pricing",
 ];
 
 export default function LandingPage() {
@@ -76,11 +78,10 @@ export default function LandingPage() {
       <section className="bg-gradient-to-b from-blue-50 to-white px-4 py-20">
         <div className="mx-auto max-w-4xl text-center">
           <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
-            Tailor your resume to any job — instantly
+            Hiring Manager Radar for your resume.
           </h1>
           <p className="mt-4 text-lg text-gray-600">
-            Upload your resume + paste a job description. Get ATS match,
-            missing keywords, and a tailored rewrite pack.
+            Paste your resume + job description. See what&apos;s blocking callbacks — then fix it in minutes.
           </p>
 
           <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
@@ -99,7 +100,7 @@ export default function LandingPage() {
           </div>
 
           {/* Trust strip */}
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             {TRUST_ITEMS.map((item) => (
               <span
                 key={item}
@@ -147,16 +148,17 @@ export default function LandingPage() {
             Simple, fair pricing
           </h2>
           <p className="mt-2 text-gray-600">
-            No subscription. No account. Just results.
+            No subscription. No surprises. Just results.
           </p>
           <div className="mt-8 inline-block rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
             <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">
-              Full Tailor Pack
+              Unlock Pro
             </p>
             <p className="mt-2 text-4xl font-bold text-gray-900">
-              {PRICE_DISPLAY}
+              {PRO_PRICE_DISPLAY}
               <span className="text-base font-normal text-gray-500"> one-time</span>
             </p>
+            <p className="mt-1 text-sm text-gray-500">No subscription. No surprises.</p>
             <ul className="mt-4 space-y-2 text-left text-sm text-gray-600">
               <li className="flex items-start gap-2">
                 <span className="mt-0.5 text-green-500">&#10003;</span>

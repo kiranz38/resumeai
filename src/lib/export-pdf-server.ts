@@ -1,4 +1,5 @@
 import type { ProOutput } from "./schema";
+import type { RadarResult } from "./types";
 import { proOutputToDocument } from "./pro-document";
 import { renderResumePdf, renderCoverLetterPdf, renderInsightsPdf } from "./pdf-helpers";
 
@@ -23,8 +24,8 @@ export async function generateServerCoverLetterPDF(result: ProOutput): Promise<B
 /**
  * Generate an Insights PDF server-side (returns Buffer for email attachments).
  */
-export async function generateServerInsightsPDF(result: ProOutput): Promise<Buffer> {
-  const pdf = await renderInsightsPdf(result);
+export async function generateServerInsightsPDF(result: ProOutput, radar?: RadarResult): Promise<Buffer> {
+  const pdf = await renderInsightsPdf(result, radar);
   return Buffer.from(pdf.output("arraybuffer"));
 }
 

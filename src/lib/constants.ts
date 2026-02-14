@@ -1,13 +1,18 @@
 export const SITE_NAME = "ResumeMate AI";
 export const SITE_URL = "https://resumemate.ai";
 export const SITE_DESCRIPTION =
-  "Tailor your resume to any job — instantly. Get ATS match scores, missing keywords, and a tailored rewrite pack.";
+  "See what's blocking callbacks — then fix it in minutes. Get your Hiring Manager Radar Score, missing keywords, and a tailored rewrite pack.";
+
+export const PRO_PRICE = 7.99;
+export const PRO_PRICE_DISPLAY = "$7.99";
+export const CAREER_PASS_PRICE = 19;
+export const CAREER_PASS_DISPLAY = "$19";
 
 export const PRICE_VARIANT = parseInt(
-  process.env.NEXT_PUBLIC_PRICE_VARIANT || "12",
+  process.env.NEXT_PUBLIC_PRICE_VARIANT || "8",
   10
 );
-export const PRICE_DISPLAY = `$${PRICE_VARIANT}`;
+export const PRICE_DISPLAY = PRO_PRICE_DISPLAY;
 
 export const ENABLE_JD_URL =
   process.env.NEXT_PUBLIC_ENABLE_JD_URL === "true";

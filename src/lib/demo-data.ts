@@ -1,4 +1,5 @@
 import type { ResumeTailorResult } from "./schema";
+import type { RadarResult } from "./types";
 
 export const DEMO_RESUME_TEXT = `SARAH CHEN
 Senior Software Engineer | San Francisco, CA
@@ -354,4 +355,59 @@ Sarah Chen`,
   ],
   summary:
     "Your resume shows solid engineering experience with good metrics and progression. The main gaps are in specific technologies the role requires (Python/Go, Kubernetes, GraphQL, IaC) and in demonstrating senior-level system design and technical leadership. Focus on expanding your cloud/infrastructure skills and adding architecture-level accomplishments to strengthen your candidacy.",
+};
+
+export const DEMO_RADAR_RESULT: RadarResult = {
+  score: 54,
+  label: "Needs sharpening",
+  breakdown: {
+    impact: 45,
+    clarity: 72,
+    ownership: 58,
+    seniority: 48,
+    alignment: 38,
+  },
+  blockers: [
+    {
+      title: "Keyword alignment gap",
+      why: "Key required terms not found: Python, Kubernetes, GraphQL. These are explicit requirements in the job description.",
+      how: "Mirror the exact phrases from the job description in your skills section and experience bullets.",
+    },
+    {
+      title: "Weak quantified impact",
+      why: "Only 4 of 11 bullets include metrics. Hiring managers scan for numbers first.",
+      how: "Add %, $, time saved, team size, or user count to each bullet. Even estimates are better than nothing.",
+      beforeAfter: {
+        before: "Collaborated with product team to define technical requirements for Q3 roadmap",
+        after: "Partnered with product and design stakeholders to translate business requirements into technical specs for Q3 roadmap, influencing 5 key feature decisions",
+      },
+    },
+    {
+      title: "Seniority signals are thin",
+      why: "7 years of experience for a Senior-level role but limited scope and leadership cues in bullets.",
+      how: "Add cross-functional scope, team size, system-level decisions, and mentorship to your bullets.",
+    },
+  ],
+  diagnostics: {
+    missingMetrics: [
+      "Collaborated with product team to define technical requirements for Q3 roadmap",
+      "Participated in on-call rotation managing production incidents",
+      "Maintained WordPress sites and implemented custom plugins",
+      "Assisted senior developers with database optimization tasks",
+    ],
+    weakVerbs: ["Participated in", "Assisted"],
+    missingKeywordClusters: [
+      { cluster: "Backend Languages", keywords: ["Python", "Go"] },
+      { cluster: "DevOps & Infra", keywords: ["Kubernetes", "Terraform"] },
+      { cluster: "Frontend", keywords: ["Next.js", "GraphQL"] },
+    ],
+  },
+  atsCompat: {
+    matchedKeywords: ["JavaScript", "TypeScript", "React", "Node.js", "AWS", "Docker", "CI/CD", "Git"],
+    missingKeywords: ["Python", "Go", "Kubernetes", "GraphQL", "Terraform", "Next.js", "GCP", "system design", "microservices"],
+    warnings: [
+      "Missing professional summary — most reviewers prioritize the top of the resume",
+      "No explicit job title match for 'Full-Stack Engineer'",
+    ],
+  },
 };

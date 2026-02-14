@@ -5,7 +5,10 @@
 
 import { createHmac } from "crypto";
 
-const TOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const PRO_TOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const CAREER_PASS_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+export type EntitlementProduct = "pro" | "career_pass";
 
 /**
  * Get the HMAC signing secret. Derives from STRIPE_SECRET_KEY or falls back to HMAC_SECRET.
@@ -18,12 +21,15 @@ function getSecret(): string {
 
 /**
  * Generate an entitlement token for a paid Stripe session.
+ * Career Pass tokens have a 30-day TTL; Pro tokens have 24-hour TTL.
  */
-export function generateEntitlementToken(stripeSessionId: string): string {
+export function generateEntitlementToken(stripeSessionId: string, product: EntitlementProduct = "pro"): string {
+  const ttl = product === "career_pass" ? CAREER_PASS_TTL_MS : PRO_TOKEN_TTL_MS;
   const payload = {
     sid: stripeSessionId,
+    product,
     iat: Date.now(),
-    exp: Date.now() + TOKEN_TTL_MS,
+    exp: Date.now() + ttl,
   };
   const payloadB64 = Buffer.from(JSON.stringify(payload)).toString("base64url");
   const sig = createHmac("sha256", getSecret()).update(payloadB64).digest("base64url");
@@ -31,9 +37,9 @@ export function generateEntitlementToken(stripeSessionId: string): string {
 }
 
 /**
- * Verify an entitlement token. Returns the Stripe session ID if valid, null otherwise.
+ * Verify an entitlement token. Returns the Stripe session ID and product if valid, null otherwise.
  */
-export function verifyEntitlementToken(token: string): { sessionId: string } | null {
+export function verifyEntitlementToken(token: string): { sessionId: string; product: EntitlementProduct } | null {
   if (!token || typeof token !== "string") return null;
 
   const parts = token.split(".");
@@ -53,7 +59,7 @@ export function verifyEntitlementToken(token: string): { sessionId: string } | n
     // Check expiry
     if (Date.now() > payload.exp) return null;
 
-    return { sessionId: payload.sid };
+    return { sessionId: payload.sid, product: payload.product || "pro" };
   } catch {
     return null;
   }

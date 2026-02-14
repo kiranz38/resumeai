@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { PRICE_DISPLAY } from "@/lib/constants";
+import { PRO_PRICE_DISPLAY } from "@/lib/constants";
 import { trackEvent } from "@/lib/analytics";
 
 interface ProUpgradeCardProps {
@@ -95,11 +95,12 @@ export default function ProUpgradeCard({ onUpgrade }: ProUpgradeCardProps) {
         </div>
 
         <h3 className="mb-2 text-2xl font-bold text-gray-900">
-          Get Your Full Tailor Pack
+          Unlock Pro — {PRO_PRICE_DISPLAY} one-time
         </h3>
-        <p className="mb-4 text-sm text-gray-600">
+        <p className="mb-1 text-sm text-gray-600">
           Unlock the complete analysis with tailored rewrites, cover letter, and downloadable exports.
         </p>
+        <p className="mb-4 text-xs text-gray-400">No subscription. No surprises.</p>
 
         <ul className="mb-6 space-y-2">
           {PRO_FEATURES.map((feature) => (
@@ -136,7 +137,7 @@ export default function ProUpgradeCard({ onUpgrade }: ProUpgradeCardProps) {
               <>
                 Unlock Pro
                 <span className="text-blue-200">|</span>
-                <span>{PRICE_DISPLAY}</span>
+                <span>{PRO_PRICE_DISPLAY}</span>
               </>
             )}
           </button>

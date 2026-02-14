@@ -12,17 +12,17 @@ const caveat = Caveat({
 
 export const metadata: Metadata = {
   title: {
-    default: "ResumeMate AI — Tailor your resume to any job instantly",
+    default: "ResumeMate AI — Hiring Manager Radar for your resume",
     template: "%s | ResumeMate AI",
   },
   description:
-    "Upload your resume + paste a job description. Get ATS match scores, missing keywords, and a tailored rewrite pack. Privacy-first, no signup required.",
-  keywords: ["ResumeMate AI", "ATS score", "resume optimizer", "job application", "resume keywords", "cover letter generator", "ATS-friendly resume"],
+    "Upload your resume + paste a job description. Get your Radar Score, see what's blocking callbacks, and fix it in minutes. Privacy-first, no signup required.",
+  keywords: ["ResumeMate AI", "Radar Score", "resume optimizer", "job application", "resume keywords", "cover letter generator", "hiring manager radar", "resume signal"],
   authors: [{ name: "ResumeMate AI" }],
   openGraph: {
-    title: "ResumeMate AI — Tailor your resume to any job instantly",
+    title: "ResumeMate AI — Hiring Manager Radar for your resume",
     description:
-      "Get ATS match scores, missing keywords, and a tailored rewrite pack. Privacy-first, no signup required.",
+      "Get your Radar Score, see what's blocking callbacks, and fix it in minutes. Privacy-first, no signup required.",
     type: "website",
     url: "https://resumemate.ai",
     siteName: "ResumeMate AI",
@@ -30,8 +30,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "ResumeMate AI — Tailor your resume to any job instantly",
-    description: "Get ATS match scores, missing keywords, and a tailored rewrite pack.",
+    title: "ResumeMate AI — Hiring Manager Radar for your resume",
+    description: "Get your Radar Score, see what's blocking callbacks, and fix it in minutes.",
   },
   robots: {
     index: true,

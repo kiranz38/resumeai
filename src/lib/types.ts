@@ -68,6 +68,45 @@ export interface FreeAnalysisResult {
     original: string;
     improved: string;
   }>;
+  radarResult?: RadarResult;
+}
+
+// ── Radar Score types ──
+
+export interface RadarBreakdown {
+  impact: number;     // 0-100, weight 30%
+  clarity: number;    // 0-100, weight 20%
+  ownership: number;  // 0-100, weight 20%
+  seniority: number;  // 0-100, weight 15%
+  alignment: number;  // 0-100, weight 15%
+}
+
+export type RadarLabel = "Strong signal" | "Needs sharpening" | "Signal hidden";
+
+export interface RadarBlocker {
+  title: string;
+  why: string;
+  how: string;
+  beforeAfter?: { before: string; after: string };
+}
+
+export interface RadarDiagnostics {
+  missingMetrics: string[];
+  weakVerbs: string[];
+  missingKeywordClusters: Array<{ cluster: string; keywords: string[] }>;
+}
+
+export interface RadarResult {
+  score: number;
+  label: RadarLabel;
+  breakdown: RadarBreakdown;
+  blockers: RadarBlocker[];      // top 3
+  diagnostics: RadarDiagnostics;
+  atsCompat: {                    // legacy ATS for collapsed section
+    matchedKeywords: string[];
+    missingKeywords: string[];
+    warnings: string[];
+  };
 }
 
 // Re-export the canonical ProOutput from schema

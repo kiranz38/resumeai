@@ -3,14 +3,17 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import type { FreeAnalysisResult } from "@/lib/types";
+import type { FreeAnalysisResult, RadarResult } from "@/lib/types";
 import ScoreCard from "@/components/ScoreCard";
+import BlockerCard from "@/components/BlockerCard";
 import KeywordList from "@/components/KeywordList";
 import StrengthsList from "@/components/StrengthsList";
 import GapsList from "@/components/GapsList";
 import RewritePreviews from "@/components/RewritePreviews";
 import ProUpgradeCard from "@/components/ProUpgradeCard";
 import { trackEvent } from "@/lib/analytics";
+import { DEMO_RADAR_RESULT } from "@/lib/demo-data";
+import { loadJobSessions, type JobSession } from "@/lib/job-sessions";
 
 export default function ResultsPage() {
   const router = useRouter();
@@ -18,9 +21,11 @@ export default function ResultsPage() {
   const [isDemo, setIsDemo] = useState(false);
   const [loading, setLoading] = useState(true);
   const [noData, setNoData] = useState(false);
+  const [showAtsDetails, setShowAtsDetails] = useState(false);
+  const [recentRoles, setRecentRoles] = useState<JobSession[]>([]);
+  const [showRecentRoles, setShowRecentRoles] = useState(false);
 
   useEffect(() => {
-    // Small delay to ensure sessionStorage writes from /demo are flushed
     const timer = setTimeout(() => {
       // Check for demo data first
       const demoData = sessionStorage.getItem("rt_demo");
@@ -33,7 +38,7 @@ export default function ResultsPage() {
           setLoading(false);
           return;
         } catch {
-          // Fall through to analysis data
+          // Fall through
         }
       }
 
@@ -44,18 +49,24 @@ export default function ResultsPage() {
           const parsed = JSON.parse(analysisData);
           setResult(parsed);
           setLoading(false);
+          trackEvent("radar_viewed", { bucket: getBucket(parsed.radarResult?.score) });
           return;
         } catch {
           // Fall through
         }
       }
 
-      // No data found — show message instead of silent redirect
       setLoading(false);
       setNoData(true);
     }, 100);
 
     return () => clearTimeout(timer);
+  }, []);
+
+  // Load recent roles
+  useEffect(() => {
+    const sessions = loadJobSessions();
+    if (sessions.length > 0) setRecentRoles(sessions);
   }, []);
 
   if (loading) {
@@ -83,7 +94,7 @@ export default function ResultsPage() {
               onClick={() => router.push("/analyze")}
               className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
             >
-              Analyze My Resume
+              Check my resume
             </button>
             <button
               onClick={() => router.push("/demo")}
@@ -99,6 +110,8 @@ export default function ResultsPage() {
 
   if (!result) return null;
 
+  const radar: RadarResult | undefined = result.radarResult || (isDemo ? DEMO_RADAR_RESULT : undefined);
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
       {isDemo && (
@@ -111,8 +124,67 @@ export default function ResultsPage() {
         </div>
       )}
 
+      {/* Recent Roles */}
+      {recentRoles.length > 1 && (
+        <div className="mb-6">
+          <button
+            onClick={() => setShowRecentRoles(!showRecentRoles)}
+            className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"
+          >
+            <svg
+              className={`h-4 w-4 transition-transform ${showRecentRoles ? "rotate-90" : ""}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+            Recent Roles ({recentRoles.length})
+          </button>
+          {showRecentRoles && (
+            <div className="mt-3 space-y-2">
+              {recentRoles.map((session) => (
+                <div
+                  key={session.id}
+                  className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{session.jobTitle}</p>
+                    {session.company && (
+                      <p className="text-xs text-gray-500">{session.company}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                      session.radarBefore >= 75 ? "bg-green-100 text-green-700" :
+                      session.radarBefore >= 50 ? "bg-yellow-100 text-yellow-700" :
+                      "bg-red-100 text-red-700"
+                    }`}>
+                      {session.radarBefore}
+                    </span>
+                    {session.radarAfter != null && (
+                      <>
+                        <svg className="h-3 w-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                        </svg>
+                        <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">
+                          {session.radarAfter}
+                        </span>
+                      </>
+                    )}
+                    <span className="text-xs text-gray-400">
+                      {new Date(session.timestamp).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Your Analysis Results</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Your Hiring Manager Radar</h1>
         <p className="mt-2 text-gray-600">
           {result.jobProfile.title
             ? `Analysis for ${result.jobProfile.title}${result.jobProfile.company ? ` at ${result.jobProfile.company}` : ""}`
@@ -120,48 +192,75 @@ export default function ResultsPage() {
         </p>
       </div>
 
-      {/* Score cards */}
-      <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <ScoreCard
-          label="ATS Match Score"
-          score={result.atsResult.score}
-          description="How well your resume matches the job requirements"
-        />
-        <ScoreCard
-          label="Skill Overlap"
-          score={result.atsResult.breakdown.skillOverlap}
-          description="Matching skills and technologies"
-        />
-        <ScoreCard
-          label="Keyword Coverage"
-          score={result.atsResult.breakdown.keywordCoverage}
-          description="Relevant keywords found in your resume"
-        />
-        <ScoreCard
-          label="Impact Strength"
-          score={result.atsResult.breakdown.impactStrength}
-          description="Use of metrics, action verbs, and results"
-        />
-      </div>
+      {/* Radar Score + Breakdown */}
+      {radar && (
+        <div className="mb-8">
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* Primary radar gauge */}
+            <ScoreCard
+              variant="primary"
+              label="Radar Score"
+              score={radar.score}
+              description="How strongly your resume signals to hiring managers"
+              radarLabel={radar.label}
+            />
 
+            {/* Breakdown bars */}
+            <div className="rounded-xl border border-gray-200 bg-white p-6">
+              <h3 className="mb-3 text-sm font-semibold text-gray-700 uppercase tracking-wide">Signal Breakdown</h3>
+              <ScoreCard variant="breakdown" label="Impact" score={radar.breakdown.impact} description="" />
+              <ScoreCard variant="breakdown" label="Clarity" score={radar.breakdown.clarity} description="" />
+              <ScoreCard variant="breakdown" label="Ownership" score={radar.breakdown.ownership} description="" />
+              <ScoreCard variant="breakdown" label="Seniority" score={radar.breakdown.seniority} description="" />
+              <ScoreCard variant="breakdown" label="Alignment" score={radar.breakdown.alignment} description="" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Blockers — blurred on free tier */}
+      {radar && radar.blockers.length > 0 && (
+        <div className="mb-8">
+          <h2 className="mb-4 text-lg font-semibold text-gray-900">Top Blockers</h2>
+          <div className="grid gap-4 md:grid-cols-3">
+            {radar.blockers.slice(0, 3).map((blocker, i) => (
+              <BlockerCard
+                key={i}
+                blocker={blocker}
+                index={i}
+                locked={!isDemo && i > 0}
+              />
+            ))}
+          </div>
+          {!isDemo && (
+            <div className="mt-3 text-center">
+              <p className="text-sm text-gray-500">
+                Unlock all blockers with detailed fixes —{" "}
+                <Link href="#pro-upgrade" className="font-semibold text-blue-600 hover:underline">
+                  Get Pro
+                </Link>
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Keywords, Strengths, Gaps */}
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Left column */}
         <div className="space-y-6">
           <KeywordList
-            matched={result.atsResult.matchedKeywords}
-            missing={result.atsResult.missingKeywords}
+            matched={radar?.atsCompat.matchedKeywords || result.atsResult.matchedKeywords}
+            missing={radar?.atsCompat.missingKeywords || result.atsResult.missingKeywords}
           />
           <StrengthsList strengths={result.strengths} />
         </div>
-
-        {/* Right column */}
         <div className="space-y-6">
           <GapsList gaps={result.gaps} />
-          {result.atsResult.warnings.length > 0 && (
+          {(radar?.atsCompat.warnings || result.atsResult.warnings).length > 0 && (
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-6">
-              <h3 className="mb-3 text-lg font-semibold text-amber-900">ATS Warnings</h3>
+              <h3 className="mb-3 text-lg font-semibold text-amber-900">Formatting Warnings</h3>
               <ul className="space-y-2">
-                {result.atsResult.warnings.map((warning, i) => (
+                {(radar?.atsCompat.warnings || result.atsResult.warnings).map((warning, i) => (
                   <li key={i} className="flex items-start gap-2 text-sm text-amber-800">
                     <svg className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
@@ -174,6 +273,50 @@ export default function ResultsPage() {
           )}
         </div>
       </div>
+
+      {/* Collapsible ATS details */}
+      {result.atsResult && (
+        <div className="mt-6">
+          <button
+            onClick={() => setShowAtsDetails(!showAtsDetails)}
+            className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"
+          >
+            <svg
+              className={`h-4 w-4 transition-transform ${showAtsDetails ? "rotate-90" : ""}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+            Compatibility checks (advanced)
+          </button>
+          {showAtsDetails && (
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <ScoreCard
+                label="ATS Match"
+                score={result.atsResult.score}
+                description="Overall ATS compatibility"
+              />
+              <ScoreCard
+                label="Skill Overlap"
+                score={result.atsResult.breakdown.skillOverlap}
+                description="Matching skills"
+              />
+              <ScoreCard
+                label="Keyword Coverage"
+                score={result.atsResult.breakdown.keywordCoverage}
+                description="Keywords found"
+              />
+              <ScoreCard
+                label="Impact Strength"
+                score={result.atsResult.breakdown.impactStrength}
+                description="Metrics and results"
+              />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Rewrite previews */}
       {result.rewritePreviews.length > 0 && (
@@ -199,11 +342,11 @@ export default function ResultsPage() {
         </div>
       )}
 
-      {/* Pro upgrade CTA - only for real analyses, not demos */}
+      {/* Pro upgrade CTA */}
       {!isDemo && (
-        <div className="mt-10">
+        <div className="mt-10" id="pro-upgrade">
           <ProUpgradeCard onUpgrade={() => {
-            trackEvent("pro_viewed");
+            trackEvent("pro_cta_clicked");
           }} />
         </div>
       )}
@@ -219,6 +362,13 @@ export default function ResultsPage() {
       </div>
     </div>
   );
+}
+
+function getBucket(score?: number): string {
+  if (!score) return "unknown";
+  if (score >= 75) return "strong";
+  if (score >= 50) return "needs_sharpening";
+  return "signal_hidden";
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -268,5 +418,6 @@ function convertDemoToFreeResult(demo: any): FreeAnalysisResult {
       original: b.original,
       improved: b.rewritten,
     })),
+    radarResult: DEMO_RADAR_RESULT,
   };
 }

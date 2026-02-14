@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { parseResume } from "@/lib/resume-parser";
 import { parseJobDescription } from "@/lib/jd-parser";
 import { scoreATS, generateStrengths, generateGaps, generateRewritePreviews } from "@/lib/ats-scorer";
+import { scoreRadar } from "@/lib/radar-scorer";
 import { rateLimitRoute } from "@/lib/rate-limiter";
 import { parseAndValidate, AnalyzeRequestSchema } from "@/lib/sanitizer";
 import { preprocessResume, preprocessJobDescription } from "@/lib/input-preprocessor";
@@ -47,6 +48,9 @@ export async function POST(request: Request) {
     const gaps = generateGaps(candidateProfile, jobProfile, atsResult.missingKeywords);
     const rewritePreviews = generateRewritePreviews(candidateProfile);
 
+    // Compute radar score
+    const radarResult = scoreRadar(candidateProfile, jobProfile);
+
     const result: FreeAnalysisResult = {
       atsResult,
       candidateProfile,
@@ -54,6 +58,7 @@ export async function POST(request: Request) {
       strengths,
       gaps,
       rewritePreviews,
+      radarResult,
     };
 
     // Store in cache
