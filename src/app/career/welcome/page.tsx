@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { trackEvent } from "@/lib/analytics";
 import { CAREER_PASS_DISPLAY } from "@/lib/constants";
+import { isValidTokenFormat, isValidPlan } from "@/lib/sanitizer";
 
 export default function CareerWelcomeWrapper() {
   return (
@@ -27,12 +28,13 @@ function CareerWelcomePage() {
   const [plan, setPlan] = useState<string>("pass");
 
   useEffect(() => {
-    // Handle dev_token from checkout redirect
+    // Handle dev_token from checkout redirect (validate format before storing)
     const devToken = searchParams.get("dev_token");
     const planParam = searchParams.get("plan");
-    if (devToken) {
+    if (devToken && isValidTokenFormat(devToken)) {
       sessionStorage.setItem("rt_entitlement_token", devToken);
-      sessionStorage.setItem("rt_entitlement_plan", planParam || "pass");
+      const safePlan = planParam && isValidPlan(planParam) ? planParam : "pass";
+      sessionStorage.setItem("rt_entitlement_plan", safePlan);
     }
 
     // Handle Stripe session_id

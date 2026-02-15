@@ -151,34 +151,34 @@ export const DEMO_RESULT: ResumeTailorResult = {
       original:
         "Led development of customer-facing dashboard serving 50K monthly active users",
       rewritten:
-        "Architected and led development of a customer-facing analytics dashboard serving 50K+ MAU, defining technical architecture and coordinating delivery across [N] engineers",
+        "Architected and led development of a customer-facing analytics dashboard serving 50K+ MAU, defining technical architecture and coordinating delivery across 5 engineers",
       section: "Acme Corp — Senior Software Engineer",
       improvementNotes:
-        "Added architecture ownership and team coordination to demonstrate senior-level scope. Replace [N] with actual team size.",
+        "Added architecture ownership and team coordination to demonstrate senior-level scope.",
     },
     {
       original:
         "Built REST API endpoints using Node.js and Express, reducing response times by 35%",
       rewritten:
-        "Designed and optimized high-throughput API layer using Node.js and Express, achieving 35% latency reduction through caching strategies and query optimization serving [N] daily requests",
+        "Designed and optimized high-throughput API layer using Node.js and Express, achieving 35% latency reduction through caching strategies and query optimization serving 100K+ daily requests",
       section: "Acme Corp — Senior Software Engineer",
       improvementNotes:
-        "Elevated from 'built' to 'designed and optimized' to show senior-level ownership. Added scale context. Fill in [N] with actual request volume.",
+        "Elevated from 'built' to 'designed and optimized' to show senior-level ownership. Added scale context.",
     },
     {
       original:
         "Mentored 3 junior engineers through code reviews and pair programming sessions",
       rewritten:
-        "Mentored 3 junior engineers through structured code reviews and pair programming, contributing to [X]% improvement in team code quality metrics and onboarding velocity",
+        "Mentored 3 junior engineers through structured code reviews and pair programming, contributing to 40% improvement in team code quality metrics and onboarding velocity",
       section: "Acme Corp — Senior Software Engineer",
       improvementNotes:
-        "Added measurable outcomes of mentoring. Replace [X]% with actual metrics if available.",
+        "Added measurable outcomes of mentoring with estimated impact metric.",
     },
     {
       original:
         "Collaborated with product team to define technical requirements for Q3 roadmap",
       rewritten:
-        "Partnered with product and design stakeholders to translate business requirements into technical specifications for Q3 platform roadmap, influencing [N] key feature decisions",
+        "Partnered with product and design stakeholders to translate business requirements into technical specifications for Q3 platform roadmap, influencing 4 key feature decisions",
       section: "Acme Corp — Senior Software Engineer",
       improvementNotes:
         "Strengthened with specific cross-functional impact. Shows strategic influence expected at senior level.",
@@ -187,10 +187,10 @@ export const DEMO_RESULT: ResumeTailorResult = {
       original:
         "Developed React components for e-commerce platform processing $2M annual revenue",
       rewritten:
-        "Built and maintained React component library powering an e-commerce platform processing $2M+ annual revenue, improving page load performance by [X]% through code splitting and lazy loading",
+        "Built and maintained React component library powering an e-commerce platform processing $2M+ annual revenue, improving page load performance by 35% through code splitting and lazy loading",
       section: "StartupXYZ — Software Engineer",
       improvementNotes:
-        "Added performance optimization angle and component library ownership. Fill in [X]% with actual improvement.",
+        "Added performance optimization angle and component library ownership with estimated improvement metric.",
     },
     {
       original:
@@ -205,7 +205,7 @@ export const DEMO_RESULT: ResumeTailorResult = {
       original:
         "Wrote unit and integration tests achieving 85% code coverage",
       rewritten:
-        "Established testing strategy with unit and integration tests achieving 85% code coverage, reducing production incidents by [X]% quarter-over-quarter",
+        "Established testing strategy with unit and integration tests achieving 85% code coverage, reducing production incidents by 25% quarter-over-quarter",
       section: "StartupXYZ — Software Engineer",
       improvementNotes:
         "Elevated from task execution to strategy ownership. Added business impact metric placeholder.",
@@ -214,7 +214,7 @@ export const DEMO_RESULT: ResumeTailorResult = {
       original:
         "Participated in on-call rotation managing production incidents",
       rewritten:
-        "Managed production incident response in on-call rotation, developing runbooks and monitoring dashboards that reduced mean time to resolution by [X]%",
+        "Managed production incident response in on-call rotation, developing runbooks and monitoring dashboards that reduced mean time to resolution by 45%",
       section: "StartupXYZ — Software Engineer",
       improvementNotes:
         "Transformed from passive participation to active improvement. Shows operational maturity valued in platform roles.",
@@ -241,7 +241,7 @@ export const DEMO_RESULT: ResumeTailorResult = {
       original:
         "Assisted senior developers with database optimization tasks",
       rewritten:
-        "Collaborated with senior engineers on PostgreSQL database optimization, contributing to query performance improvements that reduced page load times by [X]%",
+        "Collaborated with senior engineers on PostgreSQL database optimization, contributing to query performance improvements that reduced page load times by 50%",
       section: "WebAgency — Junior Developer",
       improvementNotes:
         "Specified database technology and added measurable outcome. Shows early interest in backend/data.",
@@ -249,7 +249,7 @@ export const DEMO_RESULT: ResumeTailorResult = {
     {
       original: "",
       rewritten:
-        "NEW BULLET: Contributed to system design decisions for [project name], evaluating trade-offs between monolithic and microservices architectures for [specific use case]",
+        "NEW BULLET: Contributed to system design decisions for the analytics platform, evaluating trade-offs between monolithic and microservices architectures for real-time data processing",
       section: "Acme Corp — Senior Software Engineer (suggested addition)",
       improvementNotes:
         "Suggested new bullet to address the critical 'system design' gap. Customize with actual project details.",
@@ -269,7 +269,7 @@ export const DEMO_RESULT: ResumeTailorResult = {
       evidence:
         "You mention Docker in skills but the role requires Kubernetes experience for containerized deployments.",
       suggestion:
-        "If you have K8s experience, add it explicitly. If you've worked with Docker Compose or ECS, mention container orchestration experience. Consider adding: 'Deployed containerized services using Docker and [orchestration tool] managing [N] services in production.'",
+        "If you have K8s experience, add it explicitly. If you've worked with Docker Compose or ECS, mention container orchestration experience. Consider adding specifics about the number of services you managed in production.",
       severity: "high",
     },
     {
@@ -321,7 +321,7 @@ export const DEMO_RESULT: ResumeTailorResult = {
     {
       issue: "No professional summary section",
       location: "Top of resume",
-      fix: "Add a 2-3 sentence professional summary at the top that includes key terms from the job description: 'Senior Full-Stack Engineer with [N]+ years building scalable web platforms...' This helps ATS and human reviewers quickly match your profile.",
+      fix: "Add a 2-3 sentence professional summary at the top that includes key terms from the job description: 'Senior Full-Stack Engineer with 6+ years building scalable web platforms...' This helps ATS and human reviewers quickly match your profile.",
       severity: "medium",
     },
     {
@@ -335,7 +335,7 @@ export const DEMO_RESULT: ResumeTailorResult = {
     "SKILLS\n\nLanguages: JavaScript, TypeScript, Python (add if applicable)\nFrontend: React, Next.js, HTML, CSS\nBackend: Node.js, Express, GraphQL (add if applicable)\nCloud & DevOps: AWS (EC2, S3, Lambda, RDS), Docker, Kubernetes (add if applicable), GitHub Actions, CI/CD\nInfrastructure: Terraform (add if applicable)\nDatabases: PostgreSQL, MongoDB\nMethodologies: Agile/Scrum, System Design, Technical Leadership",
   coverLetterDraft: `Dear Hiring Manager,
 
-I'm writing to express my strong interest in the Senior Full-Stack Engineer position at CloudScale Inc. With [N]+ years of experience building and scaling web applications, I'm excited about the opportunity to contribute to your cloud infrastructure management platform.
+I'm writing to express my strong interest in the Senior Full-Stack Engineer position at CloudScale Inc. With 6+ years of experience building and scaling web applications, I'm excited about the opportunity to contribute to your cloud infrastructure management platform.
 
 In my current role as Senior Software Engineer at Acme Corp, I've led development of a customer-facing dashboard serving 50K+ monthly active users, making key architecture decisions and optimizing API performance. This experience building scalable, user-facing platforms directly aligns with CloudScale's mission to serve enterprise customers.
 

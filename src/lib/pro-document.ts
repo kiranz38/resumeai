@@ -125,17 +125,30 @@ export function proOutputToDocument(output: ProOutput): ProDocument {
         status: k.found ? ("present" as const) : ("missing" as const),
       })),
     },
-    coverLetter: {
-      date: new Date().toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      }),
-      recipientLine: "Hiring Manager",
-      paragraphs: output.coverLetter.paragraphs,
-      closing: "Sincerely,",
-      signatureName: r.name || "Your Name",
-    },
+    coverLetter: (() => {
+      let paragraphs = output.coverLetter.paragraphs;
+      let recipientLine = "Hiring Manager";
+
+      // Strip duplicate greeting: if the first paragraph is a "Dear …" line,
+      // extract the recipient and remove it from the paragraphs array
+      if (paragraphs.length > 0 && /^dear\s/i.test(paragraphs[0])) {
+        const match = paragraphs[0].match(/^dear\s+(.+?)[,.]?\s*$/i);
+        if (match) recipientLine = match[1];
+        paragraphs = paragraphs.slice(1);
+      }
+
+      return {
+        date: new Date().toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        }),
+        recipientLine,
+        paragraphs,
+        closing: "Sincerely,",
+        signatureName: r.name || "Your Name",
+      };
+    })(),
   };
 }
 

@@ -583,36 +583,104 @@ export function generateRewritePreviews(
 }
 
 function improveDirectly(bullet: string): string {
-  let improved = bullet;
+  let improved = bullet.trim();
+  if (!improved) return bullet;
 
-  // Replace weak openers
+  let changed = false;
+
+  // 1. Replace weak openers and noun-phrase patterns
   const weakOpeners: [RegExp, string][] = [
     [/^Responsible for\s+/i, "Led "],
-    [/^Helped\s+/i, "Contributed to "],
-    [/^Assisted\s+(with\s+)?/i, "Supported "],
-    [/^Worked on\s+/i, "Developed "],
+    [/^Helped\s+(to\s+)?/i, "Contributed to "],
+    [/^Assisted\s+(with\s+|in\s+)?/i, "Supported "],
+    [/^Worked\s+(extensively\s+)?with\s+/i, "Leveraged "],
+    [/^Worked\s+(extensively\s+)?on\s+/i, "Developed "],
     [/^Participated in\s+/i, "Contributed to "],
     [/^Involved in\s+/i, "Drove "],
     [/^Was part of\s+/i, "Collaborated on "],
+    [/^Been part of\s+(the\s+)?/i, "Contributed to "],
+    [/^Was responsible for\s+/i, "Managed "],
+    [/^Tasked with\s+/i, "Spearheaded "],
+    [/^Had to\s+/i, ""],
+    [/^Used\s+/i, "Leveraged "],
+    [/^Utilized\s+/i, "Leveraged "],
+    [/^Handled\s+/i, "Managed "],
+    [/^Dealt with\s+/i, "Addressed "],
+    [/^Took care of\s+/i, "Managed "],
+    [/^In charge of\s+/i, "Led "],
+    [/^Looked after\s+/i, "Maintained "],
+    // Noun-phrase starts → active verb form
+    [/^Development and enhancement\s+(work\s+)?for\s+/i, "Developed and enhanced "],
+    [/^Development of\s+/i, "Developed "],
+    [/^Creation of\s+/i, "Created "],
+    [/^Application development in\s+/i, "Developed applications using "],
+    [/^Implementation of\s+/i, "Implemented "],
+    [/^Design and development of\s+/i, "Designed and developed "],
+    [/^Management of\s+/i, "Managed "],
+    [/^Maintenance of\s+/i, "Maintained "],
+    [/^Migration of\s+/i, "Migrated "],
+    [/^Integration of\s+/i, "Integrated "],
+    [/^Optimization of\s+/i, "Optimized "],
+    [/^Configuration of\s+/i, "Configured "],
   ];
 
   for (const [pattern, replacement] of weakOpeners) {
     if (pattern.test(improved)) {
       improved = improved.replace(pattern, replacement);
+      changed = true;
       break;
     }
   }
 
-  // Add scope/impact hints if none present
-  if (!/\d/.test(improved) && !improved.includes("[")) {
-    // Suggest adding metrics
-    if (improved.length < 100) {
-      improved = improved.replace(/\.$/, "") + ", resulting in [X]% improvement in [metric]";
+  // 2. Convert leading gerunds to past tense (weaker resume style)
+  if (!changed) {
+    const gerundMap: [RegExp, string][] = [
+      [/^Developing\s+/i, "Developed "],
+      [/^Creating\s+/i, "Created "],
+      [/^Managing\s+/i, "Managed "],
+      [/^Implementing\s+/i, "Implemented "],
+      [/^Building\s+/i, "Built "],
+      [/^Designing\s+/i, "Designed "],
+      [/^Leading\s+/i, "Led "],
+      [/^Writing\s+/i, "Wrote "],
+      [/^Maintaining\s+/i, "Maintained "],
+      [/^Testing\s+/i, "Tested "],
+      [/^Deploying\s+/i, "Deployed "],
+      [/^Automating\s+/i, "Automated "],
+      [/^Configuring\s+/i, "Configured "],
+      [/^Migrating\s+/i, "Migrated "],
+      [/^Integrating\s+/i, "Integrated "],
+      [/^Optimizing\s+/i, "Optimized "],
+    ];
+
+    for (const [pattern, replacement] of gerundMap) {
+      if (pattern.test(improved)) {
+        improved = improved.replace(pattern, replacement);
+        changed = true;
+        break;
+      }
     }
   }
 
-  // Capitalize first letter
-  improved = improved.charAt(0).toUpperCase() + improved.slice(1);
+  // 3. Fix remaining gerunds in conjunctions: "and Implementing" → "and implemented"
+  if (changed) {
+    const gerundPastMap: Record<string, string> = {
+      developing: "developed", creating: "created", implementing: "implemented",
+      building: "built", designing: "designed", leading: "led", writing: "wrote",
+      maintaining: "maintained", testing: "tested", deploying: "deployed",
+      automating: "automated", configuring: "configured", migrating: "migrated",
+      integrating: "integrated", optimizing: "optimized",
+    };
+    improved = improved.replace(
+      /\band\s+(Developing|Creating|Implementing|Building|Designing|Leading|Writing|Maintaining|Testing|Deploying|Automating|Configuring|Migrating|Integrating|Optimizing)\b/gi,
+      (_, gerund) => `and ${gerundPastMap[gerund.toLowerCase()] || gerund}`
+    );
+  }
 
-  return improved === bullet ? bullet : improved;
+  // 4. Capitalize first letter (formatting only — not counted as a change)
+  if (improved.length > 0) {
+    improved = improved.charAt(0).toUpperCase() + improved.slice(1);
+  }
+
+  return changed ? improved : bullet;
 }

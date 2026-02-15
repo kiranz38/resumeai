@@ -4,6 +4,20 @@ import { useState } from "react";
 import { trackEvent } from "@/lib/analytics";
 import type { Plan } from "@/lib/entitlement";
 
+/** Trusted domains for checkout redirects */
+const TRUSTED_REDIRECT_HOSTS = new Set(["checkout.stripe.com", "pay.stripe.com"]);
+
+/** Validate redirect URL is safe (same-origin relative path or trusted external host) */
+function isSafeRedirect(url: string): boolean {
+  if (url.startsWith("/")) return true; // relative paths are safe
+  try {
+    const parsed = new URL(url);
+    return TRUSTED_REDIRECT_HOSTS.has(parsed.hostname);
+  } catch {
+    return false;
+  }
+}
+
 interface CheckoutButtonProps {
   plan: Plan;
   label: string;
@@ -31,8 +45,8 @@ export default function CheckoutButton({ plan, label, className }: CheckoutButto
       if (data.devMode && data.token) {
         sessionStorage.setItem("rt_entitlement_token", data.token);
         sessionStorage.setItem("rt_entitlement_plan", plan);
-        window.location.href = data.url;
-      } else if (data.url) {
+        if (isSafeRedirect(data.url)) window.location.href = data.url;
+      } else if (data.url && isSafeRedirect(data.url)) {
         window.location.href = data.url;
       }
     } catch {

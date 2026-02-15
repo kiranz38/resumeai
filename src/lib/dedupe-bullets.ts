@@ -11,7 +11,7 @@ import type { ProOutput } from "./schema";
 // ── Configuration ──
 
 const MAX_BACKEND_BULLETS_PER_ROLE = 3;
-const JACCARD_THRESHOLD = 0.75;
+const JACCARD_THRESHOLD = 0.85; // Higher threshold to avoid removing similar-but-distinct technical bullets
 const ENDING_WORD_COUNT = 5;
 
 /** Tokens that signal a backend-focused bullet */
@@ -141,15 +141,9 @@ export function dedupeBullets(bullets: string[]): string[] {
     }
   }
 
-  // Step 2: Cap backend bullets
-  let backendCount = 0;
-  const capped = unique.filter((bullet) => {
-    if (isBackendBullet(bullet)) {
-      backendCount++;
-      return backendCount <= MAX_BACKEND_BULLETS_PER_ROLE;
-    }
-    return true;
-  });
+  // Step 2: No backend cap — removing content violates core principle.
+  // The LLM prompt already handles domain-appropriate bullet distribution.
+  const capped = unique;
 
   // Step 3: Enforce sentence-ending diversity
   const endings = new Set<string>();

@@ -29,17 +29,15 @@ const MAX_JD_LENGTH = 30_000;
 const ONBOARDING_KEY = "rt_onboarding_complete";
 
 // Step dots config
-const STEP_LABELS = ["Resume", "Job Description", "Analyze"] as const;
+const STEP_LABELS = ["Resume", "Job Description"] as const;
 
 function getStepIndex(phase: Phase): number {
   switch (phase) {
     case "resume_input":
       return 0;
     case "jd_input":
-      return 1;
-    case "ready":
     case "analyzing":
-      return 2;
+      return 1;
     default:
       return -1;
   }
@@ -108,15 +106,8 @@ function AnalyzePage() {
         targetRef: jdPanelRef,
         title: "Add the job description",
         description:
-          "Paste the job description you're targeting. We'll analyze the match and find missing keywords.",
+          "Paste the job description you're targeting and hit 'Check my resume' to see your Match Score.",
         placement: "right" as const,
-      },
-      {
-        targetRef: analyzeBtnRef,
-        title: "Get your Match Score",
-        description:
-          "Hit analyze to see how well you match, what's missing, and how to fix it.",
-        placement: "top" as const,
       },
     ],
     [],
@@ -137,7 +128,6 @@ function AnalyzePage() {
     // Sync phase with onboarding step
     if (nextStep === 1) setPhase("resume_input");
     else if (nextStep === 2) setPhase("jd_input");
-    else if (nextStep === 3) setPhase("ready");
   }, [onboardingStep, spotlightSteps.length, dismissOnboarding]);
 
   const handleQuickAnalyze = useCallback(() => {
@@ -181,13 +171,12 @@ function AnalyzePage() {
     setPhase("jd_input");
   }, [showOnboarding, onboardingStep]);
 
-  // JD continue → ready
+  // JD continue (only used by onboarding flow)
   const handleJdContinue = useCallback(() => {
-    if (showOnboarding && onboardingStep === 2) {
-      setOnboardingStep(3);
+    if (showOnboarding) {
+      dismissOnboarding();
     }
-    setPhase("ready");
-  }, [showOnboarding, onboardingStep]);
+  }, [showOnboarding, dismissOnboarding]);
 
   // File upload handler (memoized with useCallback)
   const handleFileUpload = useCallback(
@@ -332,7 +321,7 @@ function AnalyzePage() {
           : "Analysis failed. Please try again.",
       );
       setIsAnalyzing(false);
-      setPhase("ready");
+      setPhase("jd_input");
       setProgress("");
     }
   }, [resumeText, jobDescription, router, dismissOnboarding]);
@@ -395,9 +384,6 @@ function AnalyzePage() {
       case "jd_input":
         setPhase("resume_input");
         break;
-      case "ready":
-        setPhase("jd_input");
-        break;
       case "pack_resume":
         setPhase("hub");
         break;
@@ -427,7 +413,7 @@ function AnalyzePage() {
       />
 
       {/* Main content area */}
-      <main className="flex-1 px-4 py-8 lg:px-8">
+      <main className="min-w-0 flex-1 overflow-x-hidden px-4 py-8 lg:px-8">
         {/* Error / Warning banners */}
         {error && (
           <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -492,21 +478,21 @@ function AnalyzePage() {
 
         {/* ── Step Dots + Back Arrow (for input phases) ── */}
         {stepIndex >= 0 && (
-          <div className="mx-auto mb-6 flex max-w-2xl items-center gap-4">
+          <div className="mx-auto mb-6 flex max-w-2xl items-center gap-2 sm:gap-4">
             <button
               onClick={handleBack}
-              className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+              className="flex-shrink-0 rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
               aria-label="Go back"
             >
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <div className="flex items-center gap-2">
+            <div className="flex min-w-0 items-center gap-1.5 sm:gap-2 overflow-x-auto">
               {STEP_LABELS.map((label, i) => (
-                <div key={label} className="flex items-center gap-2">
+                <div key={label} className="flex flex-shrink-0 items-center gap-1.5 sm:gap-2">
                   <div
-                    className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                    className={`flex items-center gap-1 sm:gap-1.5 rounded-full px-2 py-1 sm:px-3 text-xs font-medium transition-colors ${
                       i === stepIndex
                         ? "bg-blue-100 text-blue-700"
                         : i < stepIndex
@@ -527,7 +513,7 @@ function AnalyzePage() {
                   </div>
                   {i < STEP_LABELS.length - 1 && (
                     <div
-                      className={`h-px w-6 ${
+                      className={`h-px w-4 sm:w-6 ${
                         i < stepIndex ? "bg-green-300" : "bg-gray-200"
                       }`}
                     />
@@ -653,12 +639,24 @@ function AnalyzePage() {
                   <p className="text-sm text-gray-400">
                     {jobDescription.length.toLocaleString()} characters
                   </p>
-                  {phase === "jd_input" && jdReady && (
+                  {phase === "jd_input" && jdReady && resumeReady && (
                     <button
-                      onClick={handleJdContinue}
-                      className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                      ref={analyzeBtnRef}
+                      onClick={handleAnalyze}
+                      disabled={isAnalyzing}
+                      className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      Continue
+                      {isAnalyzing ? (
+                        <>
+                          <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                          </svg>
+                          Analyzing...
+                        </>
+                      ) : (
+                        "Check my resume"
+                      )}
                     </button>
                   )}
                 </div>
@@ -667,49 +665,10 @@ function AnalyzePage() {
           </div>
         )}
 
-        {/* ── Ready / Analyze Phase ── */}
-        {(phase === "ready" || phase === "analyzing") && (
-          <div className="animate-slide-up-in mx-auto mt-6 max-w-2xl text-center">
-            <button
-              ref={analyzeBtnRef}
-              onClick={handleAnalyze}
-              disabled={isAnalyzing || !resumeReady || !jdReady}
-              className={`inline-flex items-center gap-2 rounded-lg bg-blue-600 px-10 py-3.5 text-base font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 ${
-                !isAnalyzing && resumeReady && jdReady
-                  ? "animate-pulse-ring"
-                  : ""
-              }`}
-            >
-              {isAnalyzing ? (
-                <>
-                  <svg
-                    className="h-5 w-5 animate-spin"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    />
-                  </svg>
-                  Analyzing...
-                </>
-              ) : (
-                "Check my resume"
-              )}
-            </button>
-            {progress && (
-              <p className="mt-3 text-sm text-gray-500">{progress}</p>
-            )}
+        {/* ── Analyzing progress ── */}
+        {phase === "analyzing" && progress && (
+          <div className="mx-auto mt-4 max-w-2xl text-center">
+            <p className="text-sm text-gray-500">{progress}</p>
           </div>
         )}
 

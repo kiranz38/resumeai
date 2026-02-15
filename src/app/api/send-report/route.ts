@@ -31,11 +31,19 @@ export async function POST(request: Request) {
       }
     }
 
-    const body = await request.json();
+    const body = await request.json().catch(() => null);
+    if (!body || typeof body !== "object") {
+      return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
+    }
     const { email, reportText } = body;
 
     if (!email || typeof email !== "string" || !email.includes("@")) {
       return NextResponse.json({ error: "Valid email is required." }, { status: 400 });
+    }
+
+    // Reject control characters in email (prevents SMTP header injection)
+    if (/[\x00-\x1f\x7f]/.test(email) || email.length > 320) {
+      return NextResponse.json({ error: "Invalid email address." }, { status: 400 });
     }
 
     // Validate email (disposable domain blocking)
@@ -46,6 +54,11 @@ export async function POST(request: Request) {
 
     if (!reportText || typeof reportText !== "string") {
       return NextResponse.json({ error: "Report content is required." }, { status: 400 });
+    }
+
+    // Enforce max size to prevent abuse
+    if (reportText.length > 200_000) {
+      return NextResponse.json({ error: "Report content too large." }, { status: 413 });
     }
 
     // Dynamic import to avoid issues if resend isn't installed

@@ -89,7 +89,7 @@ function releaseSlot(): void {
 
 // ── Timeout helper ──
 
-const DEFAULT_TIMEOUT_MS = 30_000;
+const DEFAULT_TIMEOUT_MS = 180_000; // 3 minutes — Sonnet with large resumes takes 60-150s
 
 async function withTimeout<T>(
   promise: Promise<T>,

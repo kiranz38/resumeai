@@ -15,7 +15,7 @@ export default function DashboardSidebar({
   onQuickAnalyze,
 }: DashboardSidebarProps) {
   const [sessions, setSessions] = useState<JobSession[]>([]);
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
 
   useEffect(() => {
     setSessions(loadJobSessions());

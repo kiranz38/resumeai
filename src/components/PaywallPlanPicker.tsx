@@ -5,6 +5,13 @@ import { PRO_PRICE_DISPLAY, CAREER_PASS_DISPLAY } from "@/lib/constants";
 import { trackEvent } from "@/lib/analytics";
 import type { Plan } from "@/lib/entitlement";
 
+const TRUSTED_REDIRECT_HOSTS = new Set(["checkout.stripe.com", "pay.stripe.com"]);
+function isSafeRedirect(url: string): boolean {
+  if (url.startsWith("/")) return true;
+  try { return TRUSTED_REDIRECT_HOSTS.has(new URL(url).hostname); }
+  catch { return false; }
+}
+
 interface PaywallPlanPickerProps {
   /** Pre-select a plan (e.g., from a quota-exhausted upsell) */
   defaultPlan?: Plan;
@@ -78,8 +85,8 @@ export default function PaywallPlanPicker({
         // Dev mode: store token and redirect
         sessionStorage.setItem("rt_entitlement_token", data.token);
         sessionStorage.setItem("rt_entitlement_plan", plan);
-        window.location.href = data.url;
-      } else if (data.url) {
+        if (isSafeRedirect(data.url)) window.location.href = data.url;
+      } else if (data.url && isSafeRedirect(data.url)) {
         // Production: redirect to Stripe
         window.location.href = data.url;
       }

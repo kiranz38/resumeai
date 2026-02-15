@@ -28,10 +28,18 @@ const STOP_WORDS = new Set([
 /** Threshold below which we show the low-match permission dialog */
 export const LOW_MATCH_THRESHOLD = 25;
 
+/** Split text into lowercase tokens on whitespace/punctuation */
+const TOKEN_RE = /[\s,;:.!?()\[\]{}|/\\""''`~@#$%^&*+=<>]+/;
+
+function tokenize(text: string): string[] {
+  return text.toLowerCase().split(TOKEN_RE).filter((w) => w.length >= 2);
+}
+
 /**
  * Quick keyword-overlap score (0-100).
- * Extracts significant words from the JD and checks how many
- * appear anywhere in the resume text.
+ * Uses Set-based word lookup for true word-boundary matching
+ * ("java" will NOT match "javascript") plus bigram phrase matching
+ * for compound skills like "machine learning".
  */
 export function quickMatchScore(
   resumeText: string,
@@ -39,22 +47,51 @@ export function quickMatchScore(
 ): number {
   if (!resumeText || !jobDescription) return 0;
 
-  const resumeLower = resumeText.toLowerCase();
+  // Build a Set of individual resume words → O(1) lookup
+  const resumeTokens = tokenize(resumeText);
+  const resumeWordSet = new Set(resumeTokens);
 
-  const jdWords = jobDescription
-    .toLowerCase()
-    .split(/[\s,;:.!?()\[\]{}|/\\""''`~@#$%^&*+=<>]+/)
-    .filter((w) => w.length >= 3 && !STOP_WORDS.has(w));
+  // Build a Set of resume bigrams for phrase matching
+  const resumeBigramSet = new Set<string>();
+  for (let i = 0; i < resumeTokens.length - 1; i++) {
+    resumeBigramSet.add(resumeTokens[i] + " " + resumeTokens[i + 1]);
+  }
 
+  // Extract unique JD words (skip stop words and very short tokens)
+  const jdTokens = tokenize(jobDescription);
+  const jdWords = jdTokens.filter((w) => w.length >= 3 && !STOP_WORDS.has(w));
   const uniqueJdWords = [...new Set(jdWords)];
   if (uniqueJdWords.length === 0) return 50;
 
-  let matched = 0;
+  // Word-level matching
+  let wordMatched = 0;
   for (const word of uniqueJdWords) {
-    if (resumeLower.includes(word)) matched++;
+    if (resumeWordSet.has(word)) wordMatched++;
+  }
+  const wordScore = wordMatched / uniqueJdWords.length;
+
+  // Bigram (phrase) matching for compound skills
+  const jdBigrams: string[] = [];
+  for (let i = 0; i < jdTokens.length - 1; i++) {
+    const a = jdTokens[i], b = jdTokens[i + 1];
+    if (a.length >= 3 && b.length >= 3 && !STOP_WORDS.has(a) && !STOP_WORDS.has(b)) {
+      jdBigrams.push(a + " " + b);
+    }
+  }
+  const uniqueJdBigrams = [...new Set(jdBigrams)];
+
+  let phraseScore = wordScore; // fallback if no bigrams
+  if (uniqueJdBigrams.length > 0) {
+    let phraseMatched = 0;
+    for (const bigram of uniqueJdBigrams) {
+      if (resumeBigramSet.has(bigram)) phraseMatched++;
+    }
+    phraseScore = phraseMatched / uniqueJdBigrams.length;
   }
 
-  return Math.round((matched / uniqueJdWords.length) * 100);
+  // Blend: 80% word score + 20% phrase score
+  const blended = wordScore * 0.8 + phraseScore * 0.2;
+  return Math.round(blended * 100);
 }
 
 /**

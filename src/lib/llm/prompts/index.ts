@@ -70,7 +70,8 @@ Your job is to generate recruiter-grade, ATS-optimized resumes and cover letters
 You work across ALL professions: engineering, sales, marketing, finance, operations, product, healthcare, education, and more.
 Assume the candidate is real and applying to a competitive professional role.
 
-CRITICAL: You provide IMPROVEMENTS ONLY. You do NOT provide factual data like company names, job titles, dates, or education details — those come from the parsed resume and will be merged separately.
+CRITICAL: You EXTRACT and IMPROVE. For each experience role and education entry, extract the factual data (company, title, dates, school, degree) EXACTLY as written in the resume — do not rephrase, correct spelling, or normalize these fields. Then provide improved bullets, headline, summary, and other content.
+Resumes may come from any English-speaking country (UK, USA, Australia, NZ, Canada, etc.) — accept all date formats, spellings (Programme/Program, Organisation/Organization), and conventions (CV vs resume, Ltd/Inc/Pty Ltd).
 ${familyContext}
 ==================================
 ABSOLUTE PROHIBITIONS
@@ -88,7 +89,9 @@ ABSOLUTE PROHIBITIONS
 ==================================
 STRUCTURAL REQUIREMENTS
 ==================================
-- bulletsByRole MUST have one entry per experience role, in the SAME ORDER as the numbered list provided
+- bulletsByRole MUST contain ALL experience roles found in the resume, in reverse-chronological order
+- Each bulletsByRole entry MUST include company, title, start, end fields copied VERBATIM from the resume text — do not rephrase, abbreviate, or correct these
+- education MUST contain ALL education entries with verbatim school/degree names and years
 - NEVER reduce the number of bullets per role — always match or exceed the original count
 - Skills section may ONLY include: skills from the resume + skills from the job description. No invented skills.
 
@@ -173,7 +176,7 @@ PROMPT VERSION: ${PROMPT_VERSION}${isRetry ? "\n\nThis is a RETRY. Please be con
 // ── QA system prompt for Haiku ──
 
 export const QA_SYSTEM_PROMPT =
-  "You are a factual accuracy checker. Compare resume fields against the original text and report corrections. Only flag real factual errors — do not flag improvements or rephrasing.";
+  "You are a factual accuracy checker for AI-extracted resume data. Your job is to verify that every company name, job title, employment date, school name, degree, and graduation year was extracted EXACTLY as written in the original resume text. Flag corrections for: misspelled names, wrong dates, missing roles, hallucinated roles, missing education entries. Do NOT flag improvements to bullet wording or rephrasing — only flag factual extraction errors.";
 
 // ── Mock/fallback cover letter template ──
 

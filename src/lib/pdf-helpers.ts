@@ -409,7 +409,13 @@ function drawBlockerCard(
   const whyLines = pdf.splitTextToSize(blocker.why, contentWidth - cardPadding * 2 - 4);
   const howLines = pdf.splitTextToSize(blocker.how, contentWidth - cardPadding * 2 - 4);
   let estimatedHeight = 18 + whyLines.length * 3.5 + howLines.length * 3.5;
-  if (blocker.beforeAfter) estimatedHeight += 20;
+  if (blocker.beforeAfter) {
+    const innerWidth = contentWidth - cardPadding * 2 - 4;
+    const bLines = pdf.splitTextToSize(blocker.beforeAfter.before, innerWidth);
+    const aLines = pdf.splitTextToSize(blocker.beforeAfter.after, innerWidth);
+    // 2 (gap) + 3 (BEFORE label) + bLines*3 + 1 (gap) + 3 (AFTER label) + aLines*3
+    estimatedHeight += 2 + 3 + bLines.length * 3 + 1 + 3 + aLines.length * 3;
+  }
 
   checkPageBreak(ctx, estimatedHeight + 4);
 

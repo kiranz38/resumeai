@@ -332,7 +332,7 @@ function buildBlocker(
           ? {
               beforeAfter: {
                 before: sample,
-                after: `${sample.replace(/\.$/, "")}, resulting in [X]% improvement in [key metric]`,
+                after: `${sample.replace(/\.$/, "")}, reducing turnaround time by 30% and improving team throughput`,
               },
             }
           : {}),

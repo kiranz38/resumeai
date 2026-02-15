@@ -60,7 +60,7 @@ export default function ResumeUploader({
   // File already uploaded — show success state
   if (fileName) {
     return (
-      <div className="relative overflow-hidden rounded-2xl border-2 border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 p-8">
+      <div className="relative overflow-hidden rounded-2xl border-2 border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 p-5 sm:p-8">
         <div className="relative z-10 text-center">
           {/* Animated checkmark */}
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
@@ -112,18 +112,18 @@ export default function ResumeUploader({
         }}
       />
 
-      <label className="relative z-10 flex cursor-pointer flex-col items-center px-8 py-12">
+      <label className="relative z-10 flex cursor-pointer flex-col items-center px-4 py-8 sm:px-8 sm:py-12">
         {/* Upload icon with animated ring */}
-        <div className="relative mb-5">
+        <div className="relative mb-4 sm:mb-5">
           <div
-            className={`flex h-20 w-20 items-center justify-center rounded-2xl transition-all duration-300 ${
+            className={`flex h-14 w-14 sm:h-20 sm:w-20 items-center justify-center rounded-2xl transition-all duration-300 ${
               isDragging
                 ? "bg-blue-100 shadow-lg shadow-blue-200/50"
                 : "bg-white shadow-sm group-hover:bg-blue-50 group-hover:shadow-md group-hover:shadow-blue-100/50"
             }`}
           >
             <svg
-              className={`h-10 w-10 transition-all duration-300 ${
+              className={`h-7 w-7 sm:h-10 sm:w-10 transition-all duration-300 ${
                 isDragging
                   ? "scale-110 text-blue-600"
                   : "text-gray-400 group-hover:scale-105 group-hover:text-blue-500"
@@ -185,7 +185,7 @@ export default function ResumeUploader({
       </label>
 
       {/* Switch to paste link */}
-      <div className="border-t border-gray-100 px-8 py-3 text-center">
+      <div className="border-t border-gray-100 px-4 py-3 text-center sm:px-8">
         <button
           type="button"
           onClick={(e) => {

@@ -63,6 +63,7 @@ export const ROUTE_BUDGETS: Record<string, RouteBudget> = {
   "email-pro":    { capacity: 3,  refillRate: 0.001, windowMs: 3_600_000,  windowMax: 3 },   // 3/hour
   "send-report":  { capacity: 3,  refillRate: 0.001, windowMs: 3_600_000,  windowMax: 3 },   // 3/hour
   export:         { capacity: 30, refillRate: 0.01,  windowMs: 86_400_000, windowMax: 30 },  // 30/day
+  jobs:           { capacity: 30, refillRate: 0.5,   windowMs: 3_600_000,  windowMax: 60 },  // 60/hour
 };
 
 export interface RateLimitResult {

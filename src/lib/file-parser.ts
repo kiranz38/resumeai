@@ -23,16 +23,31 @@ async function extractFromPDF(file: File): Promise<string> {
   // Dynamic import to keep bundle small
   const pdfjsLib = await import("pdfjs-dist");
 
-  // Set worker source
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+  // Use local worker from public/ directory — avoids CDN availability issues
+  // (Cloudflare CDN doesn't carry pdfjs-dist v5.x; local copy always matches installed version)
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
 
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
   const pages: string[] = [];
+  const hiddenLinks = new Set<string>();
+
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);
     const textContent = await page.getTextContent();
+
+    // Extract hidden hyperlinks from PDF annotations
+    try {
+      const annotations = await page.getAnnotations();
+      for (const annot of annotations) {
+        if (annot.subtype === "Link" && annot.url) {
+          hiddenLinks.add(annot.url);
+        }
+      }
+    } catch {
+      // Annotation extraction is best-effort
+    }
 
     // Preserve line breaks by detecting y-coordinate changes between text items.
     // PDF.js returns text runs with transform matrices — transform[5] is the
@@ -74,14 +89,43 @@ async function extractFromPDF(file: File): Promise<string> {
     pages.push(lines.join("\n"));
   }
 
-  return pages.join("\n\n").trim();
+  let text = pages.join("\n\n").trim();
+
+  // Append hidden links as a special section for the resume parser
+  if (hiddenLinks.size > 0) {
+    text += "\n\n[LINKS]\n" + Array.from(hiddenLinks).join("\n");
+  }
+
+  return text;
 }
 
 async function extractFromDOCX(file: File): Promise<string> {
   const mammoth = await import("mammoth");
   const arrayBuffer = await file.arrayBuffer();
+
+  // Extract hyperlinks by converting to HTML first, then strip tags for plain text
+  const hiddenLinks = new Set<string>();
+  try {
+    const htmlResult = await mammoth.convertToHtml({ arrayBuffer });
+    const hrefMatches = htmlResult.value.matchAll(/href="([^"]+)"/g);
+    for (const match of hrefMatches) {
+      const url = match[1];
+      if (url.startsWith("http://") || url.startsWith("https://")) {
+        hiddenLinks.add(url);
+      }
+    }
+  } catch {
+    // HTML extraction is best-effort
+  }
+
   const result = await mammoth.extractRawText({ arrayBuffer });
-  return result.value.trim();
+  let text = result.value.trim();
+
+  if (hiddenLinks.size > 0) {
+    text += "\n\n[LINKS]\n" + Array.from(hiddenLinks).join("\n");
+  }
+
+  return text;
 }
 
 async function extractFromTXT(file: File): Promise<string> {

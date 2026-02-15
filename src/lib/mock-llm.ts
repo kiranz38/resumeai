@@ -269,7 +269,8 @@ function generateTailoredResume(
   const skills = buildSkillGroups(candidate, job, strategy);
 
   // Build structured experience — preserve ALL original bullets and add extras
-  const experience = candidate.experience.map((exp) => {
+  // Filter out entries where both company and title are empty (stray parsed lines)
+  const experience = candidate.experience.filter((exp) => exp.company || exp.title || exp.bullets.length > 0).map((exp) => {
     const improved = exp.bullets.map((b) => {
       const signals = analyzeBullet(b);
       return strategy.rewriteBullet(b, signals);
@@ -330,6 +331,7 @@ function generateTailoredResume(
     email: candidate.email || undefined,
     phone: candidate.phone || undefined,
     location: candidate.location || undefined,
+    links: candidate.links || undefined,
   };
 }
 

@@ -33,11 +33,12 @@ interface JobBoardProps {
 
 const MAX_BULK_SELECT = 5;
 const DEFAULT_QUERY = "hiring";
+const JOBS_PER_PAGE = 10;
 
 // Simple in-memory cache for search results
 const searchCache = new Map<
   string,
-  { data: JobListing[]; totalPages: number; ts: number }
+  { data: JobListing[]; totalPages: number; source: string; ts: number }
 >();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes client-side
 
@@ -46,6 +47,13 @@ function getCachedResults(key: string) {
   if (cached && Date.now() - cached.ts < CACHE_TTL) return cached;
   return null;
 }
+
+// Module-level memoization caches for stripHtml and match scores
+const strippedHtmlCache = new Map<string, string>();
+const MAX_STRIPPED_CACHE = 500;
+
+const matchScoreCache = new Map<string, number>();
+const MAX_SCORE_CACHE = 500;
 
 function formatSalary(job: JobListing): string | null {
   if (!job.job_min_salary && !job.job_max_salary) return null;
@@ -74,24 +82,58 @@ function timeAgo(dateStr: string): string {
 const DEBOUNCE_MS = 400;
 const MIN_QUERY_LENGTH = 3;
 
-/** Strip HTML tags and decode entities to plain text */
+/** Strip HTML tags and decode entities to plain text (safe — no innerHTML) */
 function stripHtml(html: string): string {
-  if (typeof document !== "undefined") {
-    const div = document.createElement("div");
-    div.innerHTML = html;
-    return (div.textContent || div.innerText || "").trim();
-  }
-  // SSR fallback: regex strip
-  return html
+  const cached = strippedHtmlCache.get(html);
+  if (cached !== undefined) return cached;
+
+  const result = html
     .replace(/<[^>]*>/g, "\n")
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
+    .replace(/&#x27;/g, "'")
     .replace(/&nbsp;/g, " ")
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
     .replace(/\n{3,}/g, "\n\n")
     .trim();
+
+  if (strippedHtmlCache.size >= MAX_STRIPPED_CACHE) {
+    // Evict oldest entry
+    const firstKey = strippedHtmlCache.keys().next().value;
+    if (firstKey !== undefined) strippedHtmlCache.delete(firstKey);
+  }
+  strippedHtmlCache.set(html, result);
+  return result;
+}
+
+/** Cached match score lookup */
+function getCachedMatchScore(resumeText: string, jobId: string, jobDescription: string): number {
+  const cacheKey = `${jobId}|${resumeText.length}`;
+  const cached = matchScoreCache.get(cacheKey);
+  if (cached !== undefined) return cached;
+
+  const score = quickMatchScore(resumeText, stripHtml(jobDescription));
+
+  if (matchScoreCache.size >= MAX_SCORE_CACHE) {
+    const firstKey = matchScoreCache.keys().next().value;
+    if (firstKey !== undefined) matchScoreCache.delete(firstKey);
+  }
+  matchScoreCache.set(cacheKey, score);
+  return score;
+}
+
+/** Deduplicate jobs by normalized title + employer (client-side safety net) */
+function deduplicateJobs(jobs: JobWithScore[]): JobWithScore[] {
+  const seen = new Set<string>();
+  return jobs.filter((j) => {
+    const key = `${j.job_title.toLowerCase().trim()}|${j.employer_name.toLowerCase().trim()}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 export default function JobBoard({ onSelectJob, onBulkGenerate, resumeText }: JobBoardProps) {
@@ -109,6 +151,10 @@ export default function JobBoard({ onSelectJob, onBulkGenerate, resumeText }: Jo
   const abortRef = useRef<AbortController | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Source tracking for client-side vs server-side pagination
+  const [source, setSource] = useState<string>("jsearch");
+  const [allClientJobs, setAllClientJobs] = useState<JobListing[]>([]);
+
   // Low-match permission dialog state
   const [lowMatchDialog, setLowMatchDialog] = useState<{
     jobTitle: string;
@@ -118,26 +164,38 @@ export default function JobBoard({ onSelectJob, onBulkGenerate, resumeText }: Jo
     onProceed: () => void;
   } | null>(null);
 
-  // ── Sorted jobs with match scores ──
-  const sortedJobs = useMemo<JobWithScore[]>(() => {
-    const source = isDefaultView ? defaultJobs : jobs;
-    if (!source.length) return [];
+  // ── Visible jobs for current page (client-paginated sources) ──
+  const visibleJobs = useMemo<JobListing[]>(() => {
+    if (source === "jsearch" || isDefaultView) {
+      return isDefaultView ? defaultJobs : jobs;
+    }
+    // Client-side pagination for LinkedIn/Remotive
+    const start = (page - 1) * JOBS_PER_PAGE;
+    return allClientJobs.slice(start, start + JOBS_PER_PAGE);
+  }, [source, isDefaultView, defaultJobs, jobs, allClientJobs, page]);
 
-    const withScores: JobWithScore[] = source.map((job) => ({
+  // ── Sorted jobs with match scores + dedup ──
+  const sortedJobs = useMemo<JobWithScore[]>(() => {
+    if (!visibleJobs.length) return [];
+
+    const withScores: JobWithScore[] = visibleJobs.map((job) => ({
       ...job,
       matchScore: resumeText
-        ? quickMatchScore(resumeText, stripHtml(job.job_description))
+        ? getCachedMatchScore(resumeText, job.job_id, job.job_description)
         : undefined,
     }));
 
+    // Deduplicate as client-side safety net
+    const deduped = deduplicateJobs(withScores);
+
     if (resumeText) {
       // Sort by match score descending — best matches first
-      return withScores.sort((a, b) => (b.matchScore ?? 0) - (a.matchScore ?? 0));
+      return deduped.sort((a, b) => (b.matchScore ?? 0) - (a.matchScore ?? 0));
     }
 
     // No resume → sort alphabetically by job title
-    return withScores.sort((a, b) => a.job_title.localeCompare(b.job_title));
-  }, [isDefaultView, defaultJobs, jobs, resumeText]);
+    return deduped.sort((a, b) => a.job_title.localeCompare(b.job_title));
+  }, [visibleJobs, resumeText]);
 
   const toggleSelect = useCallback((jobId: string) => {
     setSelectedIds((prev) => {
@@ -226,8 +284,16 @@ export default function JobBoard({ onSelectJob, onBulkGenerate, resumeText }: Jo
       const cacheKey = `${q}|${ctry}|${searchPage}`;
       const cached = getCachedResults(cacheKey);
       if (cached) {
-        setJobs(cached.data);
-        setTotalPages(cached.totalPages);
+        const src = cached.source || "jsearch";
+        setSource(src);
+        if (src !== "jsearch") {
+          setAllClientJobs(cached.data);
+          setJobs(cached.data.slice(0, JOBS_PER_PAGE));
+          setTotalPages(cached.totalPages);
+        } else {
+          setJobs(cached.data);
+          setTotalPages(cached.totalPages);
+        }
         setPage(searchPage);
         setHasSearched(true);
         setIsLoading(false);
@@ -259,14 +325,27 @@ export default function JobBoard({ onSelectJob, onBulkGenerate, resumeText }: Jo
         }
 
         const data = await response.json();
-        setJobs(data.jobs || []);
-        setTotalPages(data.totalPages || 0);
+        const src = data.source || "jsearch";
+        const allJobs = data.jobs || [];
+
+        setSource(src);
+
+        if (src !== "jsearch") {
+          // Client-side pagination: store all results, show first page
+          setAllClientJobs(allJobs);
+          setJobs(allJobs.slice(0, JOBS_PER_PAGE));
+          setTotalPages(data.totalPages || Math.ceil(allJobs.length / JOBS_PER_PAGE));
+        } else {
+          setJobs(allJobs);
+          setTotalPages(data.totalPages || 0);
+        }
         setPage(searchPage);
 
         // Cache result
         searchCache.set(cacheKey, {
-          data: data.jobs || [],
-          totalPages: data.totalPages || 0,
+          data: allJobs,
+          totalPages: data.totalPages || Math.ceil(allJobs.length / JOBS_PER_PAGE),
+          source: src,
           ts: Date.now(),
         });
       } catch (err) {
@@ -301,6 +380,7 @@ export default function JobBoard({ onSelectJob, onBulkGenerate, resumeText }: Jo
           const data = await response.json();
           setDefaultJobs(data.jobs || []);
           setTotalPages(data.totalPages || 0);
+          setSource(data.source || "jsearch");
         }
       } catch {
         // Silent fail for defaults — user can still search manually
@@ -313,6 +393,7 @@ export default function JobBoard({ onSelectJob, onBulkGenerate, resumeText }: Jo
     setIsDefaultView(true);
     setHasSearched(false);
     setJobs([]);
+    setAllClientJobs([]);
     setQuery("");
     loadDefaults();
 
@@ -358,9 +439,15 @@ export default function JobBoard({ onSelectJob, onBulkGenerate, resumeText }: Jo
 
   const handlePageChange = useCallback(
     (newPage: number) => {
-      fetchJobs(query.trim(), country, newPage);
+      if (source !== "jsearch") {
+        // Client-side pagination — just update page, visibleJobs recalculates
+        setPage(newPage);
+      } else {
+        // Server-side pagination for JSearch
+        fetchJobs(query.trim(), country, newPage);
+      }
     },
-    [fetchJobs, query, country],
+    [fetchJobs, query, country, source],
   );
 
   // Memoize the country options to avoid re-rendering
@@ -376,14 +463,14 @@ export default function JobBoard({ onSelectJob, onBulkGenerate, resumeText }: Jo
 
   const showJobs = sortedJobs.length > 0;
   const showEmptyDefault = isDefaultView && defaultJobs.length === 0 && !isLoading;
-  const showNoResults = !isDefaultView && hasSearched && !isLoading && jobs.length === 0;
+  const showNoResults = !isDefaultView && hasSearched && !isLoading && jobs.length === 0 && allClientJobs.length === 0;
 
   return (
     <div className="relative pb-20">
-      <div className="mb-6 flex items-start justify-between gap-4">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Job Board</h1>
-          <p className="mt-1 text-gray-500">
+          <p className="mt-1 text-sm text-gray-500 sm:text-base">
             Search real jobs, then analyze your CV match or select multiple to bulk generate tailored CVs.
           </p>
         </div>
@@ -412,7 +499,7 @@ export default function JobBoard({ onSelectJob, onBulkGenerate, resumeText }: Jo
       </div>
 
       {/* Search form */}
-      <form onSubmit={handleSubmit} className="mb-6 flex gap-3">
+      <form onSubmit={handleSubmit} className="mb-6 flex flex-col gap-3 sm:flex-row">
         <div className="relative flex-1">
           <svg
             className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
@@ -587,7 +674,8 @@ export default function JobBoard({ onSelectJob, onBulkGenerate, resumeText }: Jo
                   : "border-gray-200 hover:border-blue-200"
               }`}
             >
-              <div className="flex gap-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
+                <div className="flex flex-1 min-w-0 gap-3 sm:gap-4">
                 {/* Checkbox for multi-select */}
                 {onBulkGenerate && (
                   <div className="flex flex-shrink-0 items-start pt-1">
@@ -629,7 +717,7 @@ export default function JobBoard({ onSelectJob, onBulkGenerate, resumeText }: Jo
                 </div>
 
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="truncate font-semibold text-gray-900">
                       {job.job_title}
                     </h3>
@@ -669,9 +757,10 @@ export default function JobBoard({ onSelectJob, onBulkGenerate, resumeText }: Jo
                     )}
                   </div>
                 </div>
+                </div>
 
                 {/* Primary CTA */}
-                <div className="flex flex-shrink-0 items-center">
+                <div className="flex flex-shrink-0 items-center sm:self-center self-end">
                   <button
                     onClick={() => handleQuickAnalyze(job)}
                     className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700"
@@ -723,31 +812,31 @@ export default function JobBoard({ onSelectJob, onBulkGenerate, resumeText }: Jo
 
       {/* ── Floating Bulk Generate Bar (bottom) ── */}
       {onBulkGenerate && selectedIds.size > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-white/95 px-4 py-3 shadow-lg backdrop-blur-sm">
-          <div className="mx-auto flex max-w-4xl items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-sm font-bold text-blue-700">
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-white/95 px-3 py-2.5 shadow-lg backdrop-blur-sm sm:px-4 sm:py-3">
+          <div className="mx-auto flex max-w-4xl items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+              <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700 sm:h-8 sm:w-8 sm:text-sm">
                 {selectedIds.size}
               </div>
-              <div>
-                <p className="text-sm font-medium text-gray-900">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-gray-900">
                   {selectedIds.size} job{selectedIds.size !== 1 ? "s" : ""} selected
                 </p>
-                <p className="text-xs text-gray-500">
+                <p className="hidden text-xs text-gray-500 sm:block">
                   A tailored CV will be generated for each
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-shrink-0 items-center gap-2 sm:gap-3">
               <button
                 onClick={clearSelection}
-                className="text-sm text-gray-500 hover:text-gray-700"
+                className="text-xs text-gray-500 hover:text-gray-700 sm:text-sm"
               >
                 Clear
               </button>
               <button
                 onClick={handleBulkGenerate}
-                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 sm:gap-2 sm:px-5 sm:py-2.5 sm:text-sm"
               >
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />

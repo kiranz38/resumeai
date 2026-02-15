@@ -7,6 +7,7 @@ export interface CandidateProfile {
   email?: string;
   phone?: string;
   location?: string;
+  links?: string[];
   skills: string[];
   experience: ExperienceEntry[];
   education: EducationEntry[];

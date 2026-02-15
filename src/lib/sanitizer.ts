@@ -5,6 +5,32 @@
 
 import { z } from "zod";
 
+// ── Client-safe input validators (also usable in components) ──
+
+/** Token format: base64url characters with dots, max 2KB */
+const TOKEN_RE = /^[A-Za-z0-9._-]+$/;
+const MAX_TOKEN_LEN = 2048;
+
+/** Validate that a string looks like a valid entitlement token (safe to store) */
+export function isValidTokenFormat(token: string): boolean {
+  return (
+    typeof token === "string" &&
+    token.length > 0 &&
+    token.length <= MAX_TOKEN_LEN &&
+    TOKEN_RE.test(token)
+  );
+}
+
+/** Validate a plan string against allowed values */
+export function isValidPlan(plan: string): boolean {
+  return plan === "pro" || plan === "pass";
+}
+
+/** Strip control characters from a URL search param value */
+export function sanitizeParam(value: string): string {
+  return value.replace(/[\x00-\x1f\x7f]/g, "").trim();
+}
+
 // ── Text sanitization ──
 
 /**
@@ -100,7 +126,8 @@ export const EmailProRequestSchema = z.object({
     .string()
     .min(1, "Email is required.")
     .max(320, "Email is too long.")
-    .email("Valid email address is required."),
+    .email("Valid email address is required.")
+    .refine((v) => !/[\x00-\x1f\x7f]/.test(v), "Email contains invalid characters."),
   proOutput: z.record(z.string(), z.unknown()), // Validated separately with ProOutputSchema
   stripeSessionId: z.string().optional(),
 });

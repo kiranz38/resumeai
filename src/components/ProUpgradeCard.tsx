@@ -4,6 +4,15 @@ import { useState } from "react";
 import { PRO_PRICE_DISPLAY } from "@/lib/constants";
 import { trackEvent } from "@/lib/analytics";
 
+/** Trusted domains for checkout redirects */
+const TRUSTED_REDIRECT_HOSTS = new Set(["checkout.stripe.com", "pay.stripe.com"]);
+
+function isSafeRedirect(url: string): boolean {
+  if (url.startsWith("/")) return true;
+  try { return TRUSTED_REDIRECT_HOSTS.has(new URL(url).hostname); }
+  catch { return false; }
+}
+
 interface ProUpgradeCardProps {
   onUpgrade?: () => void;
 }
@@ -59,8 +68,8 @@ export default function ProUpgradeCard({ onUpgrade }: ProUpgradeCardProps) {
         // Dev mode: store token and redirect directly
         sessionStorage.setItem("rt_entitlement_token", data.token);
         sessionStorage.setItem("rt_entitlement_plan", "pro");
-        window.location.href = data.url;
-      } else if (data.url) {
+        if (isSafeRedirect(data.url)) window.location.href = data.url;
+      } else if (data.url && isSafeRedirect(data.url)) {
         // Production: redirect to Stripe checkout
         window.location.href = data.url;
       }

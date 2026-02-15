@@ -5,17 +5,21 @@ import type { CandidateProfile, ExperienceEntry, EducationEntry, ProjectEntry } 
  * Uses heuristic section detection and pattern matching.
  */
 export function parseResume(text: string): CandidateProfile {
-  const lines = text.split(/\r?\n/).map((l) => l.trim());
+  // Strip [LINKS] section before parsing, but extract hidden links from it
+  const { mainText, hiddenLinks } = stripLinksSection(text);
+
+  const lines = mainText.split(/\r?\n/).map((l) => l.trim());
   const sections = detectSections(lines);
 
   const name = extractName(lines);
-  const contactInfo = extractContactInfo(text);
+  const contactInfo = extractContactInfo(mainText);
   const headline = extractHeadline(lines, name);
   const summary = extractSection(sections, ["summary", "objective", "profile", "about"]);
-  const skills = extractSkills(sections, text);
+  const skills = extractSkills(sections, mainText);
   const experience = extractExperience(sections);
   const education = extractEducation(sections);
   const projects = extractProjects(sections);
+  const links = extractLinks(mainText, hiddenLinks);
 
   return {
     name: name || undefined,
@@ -24,6 +28,7 @@ export function parseResume(text: string): CandidateProfile {
     email: contactInfo.email || undefined,
     phone: contactInfo.phone || undefined,
     location: contactInfo.location || undefined,
+    links: links.length > 0 ? links : undefined,
     skills,
     experience,
     education,
@@ -98,6 +103,11 @@ function isLikelySectionHeader(line: string, normalized: string): boolean {
   if (/\b(19|20)\d{2}\b/.test(line)) return false;
   if (/\b(present|current)\b/i.test(line)) return false;
 
+  // Sub-headings within experience — never top-level sections
+  const stripped = line.replace(/[^a-zA-Z\s]/g, "").trim().toLowerCase();
+  if (/^roles?\s*(and|&)?\s*responsibilities$/i.test(stripped)) return false;
+  if (/^key\s*responsibilities$/i.test(stripped)) return false;
+
   // All caps short line likely a section header
   if (line === line.toUpperCase() && line.length < 40 && line.length > 2 && /^[A-Z\s&]+$/.test(line)) {
     return true;
@@ -139,12 +149,29 @@ function extractName(lines: string[]): string | null {
 
 function extractContactInfo(text: string): { email?: string; phone?: string; location?: string } {
   const emailMatch = text.match(/[\w.+-]+@[\w-]+\.[\w.]+/);
-  const phoneMatch = text.match(/(?:\+?\d{1,3}[\s-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/);
-
   // Location patterns: "City, ST" or "City, State" — only match near the top (first 500 chars)
   const headerArea = text.slice(0, 500);
+
+  // Phone: try patterns in specificity order on header area to avoid false positives
+  const phonePatterns = [
+    // UK: +44 7700 900000, 07700 900000, +44 (0) 20 7946 0958
+    /(?:\+44[\s.-]?(?:\(0\)[\s.-]?)?|0)(?:\d[\s.-]?){9,10}\d/,
+    // AU: +61 412 345 678, 0412 345 678, (02) 1234 5678
+    /(?:\+61[\s.-]?|0)[2-478](?:[\s.-]?\d){8}/,
+    // NZ: +64 21 123 4567, 021 123 4567
+    /(?:\+64[\s.-]?|0)[2-9](?:[\s.-]?\d){7,8}/,
+    // General international fallback: +<country> then 7-12 digits with optional separators
+    /\+\d{1,3}[\s.-]?\(?\d{1,4}\)?(?:[\s.-]?\d){5,9}\d/,
+    // US/CA: (555) 123-4567, +1 555-123-4567
+    /(?:\+?1[\s-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/,
+  ];
+  let phoneMatch: RegExpMatchArray | null = null;
+  for (const pattern of phonePatterns) {
+    phoneMatch = headerArea.match(pattern);
+    if (phoneMatch) break;
+  }
   const locationMatch = headerArea.match(
-    /(?:^|\||\n)\s*([A-Z][a-zA-Z\s]+,\s*(?:[A-Z]{2,3}|Australia|NSW|VIC|QLD|SA|WA|TAS|ACT|NT)(?:\s+\d{4,5})?)\s*(?:\||$|\n)/m
+    /(?:^|\||\n)\s*([A-Z][a-zA-Z ]+,\s*(?:[A-Z]{2,3}|Australia|NSW|VIC|QLD|SA|WA|TAS|ACT|NT|UK|United Kingdom|England|Scotland|Wales|Northern Ireland|Canada|Ontario|Quebec|British Columbia|Alberta|Manitoba|Saskatchewan|Nova Scotia|New Brunswick|Newfoundland|New Zealand|Ireland)(?:\s+\d{4,5})?)\s*(?:\||$|\n)/m
   );
 
   return {
@@ -245,6 +272,14 @@ function extractSkills(sections: SectionMap, fullText: string): string[] {
   return Array.from(skills);
 }
 
+function isFragmentBullet(bullet: string): boolean {
+  // Too short to be a meaningful bullet
+  if (bullet.length < 20) return true;
+  // Ends with a dangling preposition/conjunction/article — clearly truncated
+  if (/\s+(and|or|the|a|an|to|of|in|for|with|by|at|from|as|on|into|via)\s*$/i.test(bullet)) return true;
+  return false;
+}
+
 function extractExperience(sections: SectionMap): ExperienceEntry[] {
   const entries: ExperienceEntry[] = [];
   const expKeys = ["experience", "work experience", "professional experience", "employment", "employment history", "work history"];
@@ -260,12 +295,65 @@ function extractExperience(sections: SectionMap): ExperienceEntry[] {
     }
   }
 
+  // Secondary pass: find position entries scattered in non-experience sections.
+  // Multi-column PDFs often interleave sidebar headers (Details, Skills, Hobbies)
+  // into the experience text, pushing remaining entries into wrong sections.
+  const skipSections = new Set(["education", "certifications", "certificates"]);
+  for (const sectionKey of Object.keys(sections)) {
+    if (matchedSections.has(sectionKey)) continue;
+    if (skipSections.has(sectionKey.toLowerCase())) continue;
+
+    const sectionLines = sections[sectionKey];
+    let firstPositionIdx = -1;
+    for (let j = 0; j < sectionLines.length; j++) {
+      if (parsePositionLine(sectionLines[j])) {
+        firstPositionIdx = j;
+        break;
+      }
+    }
+    if (firstPositionIdx >= 0) {
+      expLines.push(...sectionLines.slice(firstPositionIdx));
+    }
+  }
+
   if (expLines.length === 0) return entries;
 
+  // Pre-process: join lines split at connectors by PDF column breaks.
+  // e.g. "Senior Engineer at Robert Bosch Engineering and" + "Business Solutions, Bengaluru"
+  for (let i = 0; i < expLines.length - 1; i++) {
+    if (/\s+(and|or|&)\s*$/i.test(expLines[i]) && expLines[i].length < 120) {
+      const next = expLines[i + 1];
+      if (!next || next.length < 3) continue;
+      // Don't join across entry boundaries (dates, Project/Company labels, bullet markers)
+      if (/^(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|\d{4})\b/i.test(next)) continue;
+      if (/^(Project|Company|Education|Skills|Experience)\s*:/i.test(next)) continue;
+      if (/^[•·●▪◦*]\s/.test(next)) continue;
+      expLines[i] = expLines[i].trimEnd() + " " + next.trimStart();
+      expLines.splice(i + 1, 1);
+      i--; // re-check merged line
+    }
+  }
+
   let currentEntry: ExperienceEntry | null = null;
+  let pendingProjectName: string | null = null;
 
   for (const line of expLines) {
     if (!line) continue;
+
+    // Skip sub-heading labels (Roles and responsibilities:, etc.)
+    if (/^(roles?\s*(and|&)?\s*responsibilities|key\s*responsibilities)\s*:?\s*$/i.test(line)) continue;
+
+    // "Project:" line — set on current entry or save for next
+    if (/^Project:\s*/i.test(line)) {
+      const projectName = line.replace(/^Project:\s*/i, "").trim();
+      if (currentEntry && !currentEntry.company) {
+        currentEntry.company = projectName;
+      } else if (!currentEntry) {
+        pendingProjectName = projectName;
+      }
+      // If currentEntry already has a company, project is supplementary context — skip
+      continue;
+    }
 
     // Check if this is a new position header
     const positionMatch = parsePositionLine(line);
@@ -274,30 +362,108 @@ function extractExperience(sections: SectionMap): ExperienceEntry[] {
         entries.push(currentEntry);
       }
       currentEntry = positionMatch;
+      pendingProjectName = null;
       continue;
     }
 
-    // Check if it's a date line for current entry
-    if (currentEntry && !currentEntry.start) {
+    // "Company:" line — update current entry's company (don't create a new entry)
+    if (/^Company:\s*/i.test(line)) {
+      const companyName = line.replace(/^Company:\s*/i, "").trim();
+      if (currentEntry) {
+        currentEntry.company = companyName;
+      } else {
+        currentEntry = { company: companyName, bullets: [] };
+      }
+      continue;
+    }
+
+    // Standalone date line (starts with month/year, short) — indicates entry boundary
+    // Skip bare year numbers that are likely version numbers (e.g., "2008" from "SQL Server 2008")
+    // A real date line has a month name or a year range with separator
+    const startsWithYear = /^\d{4}\b/.test(line);
+    const hasMonthOrRange = /^(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\b/i.test(line) || /\d{4}\s*[–\-—to]+\s*\w/i.test(line);
+    const isPureDateLine = (hasMonthOrRange || (startsWithYear && /[–\-—]/.test(line))) && line.length < 60;
+    if (isPureDateLine) {
       const dateMatch = extractDates(line);
       if (dateMatch.start) {
-        currentEntry.start = dateMatch.start;
-        currentEntry.end = dateMatch.end;
+        if (currentEntry && !currentEntry.start) {
+          currentEntry.start = dateMatch.start;
+          currentEntry.end = dateMatch.end;
+        } else {
+          // Current entry already has dates or no entry → new entry
+          if (currentEntry) entries.push(currentEntry);
+          // Only use pendingProjectName for the very first entry (before any position header)
+          const useProject = entries.length === 0 && !currentEntry && pendingProjectName;
+          currentEntry = {
+            company: useProject ? pendingProjectName || undefined : undefined,
+            start: dateMatch.start,
+            end: dateMatch.end,
+            bullets: [],
+          };
+          pendingProjectName = null;
+        }
         continue;
       }
     }
 
-    // Otherwise it's a bullet point
-    if (currentEntry) {
-      const bullet = line.replace(/^[•·●▪◦\-–—*]\s*/, "").trim();
-      if (bullet && bullet.length > 5) {
-        currentEntry.bullets.push(bullet);
+    // Bullet point or content line
+    const bullet = line.replace(/^[•·●▪◦\-–—*]\s*/, "").trim();
+    if (bullet && bullet.length > 5) {
+      if (currentEntry) {
+        const prevBullet = currentEntry.bullets.length > 0 ? currentEntry.bullets[currentEntry.bullets.length - 1] : null;
+        // Detect continuation lines: lowercase start or previous bullet ends with comma
+        const isContinuation = prevBullet && (
+          (/^[a-z]/.test(bullet) && !/[.!?]\s*$/.test(prevBullet)) ||
+          /,\s*$/.test(prevBullet)
+        );
+        if (isContinuation) {
+          // Merge with previous bullet — PDF wrapped the line
+          currentEntry.bullets[currentEntry.bullets.length - 1] = prevBullet + " " + bullet;
+        } else if (!isFragmentBullet(bullet)) {
+          currentEntry.bullets.push(bullet);
+        }
       }
     }
   }
 
   if (currentEntry) {
     entries.push(currentEntry);
+  }
+
+  // Post-process: merge bullet-less entries into adjacent entries when they
+  // look like a title line for the previous role (common in multi-column PDFs
+  // where the title appears after the bullets).
+  for (let i = entries.length - 1; i > 0; i--) {
+    const entry = entries[i];
+    const prev = entries[i - 1];
+    if (entry.bullets.length === 0 && !entry.start && prev.bullets.length > 0) {
+      // This entry has no bullets and no dates — likely a title for the previous entry
+      if (!prev.title && entry.title) {
+        prev.title = entry.title;
+      }
+      if (!prev.company && entry.company) {
+        prev.company = entry.company;
+      }
+      entries.splice(i, 1);
+    }
+  }
+
+  // Post-process: merge entries that have NO title AND NO company into the
+  // previous entry. These are orphan date+bullet entries created by
+  // multi-column PDF interleaving (e.g. "2008 – Present" with no heading).
+  for (let i = entries.length - 1; i > 0; i--) {
+    const entry = entries[i];
+    const prev = entries[i - 1];
+    if (!entry.title && !entry.company && entry.bullets.length > 0) {
+      // Absorb bullets into previous entry
+      prev.bullets.push(...entry.bullets);
+      // If prev has no dates but this orphan does, adopt them
+      if (!prev.start && entry.start) {
+        prev.start = entry.start;
+        prev.end = entry.end;
+      }
+      entries.splice(i, 1);
+    }
   }
 
   return entries;
@@ -307,8 +473,15 @@ function parsePositionLine(line: string): ExperienceEntry | null {
   // Skip date-like lines — these are dates, not position headers
   if (/^(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\b/i.test(line)) return null;
   if (/^\d{4}\s*[-–—]/.test(line)) return null;
-  // Skip "Project:" and "Tools & Technologies:" lines — these are descriptions, not positions
+  // Skip "Project:" and "Tools & Technologies:" lines — handled as context in extractExperience
   if (/^(project|tools\s*&?\s*technologies)\s*:/i.test(line)) return null;
+  // Skip sub-heading labels
+  if (/^(roles?\s*(and|&)?\s*responsibilities|key\s*responsibilities)\s*:?\s*$/i.test(line)) return null;
+  // Skip lines that start with bullet markers — they're content, not position headers
+  if (/^[•·●▪◦*]\s/.test(line) || /^-\s/.test(line)) return null;
+
+  // "Company:" lines are handled in extractExperience (update, not create)
+  if (/^Company:\s*/i.test(line)) return null;
 
   // Pattern: "Title — Company (dates)" or "Title at Company" or "Company — Title"
 
@@ -320,16 +493,21 @@ function parsePositionLine(line: string): ExperienceEntry | null {
   const p2 = line.match(/^(.+?)\s*[—–\-|]\s*(.+?),\s*(\d{4}.*)$/);
   if (p2) return buildEntry(p2[1], p2[2], p2[3]);
 
-  // 3. "Senior Engineer at Acme Corp" — only if left side looks like a title
-  //    This avoids matching regular sentences containing " at "
+  // 3. "Senior Engineer at Acme Corp" or "Front End Dveloper at Conveyancing, Sydney"
   const atMatch = line.match(/^(.+?)\s+at\s+(.+)$/i);
-  if (atMatch && isLikelyTitle(atMatch[1].trim())) {
-    return buildEntry(atMatch[1], atMatch[2], undefined);
+  if (atMatch) {
+    const leftSide = atMatch[1].trim();
+    const rightSide = atMatch[2].trim();
+    // Match if left side contains a title word, OR if right side ends with a location (City)
+    if (isLikelyTitle(leftSide) || /,\s*[A-Z][a-zA-Z\s]+$/.test(rightSide)) {
+      return buildEntry(leftSide, rightSide, undefined);
+    }
   }
 
-  // 4. "Acme Corp — Senior Engineer" (only if short enough to be a header, not a sentence)
+  // 4. "Acme Corp — Senior Engineer" (em/en dash or pipe, or space-surrounded hyphen)
+  // Regular hyphens in compound words (single-page, cross-functional) are NOT separators
   if (line.length < 100) {
-    const p4 = line.match(/^(.+?)\s*[—–\-|]\s*(.+)$/);
+    const p4 = line.match(/^(.+?)\s*[—–|]\s*(.+)$/) || line.match(/^(.+?)\s+\-\s+(.+)$/);
     if (p4) return buildEntry(p4[1], p4[2], undefined);
   }
 
@@ -478,4 +656,89 @@ function extractProjects(sections: SectionMap): ProjectEntry[] {
 
   if (currentProject) entries.push(currentProject);
   return entries;
+}
+
+/**
+ * Strip the [LINKS] section appended by the file parser and return
+ * the main text plus any hidden URLs found in it.
+ */
+function stripLinksSection(text: string): { mainText: string; hiddenLinks: string[] } {
+  const marker = "\n[LINKS]\n";
+  const idx = text.indexOf(marker);
+  if (idx === -1) {
+    // Also check if text starts with [LINKS]
+    if (text.startsWith("[LINKS]\n")) {
+      const urls = text.slice("[LINKS]\n".length).split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+      return { mainText: "", hiddenLinks: urls };
+    }
+    return { mainText: text, hiddenLinks: [] };
+  }
+  const mainText = text.slice(0, idx);
+  const linksBlock = text.slice(idx + marker.length);
+  const urls = linksBlock.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  return { mainText, hiddenLinks: urls };
+}
+
+/**
+ * Extract links from resume text.
+ * 1. Merges hidden URLs from the [LINKS] section (PDF annotations / DOCX hyperlinks)
+ * 2. Scans the header area for visible URLs (LinkedIn, GitHub, general https/www)
+ * 3. Deduplicates and normalizes (lowercase domain, strip trailing slash)
+ */
+export function extractLinks(text: string, hiddenLinks: string[] = []): string[] {
+  const urls = new Set<string>();
+
+  // 1. Add hidden links
+  for (const link of hiddenLinks) {
+    urls.add(normalizeUrl(link));
+  }
+
+  // 2. Scan header area (first 1000 chars) for visible URLs
+  const headerArea = text.slice(0, 1000);
+
+  // LinkedIn: linkedin.com/in/<user>
+  const linkedinMatches = headerArea.matchAll(/(?:https?:\/\/)?(?:www\.)?linkedin\.com\/in\/[\w-]+/gi);
+  for (const m of linkedinMatches) {
+    urls.add(normalizeUrl(m[0]));
+  }
+
+  // GitHub: github.com/<user>
+  const githubMatches = headerArea.matchAll(/(?:https?:\/\/)?(?:www\.)?github\.com\/[\w-]+/gi);
+  for (const m of githubMatches) {
+    urls.add(normalizeUrl(m[0]));
+  }
+
+  // General URLs: https://... or http://...
+  const httpMatches = headerArea.matchAll(/https?:\/\/[^\s,|)>\]]+/gi);
+  for (const m of httpMatches) {
+    urls.add(normalizeUrl(m[0]));
+  }
+
+  // www-prefixed URLs without protocol
+  const wwwMatches = headerArea.matchAll(/(?<![/])www\.[^\s,|)>\]]+/gi);
+  for (const m of wwwMatches) {
+    urls.add(normalizeUrl(m[0]));
+  }
+
+  return Array.from(urls);
+}
+
+/**
+ * Normalize a URL: ensure protocol, lowercase domain, strip trailing slash.
+ */
+function normalizeUrl(raw: string): string {
+  let url = raw.trim();
+  // Add https:// if no protocol
+  if (!/^https?:\/\//i.test(url)) {
+    url = "https://" + url;
+  }
+  // Strip trailing slash
+  url = url.replace(/\/+$/, "");
+  // Lowercase the domain portion
+  try {
+    const parsed = new URL(url);
+    return parsed.origin.toLowerCase() + parsed.pathname + parsed.search + parsed.hash;
+  } catch {
+    return url;
+  }
 }

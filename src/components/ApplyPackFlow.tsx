@@ -7,6 +7,15 @@ import { trackEvent } from "@/lib/analytics";
 
 const isDev = process.env.NODE_ENV === "development";
 
+/** Trusted domains for checkout redirects */
+const TRUSTED_REDIRECT_HOSTS = new Set(["checkout.stripe.com", "pay.stripe.com"]);
+
+function isSafeRedirect(url: string): boolean {
+  if (url.startsWith("/")) return true;
+  try { return TRUSTED_REDIRECT_HOSTS.has(new URL(url).hostname); }
+  catch { return false; }
+}
+
 interface PackJob {
   id: string;
   title: string;
@@ -100,10 +109,10 @@ export default function ApplyPackFlow({ resumeText }: ApplyPackFlowProps) {
       }
 
       const data = await response.json();
-      if (data.url) {
+      if (data.url && isSafeRedirect(data.url)) {
         window.location.href = data.url;
       } else {
-        throw new Error("No checkout URL returned.");
+        throw new Error("No valid checkout URL returned.");
       }
     } catch (err) {
       setError(

@@ -22,6 +22,7 @@ import { trackEvent } from "@/lib/analytics";
 import type { RadarResult } from "@/lib/types";
 import { scoreRadar, tailoredToCandidateProfile } from "@/lib/radar-scorer";
 import { updateSessionRadarAfter } from "@/lib/job-sessions";
+import { isValidTokenFormat, isValidPlan } from "@/lib/sanitizer";
 
 export default function ProResultsPageWrapper() {
   return (
@@ -244,12 +245,14 @@ function ProResultsPage() {
       const sessionId = searchParams.get("session_id");
       const pendingPro = sessionStorage.getItem("rt_pending_pro");
 
-      // Handle dev_token from checkout redirect
+      // Handle dev_token from checkout redirect (validate format before storing)
       const devToken = searchParams.get("dev_token");
       const planParam = searchParams.get("plan");
-      if (devToken) {
+      if (devToken && isValidTokenFormat(devToken)) {
         sessionStorage.setItem("rt_entitlement_token", devToken);
-        if (planParam) sessionStorage.setItem("rt_entitlement_plan", planParam);
+        if (planParam && isValidPlan(planParam)) {
+          sessionStorage.setItem("rt_entitlement_plan", planParam);
+        }
       }
 
       // Handle Stripe session_id: exchange for entitlement token
@@ -649,12 +652,12 @@ function ProResultsPage() {
       )}
 
       {/* Tab navigation */}
-      <div className="mb-6 flex gap-1 rounded-lg border border-gray-200 bg-gray-50 p-1" data-print-hide>
+      <div className="mb-6 flex gap-1 overflow-x-auto rounded-lg border border-gray-200 bg-gray-50 p-1" data-print-hide>
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+            className={`flex-1 whitespace-nowrap rounded-md px-3 py-2 text-xs font-medium transition-colors sm:px-4 sm:text-sm ${
               activeTab === tab.id
                 ? "bg-white text-gray-900 shadow-sm"
                 : "text-gray-600 hover:text-gray-900"
@@ -1274,7 +1277,7 @@ function StickyActionBar({ result, liveRadarScore, radarBefore, radarAfter }: { 
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200 bg-white/95 backdrop-blur-sm shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
+      <div className="mx-auto flex max-w-5xl items-center justify-between gap-2 px-3 py-2.5 sm:px-4 sm:py-3">
         <div className="hidden sm:flex sm:items-center sm:gap-3">
           {liveRadarScore != null && (
             <span className={`rounded-full px-3 py-1 text-sm font-bold ${
@@ -1295,7 +1298,7 @@ function StickyActionBar({ result, liveRadarScore, radarBefore, radarAfter }: { 
         <div className="relative ml-auto flex items-center gap-3">
           <button
             onClick={() => copyToClipboard(proOutputToText(result))}
-            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            className="hidden rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 sm:block"
           >
             Copy All
           </button>
@@ -1305,7 +1308,7 @@ function StickyActionBar({ result, liveRadarScore, radarBefore, radarAfter }: { 
             <button
               onClick={handleExportZIP}
               disabled={downloading}
-              className="inline-flex items-center gap-2 rounded-l-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 rounded-l-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-60 sm:gap-2 sm:px-5 sm:text-sm"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />

@@ -120,7 +120,7 @@ export async function POST(request: Request) {
       jobProfile,
       resumeText,
       jobDescriptionText,
-      { timeoutMs: 120_000 }, // 2min timeout (LLM can take 60-90s)
+      { timeoutMs: 180_000 }, // 3min timeout (large resumes can take 90-150s with Sonnet)
     );
 
     // Store in cache
