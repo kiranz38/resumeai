@@ -23,6 +23,24 @@ export type Seniority = (typeof SENIORITY_OPTIONS)[number];
 export const REGION_OPTIONS = ["US", "AU", "UK"] as const;
 export type Region = (typeof REGION_OPTIONS)[number];
 
+export const APPLY_PACK_5_PRICE = 19.99;
+export const APPLY_PACK_5_DISPLAY = "$19.99";
+export const APPLY_PACK_10_PRICE = 34.99;
+export const APPLY_PACK_10_DISPLAY = "$34.99";
+
+export const JOB_BOARD_COUNTRIES = [
+  { code: "us", label: "United States" },
+  { code: "gb", label: "United Kingdom" },
+  { code: "ca", label: "Canada" },
+  { code: "au", label: "Australia" },
+  { code: "de", label: "Germany" },
+  { code: "in", label: "India" },
+  { code: "fr", label: "France" },
+  { code: "nl", label: "Netherlands" },
+  { code: "sg", label: "Singapore" },
+  { code: "", label: "Remote / Anywhere" },
+] as const;
+
 export const LEGAL_DISCLAIMER =
   "General guidance only. Not career advice. Results may be inaccurate. Do not rely on this tool as your sole decision-maker.";
 

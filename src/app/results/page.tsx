@@ -184,7 +184,7 @@ export default function ResultsPage() {
       )}
 
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Your Hiring Manager Radar</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Your Resume Match</h1>
         <p className="mt-2 text-gray-600">
           {result.jobProfile.title
             ? `Analysis for ${result.jobProfile.title}${result.jobProfile.company ? ` at ${result.jobProfile.company}` : ""}`
@@ -199,20 +199,20 @@ export default function ResultsPage() {
             {/* Primary radar gauge */}
             <ScoreCard
               variant="primary"
-              label="Radar Score"
+              label="Match Score"
               score={radar.score}
-              description="How strongly your resume signals to hiring managers"
+              description="How well your resume matches this job"
               radarLabel={radar.label}
             />
 
             {/* Breakdown bars */}
             <div className="rounded-xl border border-gray-200 bg-white p-6">
-              <h3 className="mb-3 text-sm font-semibold text-gray-700 uppercase tracking-wide">Signal Breakdown</h3>
-              <ScoreCard variant="breakdown" label="Impact" score={radar.breakdown.impact} description="" />
-              <ScoreCard variant="breakdown" label="Clarity" score={radar.breakdown.clarity} description="" />
-              <ScoreCard variant="breakdown" label="Ownership" score={radar.breakdown.ownership} description="" />
-              <ScoreCard variant="breakdown" label="Seniority" score={radar.breakdown.seniority} description="" />
-              <ScoreCard variant="breakdown" label="Alignment" score={radar.breakdown.alignment} description="" />
+              <h3 className="mb-3 text-sm font-semibold text-gray-700 uppercase tracking-wide">Match Breakdown</h3>
+              <ScoreCard variant="breakdown" label="Hard Skills" score={radar.breakdown.hardSkills} description="" />
+              <ScoreCard variant="breakdown" label="Soft Skills" score={radar.breakdown.softSkills} description="" />
+              <ScoreCard variant="breakdown" label="Results" score={radar.breakdown.measurableResults} description="" />
+              <ScoreCard variant="breakdown" label="Keywords" score={radar.breakdown.keywordOptimization} description="" />
+              <ScoreCard variant="breakdown" label="Formatting" score={radar.breakdown.formattingBestPractices} description="" />
             </div>
           </div>
         </div>

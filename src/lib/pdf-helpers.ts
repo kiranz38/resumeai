@@ -366,7 +366,7 @@ function drawCategoryBar(
   y: number,
 ) {
   const { pdf, margin, contentWidth } = ctx;
-  const labelAreaWidth = 34;
+  const labelAreaWidth = 40;
   const scoreAreaWidth = 14;
   const barX = margin + labelAreaWidth;
   const barWidth = contentWidth - labelAreaWidth - scoreAreaWidth - 2;
@@ -540,15 +540,15 @@ export async function renderInsightsPdf(result: ProOutput, radar?: RadarResult):
     pdf.setFontSize(10);
     pdf.setFont("helvetica", "bold");
     pdf.setTextColor(17, 24, 39);
-    pdf.text("Signal Breakdown", ctx.margin, ctx.y);
+    pdf.text("Match Breakdown", ctx.margin, ctx.y);
     ctx.y += 6;
 
     const categories: Array<[string, number]> = [
-      ["Impact", radar.breakdown.impact],
-      ["Clarity", radar.breakdown.clarity],
-      ["Ownership", radar.breakdown.ownership],
-      ["Seniority", radar.breakdown.seniority],
-      ["Alignment", radar.breakdown.alignment],
+      ["Hard Skills", radar.breakdown.hardSkills],
+      ["Soft Skills", radar.breakdown.softSkills],
+      ["Results", radar.breakdown.measurableResults],
+      ["Keywords", radar.breakdown.keywordOptimization],
+      ["Formatting", radar.breakdown.formattingBestPractices],
     ];
 
     for (const [catLabel, catScore] of categories) {

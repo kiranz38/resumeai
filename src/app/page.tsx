@@ -9,9 +9,9 @@ const FAQ_ITEMS = [
       "No. Your resume and job description are processed in memory and never stored on our servers. We use anonymous analytics only — no personal data is retained.",
   },
   {
-    question: "How does the Radar Score work?",
+    question: "How does the Match Score work?",
     answer:
-      "We analyze your resume across five dimensions — Impact, Clarity, Ownership, Seniority, and Alignment — to compute how strongly your resume signals to hiring managers. Each category uses deterministic heuristics: metrics density, verb strength, keyword overlap, and more.",
+      "We analyze your resume across five industry-standard dimensions — Hard Skills, Soft Skills, Measurable Results, Keyword Optimization, and Formatting & Best Practices — to compute how strongly your resume signals to hiring managers. Each category uses deterministic heuristics: skill matching, metrics density, keyword coverage, and more.",
   },
   {
     question: "How accurate are the results?",
@@ -34,7 +34,7 @@ const BENEFITS = [
   {
     title: "Signal Score + Keyword Map",
     description:
-      "See your Hiring Manager Radar Score and get a categorized map of missing keywords with specific placement suggestions.",
+      "See your Match Score and get a categorized map of missing keywords with specific placement suggestions.",
     icon: (
       <svg className="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -75,32 +75,50 @@ export default function LandingPage() {
   return (
     <div>
       {/* Hero */}
-      <section className="bg-gradient-to-b from-blue-50 to-white px-4 py-20">
-        <div className="mx-auto max-w-4xl text-center">
-          <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
-            Hiring Manager Radar for your resume.
+      <section className="relative overflow-hidden bg-gradient-to-b from-blue-50 via-white to-white px-4 pb-24 pt-20">
+        {/* Decorative blobs */}
+        <div className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-blue-100/40 blur-3xl" />
+        <div className="pointer-events-none absolute -right-32 top-20 h-80 w-80 rounded-full bg-indigo-100/30 blur-3xl" />
+
+        <div className="relative mx-auto max-w-4xl text-center">
+          <span className="mb-4 inline-block rounded-full bg-blue-100 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-blue-700">
+            Free instant analysis
+          </span>
+          <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl lg:text-6xl">
+            Stop guessing why you&apos;re not
+            <br />
+            <span className="text-blue-600">getting callbacks.</span>
           </h1>
-          <p className="mt-4 text-lg text-gray-600">
-            Paste your resume + job description. See what&apos;s blocking callbacks — then fix it in minutes.
+          <p className="mx-auto mt-5 max-w-2xl text-lg text-gray-600">
+            Upload your resume, paste a job description, and see exactly what&apos;s missing.
+            Get your Match Score in 30 seconds.
           </p>
 
-          <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+          {/* Primary CTA — large, unmissable */}
+          <div className="mt-10 flex flex-col items-center gap-4">
             <Link
               href="/analyze"
-              className="rounded-lg bg-blue-600 px-8 py-3 text-base font-semibold text-white shadow-sm hover:bg-blue-700"
+              className="group relative inline-flex items-center gap-3 rounded-xl bg-blue-600 px-10 py-4 text-lg font-bold text-white shadow-lg shadow-blue-600/25 transition-all hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-600/30"
             >
-              Check my resume
+              <svg className="h-6 w-6 transition-transform group-hover:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              Upload Your Resume
             </Link>
-            <Link
-              href="/demo"
-              className="rounded-lg border border-gray-300 bg-white px-8 py-3 text-base font-semibold text-gray-700 shadow-sm hover:bg-gray-50"
-            >
-              See a demo
-            </Link>
+            <div className="flex items-center gap-4">
+              <Link
+                href="/demo"
+                className="text-sm font-medium text-gray-500 underline-offset-2 hover:text-gray-700 hover:underline"
+              >
+                See a demo first
+              </Link>
+              <span className="text-gray-300">|</span>
+              <span className="text-sm text-gray-400">PDF, DOCX, or paste text</span>
+            </div>
           </div>
 
           {/* Trust strip */}
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
             {TRUST_ITEMS.map((item) => (
               <span
                 key={item}
@@ -111,6 +129,30 @@ export default function LandingPage() {
                 </svg>
                 {item}
               </span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* How it works — 3 steps */}
+      <section className="border-t border-gray-100 bg-white px-4 py-16">
+        <div className="mx-auto max-w-4xl">
+          <h2 className="text-center text-2xl font-bold text-gray-900">
+            Three steps. 30 seconds.
+          </h2>
+          <div className="mt-10 grid gap-8 md:grid-cols-3">
+            {[
+              { step: "1", title: "Upload your CV", desc: "Drop a PDF or DOCX — we extract it instantly." },
+              { step: "2", title: "Paste the job description", desc: "Copy the target listing so we can match keywords." },
+              { step: "3", title: "Get your Match Score", desc: "See what's blocking callbacks and how to fix it." },
+            ].map((s) => (
+              <div key={s.step} className="text-center">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-600 text-lg font-bold text-white">
+                  {s.step}
+                </div>
+                <h3 className="mt-4 text-base font-semibold text-gray-900">{s.title}</h3>
+                <p className="mt-1 text-sm text-gray-500">{s.desc}</p>
+              </div>
             ))}
           </div>
         </div>
@@ -191,6 +233,27 @@ export default function LandingPage() {
               Free quick scan included — no payment required to start
             </p>
           </div>
+        </div>
+      </section>
+
+      {/* Bottom CTA banner */}
+      <section className="bg-blue-600 px-4 py-12">
+        <div className="mx-auto max-w-3xl text-center">
+          <h2 className="text-2xl font-bold text-white sm:text-3xl">
+            Ready to see what&apos;s holding you back?
+          </h2>
+          <p className="mt-2 text-blue-100">
+            Upload your resume and get your Match Score in under a minute. Free, no signup.
+          </p>
+          <Link
+            href="/analyze"
+            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-white px-8 py-3.5 text-base font-bold text-blue-600 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+            Upload Your Resume Now
+          </Link>
         </div>
       </section>
 

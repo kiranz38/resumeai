@@ -507,7 +507,7 @@ function ProResultsPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
             </svg>
             <div className="text-sm">
-              New Radar: <span className="text-2xl font-bold text-green-700">{radarAfter.score}</span>
+              New Match: <span className="text-2xl font-bold text-green-700">{radarAfter.score}</span>
               {radarAfter.score > radarBefore.score && (
                 <span className="ml-2 rounded-full bg-green-100 px-2 py-0.5 text-sm font-semibold text-green-700">
                   +{radarAfter.score - radarBefore.score}
@@ -589,7 +589,7 @@ function ProResultsPage() {
       )}
 
       {/* Tab content */}
-      <div className="rounded-xl border border-gray-200 bg-white">
+      <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
         {/* ── Resume Tab ── */}
         {activeTab === "resume" && viewMode === "preview" && (
           <div className="p-6" id="ats-preview">
@@ -597,7 +597,7 @@ function ProResultsPage() {
           </div>
         )}
         {activeTab === "resume" && viewMode === "edit" && (
-          <div className="p-6 space-y-6">
+          <div className="p-6 space-y-8">
             {/* Name & Headline */}
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
@@ -618,25 +618,40 @@ function ProResultsPage() {
 
             {/* Experience */}
             <div>
-              <h3 className="mb-3 text-sm font-semibold text-gray-700 uppercase tracking-wide">Experience</h3>
+              <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                <span className="h-4 w-1 rounded-full bg-blue-500" />
+                Experience
+              </h3>
               {result.tailoredResume.experience.map((exp, expIdx) => (
-                <div key={expIdx} className="mb-4 rounded-lg border border-gray-100 bg-gray-50/50 p-4">
-                  <div className="mb-2 flex items-baseline gap-2">
-                    <span className="text-sm font-semibold text-gray-900">{exp.title}</span>
-                    <span className="text-sm text-gray-500">{exp.company}</span>
-                    {exp.period && <span className="text-xs text-gray-400">{exp.period}</span>}
-                  </div>
-                  <div className="space-y-2">
-                    {exp.bullets.map((bullet, bulletIdx) => (
-                      <div key={bulletIdx} className="flex gap-2">
-                        <span className="mt-2.5 text-gray-400 text-sm shrink-0">{bulletIdx + 1}.</span>
-                        <EditableText
-                          value={bullet}
-                          onChange={(v) => updateExperienceBullet(expIdx, bulletIdx, v)}
-                          label={`Bullet ${bulletIdx + 1} for ${exp.title}`}
-                        />
+                <div key={expIdx} className="mb-4 flex rounded-lg border border-gray-200 bg-white shadow-sm overflow-hidden">
+                  <div className="w-1 shrink-0 bg-blue-500" />
+                  <div className="flex-1 p-4">
+                    <div className="mb-2 flex items-center gap-3">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-sm font-bold text-blue-600">
+                        {(exp.company || "?")[0].toUpperCase()}
                       </div>
-                    ))}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-baseline gap-2 flex-wrap">
+                          <span className="text-sm font-semibold text-gray-900">{exp.title}</span>
+                          <span className="text-sm text-gray-500">{exp.company}</span>
+                        </div>
+                      </div>
+                      {exp.period && (
+                        <span className="shrink-0 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-gray-500">{exp.period}</span>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      {exp.bullets.map((bullet, bulletIdx) => (
+                        <div key={bulletIdx} className="flex gap-2">
+                          <span className="mt-3 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400" />
+                          <EditableText
+                            value={bullet}
+                            onChange={(v) => updateExperienceBullet(expIdx, bulletIdx, v)}
+                            label={`Bullet ${bulletIdx + 1} for ${exp.title}`}
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -664,34 +679,69 @@ function ProResultsPage() {
 
             {/* Education */}
             <div>
-              <h3 className="mb-3 text-sm font-semibold text-gray-700 uppercase tracking-wide">Education</h3>
+              <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                <span className="h-4 w-1 rounded-full bg-purple-500" />
+                <svg className="h-4 w-4 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path d="M12 14l9-5-9-5-9 5 9 5z" />
+                  <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222" />
+                </svg>
+                Education
+              </h3>
               {result.tailoredResume.education.map((edu, i) => (
-                <div key={i} className="mb-2 text-sm text-gray-700">
-                  {edu.degree} &mdash; {edu.school}{edu.year ? `, ${edu.year}` : ""}
+                <div key={i} className="mb-2 flex items-start gap-3 rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
+                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-purple-50">
+                    <svg className="h-4 w-4 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">{edu.degree}</p>
+                    <p className="text-sm text-gray-500">{edu.school}{edu.year ? ` \u00B7 ${edu.year}` : ""}</p>
+                  </div>
                 </div>
               ))}
             </div>
 
             {/* Skills */}
             <div>
-              <h3 className="mb-3 text-sm font-semibold text-gray-700 uppercase tracking-wide">Skills</h3>
-              {result.tailoredResume.skills.map((group, groupIdx) => (
-                <div key={groupIdx} className="mb-3">
-                  <label className="mb-1 block text-sm font-medium text-gray-500">{group.category}</label>
-                  <div className="flex flex-wrap gap-2">
-                    {group.items.map((item, itemIdx) => (
-                      <input
-                        key={itemIdx}
-                        type="text"
-                        value={item}
-                        onChange={(e) => updateSkillItem(groupIdx, itemIdx, e.target.value)}
-                        className="rounded-full border border-gray-200 bg-white px-3 py-1 text-sm text-gray-700 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400"
-                        style={{ width: Math.max(60, item.length * 8 + 24) + "px" }}
-                      />
-                    ))}
+              <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                <span className="h-4 w-1 rounded-full bg-green-500" />
+                <svg className="h-4 w-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Skills
+              </h3>
+              {result.tailoredResume.skills.map((group, groupIdx) => {
+                const categoryColors = [
+                  "bg-blue-100 text-blue-700",
+                  "bg-green-100 text-green-700",
+                  "bg-purple-100 text-purple-700",
+                  "bg-amber-100 text-amber-700",
+                  "bg-rose-100 text-rose-700",
+                  "bg-teal-100 text-teal-700",
+                ];
+                const colorClass = categoryColors[groupIdx % categoryColors.length];
+                return (
+                  <div key={groupIdx} className="mb-3 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+                    <span className={`mb-2 inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${colorClass}`}>
+                      {group.category}
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {group.items.map((item, itemIdx) => (
+                        <input
+                          key={itemIdx}
+                          type="text"
+                          value={item}
+                          onChange={(e) => updateSkillItem(groupIdx, itemIdx, e.target.value)}
+                          className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-sm text-gray-700 transition-colors focus:border-blue-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-400"
+                          style={{ width: Math.max(60, item.length * 8 + 24) + "px" }}
+                        />
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -729,39 +779,60 @@ function ProResultsPage() {
         )}
 
         {/* ── Keywords Tab ── */}
-        {activeTab === "keywords" && (
-          <div className="p-6">
-            <h2 className="mb-4 text-lg font-semibold text-gray-900">Keyword Checklist</h2>
-            <div className="space-y-2">
-              {result.keywordChecklist.map((item, i) => (
-                <div
-                  key={i}
-                  className={`flex items-center justify-between rounded-lg px-4 py-3 ${
-                    item.found ? "bg-green-50" : "bg-red-50"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    {item.found ? (
-                      <svg className="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    ) : (
-                      <svg className="h-5 w-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    )}
-                    <span className={`text-sm font-medium ${item.found ? "text-green-800" : "text-red-800"}`}>
-                      {item.keyword}
-                    </span>
+        {activeTab === "keywords" && (() => {
+          const missing = result.keywordChecklist.filter((k) => !k.found);
+          const matched = result.keywordChecklist.filter((k) => k.found);
+          return (
+            <div className="p-6">
+              <h2 className="mb-4 text-lg font-semibold text-gray-900">Keyword Checklist</h2>
+
+              {/* Missing keywords */}
+              {missing.length > 0 && (
+                <div className="mb-6">
+                  <div className="mb-3 flex items-center gap-2">
+                    <h3 className="text-sm font-semibold text-gray-700">Missing</h3>
+                    <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700">{missing.length}</span>
                   </div>
-                  {item.suggestion && (
-                    <span className="text-sm text-gray-500 max-w-xs text-right">{item.suggestion}</span>
-                  )}
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {missing.map((item, i) => (
+                      <div key={i} className="flex items-start gap-3 rounded-lg bg-red-50 px-4 py-3">
+                        <svg className="mt-0.5 h-4 w-4 shrink-0 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        <div className="min-w-0">
+                          <span className="text-sm font-medium text-red-800">{item.keyword}</span>
+                          {item.suggestion && (
+                            <p className="mt-0.5 text-xs text-gray-500">{item.suggestion}</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              ))}
+              )}
+
+              {/* Matched keywords */}
+              {matched.length > 0 && (
+                <div>
+                  <div className="mb-3 flex items-center gap-2">
+                    <h3 className="text-sm font-semibold text-gray-700">Matched</h3>
+                    <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">{matched.length}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {matched.map((item, i) => (
+                      <span key={i} className="inline-flex items-center gap-1.5 rounded-full border border-green-200 bg-white px-3 py-1 text-sm font-medium text-green-700">
+                        <svg className="h-3.5 w-3.5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        {item.keyword}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* ── Feedback Tab ── */}
         {activeTab === "feedback" && (
@@ -1041,7 +1112,7 @@ function StickyActionBar({ result, liveRadarScore, radarBefore }: { result: ProO
               liveRadarScore >= 50 ? "bg-yellow-100 text-yellow-700" :
               "bg-red-100 text-red-700"
             }`}>
-              Radar: {liveRadarScore}
+              Match: {liveRadarScore}
               {radarBefore && liveRadarScore > radarBefore.score && (
                 <span className="ml-1 text-green-600">(+{liveRadarScore - radarBefore.score})</span>
               )}

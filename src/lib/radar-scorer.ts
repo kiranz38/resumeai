@@ -19,8 +19,8 @@ const VAGUE_VERBS =
 const STRONG_OWNERSHIP_VERBS =
   /^(led|designed|shipped|built|architected|spearheaded|established|pioneered|launched|created|drove|owned|directed|orchestrated|transformed|founded|initiated)/i;
 
-const WEAK_OWNERSHIP_VERBS =
-  /^(helped|worked on|assisted|participated in|contributed to|supported|involved in|was part of|collaborated|aided)/i;
+const SOFT_SKILL_VERBS =
+  /\b(led|managed|mentored|coached|directed|supervised|coordinated|headed|oversaw|guided|trained|recruited|hired|communicated|collaborated|facilitated|negotiated|presented|influenced|motivated|empowered|delegated|resolved|mediated)\b/i;
 
 const LEADERSHIP_SIGNALS =
   /\b(led|managed|mentored|coached|directed|supervised|coordinated team|headed|oversaw|guided|trained|recruited|hired)\b/i;
@@ -39,27 +39,27 @@ export function scoreRadar(
     ...candidate.projects.flatMap((p) => p.bullets),
   ];
 
-  const impact = computeImpact(allBullets);
-  const clarity = computeClarity(allBullets);
-  const ownership = computeOwnership(allBullets);
-  const seniority = computeSeniority(candidate, job);
-  const alignment = computeAlignment(candidate, job);
+  const hardSkills = computeHardSkills(candidate, job);
+  const softSkills = computeSoftSkills(allBullets);
+  const measurableResults = computeMeasurableResults(allBullets);
+  const keywordOptimization = computeKeywordOptimization(candidate, job);
+  const formattingBestPractices = computeFormattingBestPractices(candidate, allBullets);
 
   const breakdown: RadarBreakdown = {
-    impact: clamp(Math.round(impact)),
-    clarity: clamp(Math.round(clarity)),
-    ownership: clamp(Math.round(ownership)),
-    seniority: clamp(Math.round(seniority)),
-    alignment: clamp(Math.round(alignment)),
+    hardSkills: clamp(Math.round(hardSkills)),
+    softSkills: clamp(Math.round(softSkills)),
+    measurableResults: clamp(Math.round(measurableResults)),
+    keywordOptimization: clamp(Math.round(keywordOptimization)),
+    formattingBestPractices: clamp(Math.round(formattingBestPractices)),
   };
 
   const score = clamp(
     Math.round(
-      breakdown.impact * 0.3 +
-      breakdown.clarity * 0.2 +
-      breakdown.ownership * 0.2 +
-      breakdown.seniority * 0.15 +
-      breakdown.alignment * 0.15,
+      breakdown.hardSkills * 0.25 +
+      breakdown.softSkills * 0.15 +
+      breakdown.measurableResults * 0.25 +
+      breakdown.keywordOptimization * 0.20 +
+      breakdown.formattingBestPractices * 0.15,
     ),
   );
 
@@ -97,132 +97,128 @@ export function computeRadarFromTailored(
 
 // ── Category scorers ──
 
-function computeImpact(bullets: string[]): number {
-  if (bullets.length === 0) return 20;
-  const withMetrics = bullets.filter((b) => METRIC_PATTERNS.test(b)).length;
-  return (withMetrics / bullets.length) * 100;
-}
-
-function computeClarity(bullets: string[]): number {
-  if (bullets.length === 0) return 50;
-  let score = 100;
-  const penalties: number[] = [];
-
-  for (const bullet of bullets) {
-    let penalty = 0;
-    // Penalize long bullets (>150 chars)
-    if (bullet.length > 150) penalty += 10;
-    // Penalize vague verbs
-    if (VAGUE_VERBS.test(bullet)) penalty += 15;
-    // Penalize very short bullets (<30 chars) — likely incomplete
-    if (bullet.length < 30 && bullet.length > 0) penalty += 5;
-    penalties.push(penalty);
-  }
-
-  const avgPenalty =
-    penalties.reduce((sum, p) => sum + p, 0) / penalties.length;
-  score -= avgPenalty;
-  return Math.max(10, score);
-}
-
-function computeOwnership(bullets: string[]): number {
-  if (bullets.length === 0) return 30;
-
-  let strongCount = 0;
-  let weakCount = 0;
-
-  for (const bullet of bullets) {
-    if (STRONG_OWNERSHIP_VERBS.test(bullet)) strongCount++;
-    else if (WEAK_OWNERSHIP_VERBS.test(bullet)) weakCount++;
-  }
-
-  const total = strongCount + weakCount;
-  if (total === 0) return 50; // neutral — no clear ownership verbs
-  return (strongCount / total) * 100;
-}
-
-function computeSeniority(
-  candidate: CandidateProfile,
-  job: JobProfile,
-): number {
-  const years = estimateYearsExperience(candidate);
-  const jobSeniority = job.seniorityLevel || "Mid";
-
-  const seniorityYears: Record<string, [number, number]> = {
-    Junior: [0, 2],
-    Mid: [2, 5],
-    Senior: [5, 10],
-    Manager: [5, 15],
-    Principal: [8, 20],
-    Director: [10, 25],
-  };
-
-  const [minYears, maxYears] = seniorityYears[jobSeniority] || [2, 5];
-  let score = 0;
-
-  // Years match
-  if (years >= minYears && years <= maxYears + 3) score += 50;
-  else if (years >= minYears - 1) score += 30;
-  else if (years >= minYears - 2) score += 15;
-
-  // Leadership signals
-  const allBullets = candidate.experience.flatMap((e) => e.bullets);
-  const leadershipCount = allBullets.filter((b) =>
-    LEADERSHIP_SIGNALS.test(b),
-  ).length;
-  if (leadershipCount >= 3) score += 30;
-  else if (leadershipCount >= 1) score += 15;
-
-  // Scope phrases
-  const scopeCount = allBullets.filter((b) => SCOPE_PHRASES.test(b)).length;
-  if (scopeCount >= 2) score += 20;
-  else if (scopeCount >= 1) score += 10;
-
-  return Math.min(100, score);
-}
-
-function computeAlignment(
+function computeHardSkills(
   candidate: CandidateProfile,
   job: JobProfile,
 ): number {
   const candidateText = buildCandidateText(candidate);
-  const candidateKeywords = new Set(
+  const candidateSkillsLower = new Set(
     candidate.skills.map((s) => s.toLowerCase()),
   );
 
-  // Combine all job terms
-  const requiredTerms: string[] = [];
-  const otherTerms: string[] = [];
-
-  for (const skill of job.requiredSkills) {
-    requiredTerms.push(skill.toLowerCase());
-  }
-  for (const skill of job.preferredSkills) {
-    otherTerms.push(skill.toLowerCase());
-  }
-  for (const kw of job.keywords) {
-    otherTerms.push(kw.toLowerCase());
-  }
-
-  // Required keywords have 2x weight
   let totalWeight = 0;
   let matchedWeight = 0;
 
-  for (const term of requiredTerms) {
+  // Required skills have 2x weight
+  for (const skill of job.requiredSkills) {
+    const lower = skill.toLowerCase();
     totalWeight += 2;
-    if (candidateKeywords.has(term) || candidateText.includes(term)) {
+    if (candidateSkillsLower.has(lower) || candidateText.includes(lower)) {
       matchedWeight += 2;
     }
   }
-  for (const term of otherTerms) {
+
+  // Preferred skills have 1x weight
+  for (const skill of job.preferredSkills) {
+    const lower = skill.toLowerCase();
     totalWeight += 1;
-    if (candidateKeywords.has(term) || candidateText.includes(term)) {
+    if (candidateSkillsLower.has(lower) || candidateText.includes(lower)) {
       matchedWeight += 1;
     }
   }
 
   if (totalWeight === 0) return 50;
   return (matchedWeight / totalWeight) * 100;
+}
+
+function computeSoftSkills(bullets: string[]): number {
+  if (bullets.length === 0) return 30;
+
+  let softCount = 0;
+  for (const bullet of bullets) {
+    if (SOFT_SKILL_VERBS.test(bullet)) softCount++;
+  }
+
+  // Score based on density of soft-skill verbs across bullets
+  const density = softCount / bullets.length;
+  // 30%+ bullets with soft skills = 100, scale linearly
+  if (density >= 0.3) return 100;
+  return Math.round((density / 0.3) * 100);
+}
+
+function computeMeasurableResults(bullets: string[]): number {
+  if (bullets.length === 0) return 20;
+  const withMetrics = bullets.filter((b) => METRIC_PATTERNS.test(b)).length;
+  return (withMetrics / bullets.length) * 100;
+}
+
+function computeKeywordOptimization(
+  candidate: CandidateProfile,
+  job: JobProfile,
+): number {
+  const candidateText = buildCandidateText(candidate);
+  const candidateSkillsLower = new Set(
+    candidate.skills.map((s) => s.toLowerCase()),
+  );
+
+  // Combine all JD terms
+  const allTerms = new Set([
+    ...job.requiredSkills.map((s) => s.toLowerCase()),
+    ...job.preferredSkills.map((s) => s.toLowerCase()),
+    ...job.keywords.map((k) => k.toLowerCase()),
+  ]);
+
+  if (allTerms.size === 0) return 50;
+
+  let matched = 0;
+  let skillsSectionBonus = 0;
+
+  for (const term of allTerms) {
+    if (candidateText.includes(term)) {
+      matched++;
+      // Placement bonus: if also in skills section specifically
+      if (candidateSkillsLower.has(term)) {
+        skillsSectionBonus++;
+      }
+    }
+  }
+
+  const coverageScore = (matched / allTerms.size) * 80;
+  const placementScore = allTerms.size > 0
+    ? (skillsSectionBonus / allTerms.size) * 20
+    : 0;
+
+  return Math.min(100, coverageScore + placementScore);
+}
+
+function computeFormattingBestPractices(
+  candidate: CandidateProfile,
+  bullets: string[],
+): number {
+  let score = 100;
+
+  // Penalty: long bullets (>150 chars)
+  const longBullets = bullets.filter((b) => b.length > 150).length;
+  if (longBullets > 0) score -= Math.min(15, longBullets * 3);
+
+  // Penalty: vague verbs
+  const vagueBullets = bullets.filter((b) => VAGUE_VERBS.test(b)).length;
+  if (vagueBullets > 0) score -= Math.min(15, vagueBullets * 5);
+
+  // Penalty: missing summary
+  if (!candidate.summary) score -= 15;
+
+  // Penalty: missing education
+  if (candidate.education.length === 0) score -= 10;
+
+  // Penalty: short bullets (<30 chars)
+  const shortBullets = bullets.filter((b) => b.length < 30 && b.length > 0).length;
+  if (shortBullets > 0) score -= Math.min(10, shortBullets * 3);
+
+  // Penalty: too many unfocused skills (>25 is a red flag)
+  if (candidate.skills.length > 25) score -= 10;
+
+  return Math.max(10, score);
 }
 
 // ── Blocker generation ──
@@ -237,11 +233,11 @@ function generateBlockers(
     key: keyof RadarBreakdown;
     score: number;
   }> = [
-    { key: "impact", score: breakdown.impact },
-    { key: "clarity", score: breakdown.clarity },
-    { key: "ownership", score: breakdown.ownership },
-    { key: "seniority", score: breakdown.seniority },
-    { key: "alignment", score: breakdown.alignment },
+    { key: "hardSkills", score: breakdown.hardSkills },
+    { key: "softSkills", score: breakdown.softSkills },
+    { key: "measurableResults", score: breakdown.measurableResults },
+    { key: "keywordOptimization", score: breakdown.keywordOptimization },
+    { key: "formattingBestPractices", score: breakdown.formattingBestPractices },
   ];
 
   // Sort by score ascending — weakest first
@@ -266,12 +262,36 @@ function buildBlocker(
   allBullets: string[],
 ): RadarBlocker | null {
   switch (category) {
-    case "impact": {
+    case "hardSkills": {
+      const missing = job.requiredSkills
+        .filter(
+          (s) =>
+            !candidate.skills
+              .map((sk) => sk.toLowerCase())
+              .includes(s.toLowerCase()) &&
+            !buildCandidateText(candidate).includes(s.toLowerCase()),
+        )
+        .slice(0, 3);
+      return {
+        title: "Hard skills gap",
+        why: `Key required skills not found: ${missing.length > 0 ? missing.join(", ") : "several required skills missing"}. These are explicitly required in the job description.`,
+        how: "Add missing hard skills to your Skills section and weave them into experience bullets where you've used them.",
+      };
+    }
+    case "softSkills": {
+      const softCount = allBullets.filter((b) => SOFT_SKILL_VERBS.test(b)).length;
+      return {
+        title: "Weak soft skill signals",
+        why: `Only ${softCount} of ${allBullets.length} bullets show leadership, communication, or teamwork. Employers want to see collaboration and people skills.`,
+        how: "Add bullets about mentoring, leading meetings, cross-team collaboration, stakeholder communication, or conflict resolution.",
+      };
+    }
+    case "measurableResults": {
       const withMetrics = allBullets.filter((b) => METRIC_PATTERNS.test(b));
       const withoutMetrics = allBullets.filter((b) => !METRIC_PATTERNS.test(b));
       const sample = withoutMetrics[0];
       return {
-        title: "Weak quantified impact",
+        title: "Weak measurable results",
         why: `Only ${withMetrics.length} of ${allBullets.length} bullets include metrics. Hiring managers scan for numbers first.`,
         how: "Add %, $, time saved, team size, or user count to each bullet. Even estimates are better than nothing.",
         ...(sample
@@ -284,13 +304,35 @@ function buildBlocker(
           : {}),
       };
     }
-    case "clarity": {
-      const vagueB = allBullets.filter((b) => VAGUE_VERBS.test(b));
-      const longB = allBullets.filter((b) => b.length > 150);
+    case "keywordOptimization": {
+      const candidateText = buildCandidateText(candidate);
+      const allTerms = new Set([
+        ...job.requiredSkills.map((s) => s.toLowerCase()),
+        ...job.preferredSkills.map((s) => s.toLowerCase()),
+        ...job.keywords.map((k) => k.toLowerCase()),
+      ]);
+      let missingCount = 0;
+      for (const term of allTerms) {
+        if (!candidateText.includes(term)) missingCount++;
+      }
       return {
-        title: "Unclear bullet language",
-        why: `${vagueB.length} bullets start with vague verbs and ${longB.length} exceed 150 characters. Recruiters spend ~6 seconds scanning.`,
-        how: "Start every bullet with a strong past-tense verb. Keep bullets under 150 characters. Cut filler words.",
+        title: "Keyword optimization gap",
+        why: `${missingCount} job description keywords not found in your resume. ATS systems and recruiters scan for exact matches.`,
+        how: "Mirror the exact phrases from the job description in your skills section and experience bullets.",
+      };
+    }
+    case "formattingBestPractices": {
+      const issues: string[] = [];
+      const longB = allBullets.filter((b) => b.length > 150);
+      const vagueB = allBullets.filter((b) => VAGUE_VERBS.test(b));
+      if (longB.length > 0) issues.push(`${longB.length} bullets over 150 chars`);
+      if (vagueB.length > 0) issues.push(`${vagueB.length} vague verb openings`);
+      if (!candidate.summary) issues.push("missing professional summary");
+      if (candidate.education.length === 0) issues.push("no education section");
+      return {
+        title: "Formatting & best practices issues",
+        why: `Issues found: ${issues.length > 0 ? issues.join(", ") : "several formatting concerns"}.`,
+        how: "Keep bullets under 150 characters, start with strong verbs, add a professional summary, and ensure education is listed.",
         ...(vagueB[0]
           ? {
               beforeAfter: {
@@ -305,38 +347,6 @@ function buildBlocker(
               },
             }
           : {}),
-      };
-    }
-    case "ownership": {
-      return {
-        title: "Low ownership signals",
-        why: "Your bullets use collaborative or passive language. Hiring managers want to see what YOU did, not the team.",
-        how: 'Replace "helped", "assisted", "worked on" with "led", "designed", "built", "shipped", "architected".',
-      };
-    }
-    case "seniority": {
-      const years = estimateYearsExperience(candidate);
-      const target = job.seniorityLevel || "Mid";
-      return {
-        title: "Seniority signals are thin",
-        why: `${years} years of experience for a ${target}-level role. Scope and leadership cues are also needed.`,
-        how: "Add cross-functional scope, team size, system-level decisions, and mentorship to your bullets.",
-      };
-    }
-    case "alignment": {
-      const missing = job.requiredSkills
-        .filter(
-          (s) =>
-            !candidate.skills
-              .map((sk) => sk.toLowerCase())
-              .includes(s.toLowerCase()) &&
-            !buildCandidateText(candidate).includes(s.toLowerCase()),
-        )
-        .slice(0, 3);
-      return {
-        title: "Keyword alignment gap",
-        why: `Key required terms not found: ${missing.length > 0 ? missing.join(", ") : "several job keywords missing"}.`,
-        how: "Mirror the exact phrases from the job description in your skills section and experience bullets.",
       };
     }
     default:
@@ -416,9 +426,9 @@ function buildDiagnostics(
 // ── Helpers ──
 
 function scoreToLabel(score: number): RadarLabel {
-  if (score >= 75) return "Strong signal";
-  if (score >= 50) return "Needs sharpening";
-  return "Signal hidden";
+  if (score >= 75) return "Strong match";
+  if (score >= 50) return "Needs improvement";
+  return "Weak match";
 }
 
 function clamp(n: number): number {

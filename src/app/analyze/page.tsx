@@ -1,19 +1,54 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { trackEvent } from "@/lib/analytics";
 import { detectResume } from "@/lib/resume-detector";
 import { saveJobSession } from "@/lib/job-sessions";
+import DashboardSidebar from "@/components/DashboardSidebar";
+import DashboardTile from "@/components/DashboardTile";
+import SpotlightOverlay, { type SpotlightStep } from "@/components/SpotlightOverlay";
+import JobBoard from "@/components/JobBoard";
+import ApplyPackFlow from "@/components/ApplyPackFlow";
+import ResumeUploader from "@/components/ResumeUploader";
 
 type InputMode = "upload" | "paste";
+type Phase =
+  | "hub"
+  | "resume_input"
+  | "jd_input"
+  | "ready"
+  | "analyzing"
+  | "jobs"
+  | "pack_resume"
+  | "pack_jds";
 
 const MAX_RESUME_LENGTH = 50_000;
 const MAX_JD_LENGTH = 30_000;
 
+const ONBOARDING_KEY = "rt_onboarding_complete";
+
+// Step dots config
+const STEP_LABELS = ["Resume", "Job Description", "Analyze"] as const;
+
+function getStepIndex(phase: Phase): number {
+  switch (phase) {
+    case "resume_input":
+      return 0;
+    case "jd_input":
+      return 1;
+    case "ready":
+    case "analyzing":
+      return 2;
+    default:
+      return -1;
+  }
+}
+
 export default function AnalyzePage() {
   const router = useRouter();
-  const [resumeMode, setResumeMode] = useState<InputMode>("paste");
+  const [phase, setPhase] = useState<Phase>("hub");
+  const [resumeMode, setResumeMode] = useState<InputMode>("upload");
   const [resumeText, setResumeText] = useState("");
   const [jobDescription, setJobDescription] = useState("");
   const [fileName, setFileName] = useState<string | null>(null);
@@ -21,44 +56,179 @@ export default function AnalyzePage() {
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<string>("");
   const [resumeWarning, setResumeWarning] = useState<string | null>(null);
+  const [activeNav, setActiveNav] = useState<"dashboard" | "jobs">("dashboard");
 
-  const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // Onboarding state
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState(0);
 
-    setError(null);
-    setFileName(file.name);
-    setProgress("Extracting text from file...");
+  // Refs for spotlight targets
+  const optimizeTileRef = useRef<HTMLButtonElement>(null);
+  const resumePanelRef = useRef<HTMLDivElement>(null);
+  const jdPanelRef = useRef<HTMLDivElement>(null);
+  const analyzeBtnRef = useRef<HTMLButtonElement>(null);
 
-    try {
-      const { extractTextFromFile } = await import("@/lib/file-parser");
-      const text = await extractTextFromFile(file);
-
-      if (!text || text.trim().length < 20) {
-        setError("Could not extract enough text from the file. Try pasting your resume instead.");
-        setFileName(null);
-        setProgress("");
-        return;
-      }
-
-      // Check if the content looks like a resume
-      const detection = detectResume(text);
-      if (!detection.isLikelyResume) {
-        setResumeWarning(detection.message || "This doesn't look like a resume. Please upload your resume.");
-      } else {
-        setResumeWarning(null);
-      }
-
-      setResumeText(text);
-      setProgress("");
-      trackEvent("resume_uploaded", { fileType: file.name.split(".").pop() || "unknown" });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to parse file. Try pasting your resume instead.");
-      setFileName(null);
-      setProgress("");
+  // Check onboarding flag on mount
+  useEffect(() => {
+    if (typeof window !== "undefined" && !localStorage.getItem(ONBOARDING_KEY)) {
+      setShowOnboarding(true);
     }
   }, []);
 
+  // Memoized spotlight steps
+  const spotlightSteps = useMemo<SpotlightStep[]>(
+    () => [
+      {
+        targetRef: optimizeTileRef,
+        title: "Start here — Optimize for a Job",
+        description:
+          "Match your resume to any job description and see your Match Score with actionable feedback.",
+        placement: "bottom" as const,
+      },
+      {
+        targetRef: resumePanelRef,
+        title: "Paste your resume",
+        description:
+          "Paste your resume text or upload a PDF/DOCX file. We'll extract the content automatically.",
+        placement: "right" as const,
+      },
+      {
+        targetRef: jdPanelRef,
+        title: "Add the job description",
+        description:
+          "Paste the job description you're targeting. We'll analyze the match and find missing keywords.",
+        placement: "right" as const,
+      },
+      {
+        targetRef: analyzeBtnRef,
+        title: "Get your Match Score",
+        description:
+          "Hit analyze to see how well you match, what's missing, and how to fix it.",
+        placement: "top" as const,
+      },
+    ],
+    [],
+  );
+
+  const dismissOnboarding = useCallback(() => {
+    setShowOnboarding(false);
+    localStorage.setItem(ONBOARDING_KEY, "1");
+  }, []);
+
+  const handleOnboardingNext = useCallback(() => {
+    const nextStep = onboardingStep + 1;
+    if (nextStep >= spotlightSteps.length) {
+      dismissOnboarding();
+      return;
+    }
+    setOnboardingStep(nextStep);
+    // Sync phase with onboarding step
+    if (nextStep === 1) setPhase("resume_input");
+    else if (nextStep === 2) setPhase("jd_input");
+    else if (nextStep === 3) setPhase("ready");
+  }, [onboardingStep, spotlightSteps.length, dismissOnboarding]);
+
+  const handleQuickAnalyze = useCallback(() => {
+    dismissOnboarding();
+    setPhase("resume_input");
+    setActiveNav("dashboard");
+  }, [dismissOnboarding]);
+
+  const handleNavChange = useCallback(
+    (nav: "dashboard" | "jobs") => {
+      setActiveNav(nav);
+      if (nav === "jobs") {
+        dismissOnboarding();
+        setPhase("jobs");
+      } else {
+        setPhase("hub");
+      }
+    },
+    [dismissOnboarding],
+  );
+
+  // Tile actions
+  const handleOptimize = useCallback(() => {
+    if (showOnboarding) {
+      // Advance onboarding
+      setOnboardingStep(1);
+    }
+    setPhase("resume_input");
+  }, [showOnboarding]);
+
+  const handleApplyPack = useCallback(() => {
+    dismissOnboarding();
+    setPhase("pack_resume");
+  }, [dismissOnboarding]);
+
+  // Resume continue
+  const handleResumeContinue = useCallback(() => {
+    if (showOnboarding && onboardingStep === 1) {
+      setOnboardingStep(2);
+    }
+    setPhase("jd_input");
+  }, [showOnboarding, onboardingStep]);
+
+  // JD continue → ready
+  const handleJdContinue = useCallback(() => {
+    if (showOnboarding && onboardingStep === 2) {
+      setOnboardingStep(3);
+    }
+    setPhase("ready");
+  }, [showOnboarding, onboardingStep]);
+
+  // File upload handler (memoized with useCallback)
+  const handleFileUpload = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      setError(null);
+      setFileName(file.name);
+      setProgress("Extracting text from file...");
+
+      try {
+        const { extractTextFromFile } = await import("@/lib/file-parser");
+        const text = await extractTextFromFile(file);
+
+        if (!text || text.trim().length < 20) {
+          setError(
+            "Could not extract enough text from the file. Try pasting your resume instead.",
+          );
+          setFileName(null);
+          setProgress("");
+          return;
+        }
+
+        const detection = detectResume(text);
+        if (!detection.isLikelyResume) {
+          setResumeWarning(
+            detection.message ||
+              "This doesn't look like a resume. Please upload your resume.",
+          );
+        } else {
+          setResumeWarning(null);
+        }
+
+        setResumeText(text);
+        setProgress("");
+        trackEvent("resume_uploaded", {
+          fileType: file.name.split(".").pop() || "unknown",
+        });
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Failed to parse file. Try pasting your resume instead.",
+        );
+        setFileName(null);
+        setProgress("");
+      }
+    },
+    [],
+  );
+
+  // Analyze handler
   const handleAnalyze = useCallback(async () => {
     setError(null);
 
@@ -73,7 +243,10 @@ export default function AnalyzePage() {
 
     const detection = detectResume(resumeText);
     if (!detection.isLikelyResume) {
-      setError(detection.message || "This doesn't look like a resume. Please provide your actual resume content.");
+      setError(
+        detection.message ||
+          "This doesn't look like a resume. Please provide your actual resume content.",
+      );
       return;
     }
     if (!jobDescription.trim()) {
@@ -81,17 +254,20 @@ export default function AnalyzePage() {
       return;
     }
     if (jobDescription.trim().length < 30) {
-      setError("Job description seems too short. Please provide more content.");
+      setError(
+        "Job description seems too short. Please provide more content.",
+      );
       return;
     }
 
+    dismissOnboarding();
     setIsAnalyzing(true);
+    setPhase("analyzing");
     setProgress("Parsing resume and job description...");
 
     try {
       trackEvent("analysis_started");
-
-      setProgress("Computing your Radar Score...");
+      setProgress("Computing your Match Score...");
 
       const response = await fetch("/api/analyze", {
         method: "POST",
@@ -104,24 +280,28 @@ export default function AnalyzePage() {
 
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        throw new Error(data.error || `Analysis failed (${response.status})`);
+        throw new Error(
+          data.error || `Analysis failed (${response.status})`,
+        );
       }
 
       const result = await response.json();
 
-      // Store result in sessionStorage (not permanent storage)
       sessionStorage.setItem("rt_analysis", JSON.stringify(result));
       sessionStorage.setItem("rt_resume_text", resumeText);
       sessionStorage.setItem("rt_jd_text", jobDescription);
 
-      // Store radar score for before/after comparison on Pro page
       if (result.radarResult) {
-        sessionStorage.setItem("rt_radar_before", JSON.stringify(result.radarResult));
+        sessionStorage.setItem(
+          "rt_radar_before",
+          JSON.stringify(result.radarResult),
+        );
       }
 
-      trackEvent("analysis_generated", { score: result.radarResult?.score || result.atsResult.score });
+      trackEvent("analysis_generated", {
+        score: result.radarResult?.score || result.atsResult.score,
+      });
 
-      // Save job session for recent roles tracking
       const jobTitle = result.jobProfile?.title || "Untitled Role";
       const company = result.jobProfile?.company || "";
       const session = saveJobSession({
@@ -134,170 +314,448 @@ export default function AnalyzePage() {
       setProgress("Redirecting to results...");
       router.push("/results");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Analysis failed. Please try again.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Analysis failed. Please try again.",
+      );
       setIsAnalyzing(false);
+      setPhase("ready");
       setProgress("");
     }
-  }, [resumeText, jobDescription, router]);
+  }, [resumeText, jobDescription, router, dismissOnboarding]);
+
+  // Pre-fill JD from job board
+  const handleJobSelect = useCallback(
+    (jdText: string) => {
+      setJobDescription(jdText);
+      setPhase("resume_input");
+      setActiveNav("dashboard");
+    },
+    [],
+  );
+
+  // Apply pack resume continue
+  const handlePackResumeContinue = useCallback(() => {
+    setPhase("pack_jds");
+  }, []);
+
+  // Back navigation
+  const handleBack = useCallback(() => {
+    switch (phase) {
+      case "resume_input":
+        setPhase("hub");
+        break;
+      case "jd_input":
+        setPhase("resume_input");
+        break;
+      case "ready":
+        setPhase("jd_input");
+        break;
+      case "pack_resume":
+        setPhase("hub");
+        break;
+      case "pack_jds":
+        setPhase("pack_resume");
+        break;
+      case "jobs":
+        setPhase("hub");
+        setActiveNav("dashboard");
+        break;
+      default:
+        break;
+    }
+  }, [phase]);
+
+  const resumeReady = resumeText.trim().length >= 50;
+  const jdReady = jobDescription.trim().length >= 30;
+  const stepIndex = getStepIndex(phase);
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10">
-      <div className="mb-8 text-center">
-        <h1 className="text-3xl font-bold text-gray-900">Analyze Your Resume</h1>
-        <p className="mt-2 text-gray-600">
-          Paste your resume and a job description to get your Radar Score, missing keywords, and actionable feedback.
-        </p>
-      </div>
+    <div className="flex min-h-[calc(100vh-4rem)]">
+      {/* Sidebar */}
+      <DashboardSidebar
+        activeNav={activeNav}
+        onNavChange={handleNavChange}
+        onQuickAnalyze={handleQuickAnalyze}
+      />
 
-      {error && (
-        <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
-      )}
-
-      {resumeWarning && !error && (
-        <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-          {resumeWarning}
-        </div>
-      )}
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Resume input */}
-        <div className="rounded-xl border border-gray-200 bg-white p-6">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">Your Resume</h2>
-            <div className="flex rounded-lg border border-gray-200 text-sm">
-              <button
-                onClick={() => setResumeMode("paste")}
-                className={`px-3 py-1.5 ${
-                  resumeMode === "paste"
-                    ? "bg-blue-600 text-white"
-                    : "text-gray-600 hover:bg-gray-50"
-                } rounded-l-lg transition-colors`}
-              >
-                Paste
-              </button>
-              <button
-                onClick={() => setResumeMode("upload")}
-                className={`px-3 py-1.5 ${
-                  resumeMode === "upload"
-                    ? "bg-blue-600 text-white"
-                    : "text-gray-600 hover:bg-gray-50"
-                } rounded-r-lg transition-colors`}
-              >
-                Upload
-              </button>
-            </div>
+      {/* Main content area */}
+      <main className="flex-1 px-4 py-8 lg:px-8">
+        {/* Error / Warning banners */}
+        {error && (
+          <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
           </div>
+        )}
+        {resumeWarning && !error && (
+          <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+            {resumeWarning}
+          </div>
+        )}
 
-          {resumeMode === "paste" ? (
-            <textarea
-              value={resumeText}
-              onChange={(e) => setResumeText(e.target.value)}
-              placeholder="Paste your resume text here..."
-              className="h-80 w-full resize-none rounded-lg border border-gray-300 p-3 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              disabled={isAnalyzing}
-            />
-          ) : (
-            <div className="flex h-80 flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50">
-              {fileName ? (
-                <div className="text-center">
-                  <svg className="mx-auto h-10 w-10 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        {/* ── Hub Phase ── */}
+        {phase === "hub" && (
+          <div className="animate-slide-up-in mx-auto max-w-3xl">
+            <div className="mb-8">
+              <h1 className="text-2xl font-bold text-gray-900">
+                What would you like to do?
+              </h1>
+              <p className="mt-1 text-gray-500">
+                Pick an action to get started, or use Quick Analyze in the
+                sidebar.
+              </p>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <DashboardTile
+                ref={optimizeTileRef}
+                icon={
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <p className="mt-2 text-sm font-medium text-gray-700">{fileName}</p>
-                  <p className="text-sm text-gray-500">{resumeText.length.toLocaleString()} characters extracted</p>
-                  <button
-                    onClick={() => {
-                      setFileName(null);
-                      setResumeText("");
-                    }}
-                    className="mt-2 text-sm text-blue-600 hover:underline"
+                }
+                title="Optimize for a Job"
+                description="Match your resume to a specific job and see your Match Score."
+                badge="Free"
+                onClick={handleOptimize}
+              />
+              <DashboardTile
+                icon={
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                }
+                title="Apply Pack"
+                description="Tailor your resume for multiple jobs at once. Bulk generation with one click."
+                badge="From $19.99"
+                onClick={handleApplyPack}
+              />
+              <DashboardTile
+                icon={
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                }
+                title="Create from Scratch"
+                description="Start with a blank canvas and build a tailored resume from scratch."
+                comingSoon
+              />
+            </div>
+          </div>
+        )}
+
+        {/* ── Step Dots + Back Arrow (for input phases) ── */}
+        {stepIndex >= 0 && (
+          <div className="mx-auto mb-6 flex max-w-2xl items-center gap-4">
+            <button
+              onClick={handleBack}
+              className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+              aria-label="Go back"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <div className="flex items-center gap-2">
+              {STEP_LABELS.map((label, i) => (
+                <div key={label} className="flex items-center gap-2">
+                  <div
+                    className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                      i === stepIndex
+                        ? "bg-blue-100 text-blue-700"
+                        : i < stepIndex
+                          ? "bg-green-50 text-green-600"
+                          : "bg-gray-100 text-gray-400"
+                    }`}
                   >
-                    Remove
+                    {i < stepIndex ? (
+                      <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <span className="flex h-3.5 w-3.5 items-center justify-center text-[10px]">
+                        {i + 1}
+                      </span>
+                    )}
+                    {label}
+                  </div>
+                  {i < STEP_LABELS.length - 1 && (
+                    <div
+                      className={`h-px w-6 ${
+                        i < stepIndex ? "bg-green-300" : "bg-gray-200"
+                      }`}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Resume Input Phase ── */}
+        {(phase === "resume_input" ||
+          phase === "jd_input" ||
+          phase === "ready" ||
+          phase === "analyzing") && (
+          <div
+            ref={resumePanelRef}
+            className="animate-slide-up-in mx-auto max-w-2xl"
+          >
+            {resumeMode === "upload" ? (
+              <ResumeUploader
+                fileName={fileName}
+                resumeText={resumeText}
+                disabled={isAnalyzing}
+                onFileUpload={handleFileUpload}
+                onRemove={() => {
+                  setFileName(null);
+                  setResumeText("");
+                }}
+                onSwitchToPaste={() => setResumeMode("paste")}
+              />
+            ) : (
+              <div className="rounded-xl border border-gray-200 bg-white p-6">
+                <div className="mb-4 flex items-center justify-between">
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    Paste Your Resume
+                  </h2>
+                  <button
+                    onClick={() => setResumeMode("upload")}
+                    className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                  >
+                    Switch to upload
                   </button>
                 </div>
-              ) : (
-                <label className="cursor-pointer text-center">
-                  <svg className="mx-auto h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                  </svg>
-                  <p className="mt-2 text-sm text-gray-600">
-                    <span className="font-medium text-blue-600">Click to upload</span> or drag and drop
+                <textarea
+                  value={resumeText}
+                  onChange={(e) => setResumeText(e.target.value)}
+                  placeholder="Paste your resume text here..."
+                  className="h-64 w-full resize-none rounded-lg border border-gray-300 p-3 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  disabled={isAnalyzing}
+                />
+                {resumeText && (
+                  <p className="mt-2 text-sm text-gray-400">
+                    {resumeText.length.toLocaleString()} characters
                   </p>
-                  <p className="mt-1 text-sm text-gray-400">PDF, DOCX, or TXT</p>
-                  <input
-                    type="file"
-                    accept=".pdf,.docx,.doc,.txt"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                    disabled={isAnalyzing}
-                  />
-                </label>
+                )}
+              </div>
+            )}
+
+            {resumeText && phase === "resume_input" && resumeReady && (
+              <div className="mt-4 text-center">
+                <button
+                  onClick={handleResumeContinue}
+                  className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+                >
+                  Continue
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── JD Input Phase ── */}
+        {(phase === "jd_input" ||
+          phase === "ready" ||
+          phase === "analyzing") && (
+          <div
+            ref={jdPanelRef}
+            className="animate-slide-up-in mx-auto mt-4 max-w-2xl"
+          >
+            <div className="rounded-xl border border-gray-200 bg-white p-6">
+              <h2 className="mb-4 text-lg font-semibold text-gray-900">
+                Job Description
+              </h2>
+              <textarea
+                value={jobDescription}
+                onChange={(e) => {
+                  setJobDescription(e.target.value);
+                  if (
+                    e.target.value.length > 30 &&
+                    !sessionStorage.getItem("rt_jd_tracked")
+                  ) {
+                    trackEvent("jd_pasted");
+                    sessionStorage.setItem("rt_jd_tracked", "1");
+                  }
+                }}
+                placeholder="Paste the full job description here..."
+                className="h-48 w-full resize-none rounded-lg border border-gray-300 p-3 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                disabled={isAnalyzing}
+              />
+              {jobDescription && (
+                <div className="mt-3 flex items-center justify-between">
+                  <p className="text-sm text-gray-400">
+                    {jobDescription.length.toLocaleString()} characters
+                  </p>
+                  {phase === "jd_input" && jdReady && (
+                    <button
+                      onClick={handleJdContinue}
+                      className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                    >
+                      Continue
+                    </button>
+                  )}
+                </div>
               )}
             </div>
-          )}
-
-          {resumeText && (
-            <p className="mt-2 text-sm text-gray-400">
-              {resumeText.length.toLocaleString()} characters
-            </p>
-          )}
-        </div>
-
-        {/* Job description input */}
-        <div className="rounded-xl border border-gray-200 bg-white p-6">
-          <h2 className="mb-4 text-lg font-semibold text-gray-900">Job Description</h2>
-          <textarea
-            value={jobDescription}
-            onChange={(e) => {
-              setJobDescription(e.target.value);
-              if (e.target.value.length > 30 && !sessionStorage.getItem("rt_jd_tracked")) {
-                trackEvent("jd_pasted");
-                sessionStorage.setItem("rt_jd_tracked", "1");
-              }
-            }}
-            placeholder="Paste the full job description here..."
-            className="h-80 w-full resize-none rounded-lg border border-gray-300 p-3 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            disabled={isAnalyzing}
-          />
-          {jobDescription && (
-            <p className="mt-2 text-sm text-gray-400">
-              {jobDescription.length.toLocaleString()} characters
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Analyze button */}
-      <div className="mt-8 text-center">
-        <button
-          onClick={handleAnalyze}
-          disabled={isAnalyzing || !resumeText.trim() || !jobDescription.trim()}
-          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-10 py-3.5 text-base font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {isAnalyzing ? (
-            <>
-              <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-              </svg>
-              Analyzing...
-            </>
-          ) : (
-            "Check my resume"
-          )}
-        </button>
-
-        {progress && (
-          <p className="mt-3 text-sm text-gray-500">{progress}</p>
+          </div>
         )}
-      </div>
 
-      {/* Privacy note */}
-      <p className="mt-6 text-center text-sm text-gray-400">
-        Your resume and job description are processed in memory only. Nothing is stored on our servers.
-      </p>
+        {/* ── Ready / Analyze Phase ── */}
+        {(phase === "ready" || phase === "analyzing") && (
+          <div className="animate-slide-up-in mx-auto mt-6 max-w-2xl text-center">
+            <button
+              ref={analyzeBtnRef}
+              onClick={handleAnalyze}
+              disabled={isAnalyzing || !resumeReady || !jdReady}
+              className={`inline-flex items-center gap-2 rounded-lg bg-blue-600 px-10 py-3.5 text-base font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 ${
+                !isAnalyzing && resumeReady && jdReady
+                  ? "animate-pulse-ring"
+                  : ""
+              }`}
+            >
+              {isAnalyzing ? (
+                <>
+                  <svg
+                    className="h-5 w-5 animate-spin"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                  Analyzing...
+                </>
+              ) : (
+                "Check my resume"
+              )}
+            </button>
+            {progress && (
+              <p className="mt-3 text-sm text-gray-500">{progress}</p>
+            )}
+          </div>
+        )}
+
+        {/* ── Job Board Phase ── */}
+        {phase === "jobs" && (
+          <div className="animate-slide-up-in mx-auto max-w-4xl">
+            <JobBoard onSelectJob={handleJobSelect} />
+          </div>
+        )}
+
+        {/* ── Apply Pack Resume Phase ── */}
+        {phase === "pack_resume" && (
+          <div className="animate-slide-up-in mx-auto max-w-2xl">
+            <div className="mb-6">
+              <button
+                onClick={handleBack}
+                className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Back
+              </button>
+            </div>
+            <h2 className="mb-2 text-lg font-semibold text-gray-900">
+              Apply Pack — Your Resume
+            </h2>
+            <p className="mb-4 text-sm text-gray-500">
+              First, provide your resume. Then you&apos;ll add multiple job
+              descriptions.
+            </p>
+
+            {resumeMode === "upload" ? (
+              <ResumeUploader
+                fileName={fileName}
+                resumeText={resumeText}
+                disabled={false}
+                onFileUpload={handleFileUpload}
+                onRemove={() => {
+                  setFileName(null);
+                  setResumeText("");
+                }}
+                onSwitchToPaste={() => setResumeMode("paste")}
+              />
+            ) : (
+              <div className="rounded-xl border border-gray-200 bg-white p-6">
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="text-base font-semibold text-gray-900">
+                    Paste Your Resume
+                  </h3>
+                  <button
+                    onClick={() => setResumeMode("upload")}
+                    className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                  >
+                    Switch to upload
+                  </button>
+                </div>
+                <textarea
+                  value={resumeText}
+                  onChange={(e) => setResumeText(e.target.value)}
+                  placeholder="Paste your resume text here..."
+                  className="h-64 w-full resize-none rounded-lg border border-gray-300 p-3 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+                {resumeText && (
+                  <p className="mt-2 text-sm text-gray-400">
+                    {resumeText.length.toLocaleString()} characters
+                  </p>
+                )}
+              </div>
+            )}
+
+            {resumeReady && (
+              <div className="mt-4 text-center">
+                <button
+                  onClick={handlePackResumeContinue}
+                  className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+                >
+                  Continue to Job Descriptions
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Apply Pack JDs Phase ── */}
+        {phase === "pack_jds" && (
+          <div className="animate-slide-up-in mx-auto max-w-3xl">
+            <div className="mb-6">
+              <button
+                onClick={handleBack}
+                className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Back
+              </button>
+            </div>
+            <ApplyPackFlow resumeText={resumeText} />
+          </div>
+        )}
+      </main>
+
+      {/* Spotlight overlay */}
+      {showOnboarding && (
+        <SpotlightOverlay
+          steps={spotlightSteps}
+          currentStep={onboardingStep}
+          onNext={handleOnboardingNext}
+          onSkip={dismissOnboarding}
+        />
+      )}
     </div>
   );
 }

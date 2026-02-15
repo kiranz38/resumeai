@@ -74,14 +74,14 @@ export interface FreeAnalysisResult {
 // ── Radar Score types ──
 
 export interface RadarBreakdown {
-  impact: number;     // 0-100, weight 30%
-  clarity: number;    // 0-100, weight 20%
-  ownership: number;  // 0-100, weight 20%
-  seniority: number;  // 0-100, weight 15%
-  alignment: number;  // 0-100, weight 15%
+  hardSkills: number;            // 0-100, weight 25%
+  softSkills: number;            // 0-100, weight 15%
+  measurableResults: number;     // 0-100, weight 25%
+  keywordOptimization: number;   // 0-100, weight 20%
+  formattingBestPractices: number; // 0-100, weight 15%
 }
 
-export type RadarLabel = "Strong signal" | "Needs sharpening" | "Signal hidden";
+export type RadarLabel = "Strong match" | "Needs improvement" | "Weak match";
 
 export interface RadarBlocker {
   title: string;

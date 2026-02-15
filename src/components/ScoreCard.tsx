@@ -65,7 +65,7 @@ export default function ScoreCard({ label, score, description, variant = "defaul
   if (variant === "breakdown") {
     return (
       <div className="flex items-center gap-3 py-1.5">
-        <span className="w-24 shrink-0 text-sm font-medium text-gray-700">{label}</span>
+        <span className="w-28 shrink-0 text-sm font-medium text-gray-700">{label}</span>
         <div className="flex-1 h-3 rounded-full bg-gray-100 overflow-hidden">
           <div
             className={`h-full rounded-full ${colors.fill} transition-all duration-700 ease-out`}

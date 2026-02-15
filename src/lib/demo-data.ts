@@ -359,22 +359,22 @@ Sarah Chen`,
 
 export const DEMO_RADAR_RESULT: RadarResult = {
   score: 54,
-  label: "Needs sharpening",
+  label: "Needs improvement",
   breakdown: {
-    impact: 45,
-    clarity: 72,
-    ownership: 58,
-    seniority: 48,
-    alignment: 38,
+    hardSkills: 38,
+    softSkills: 58,
+    measurableResults: 45,
+    keywordOptimization: 42,
+    formattingBestPractices: 72,
   },
   blockers: [
     {
-      title: "Keyword alignment gap",
-      why: "Key required terms not found: Python, Kubernetes, GraphQL. These are explicit requirements in the job description.",
-      how: "Mirror the exact phrases from the job description in your skills section and experience bullets.",
+      title: "Hard skills gap",
+      why: "Key required skills not found: Python, Kubernetes, GraphQL. These are explicitly required in the job description.",
+      how: "Add missing hard skills to your Skills section and weave them into experience bullets where you've used them.",
     },
     {
-      title: "Weak quantified impact",
+      title: "Weak measurable results",
       why: "Only 4 of 11 bullets include metrics. Hiring managers scan for numbers first.",
       how: "Add %, $, time saved, team size, or user count to each bullet. Even estimates are better than nothing.",
       beforeAfter: {
@@ -383,9 +383,9 @@ export const DEMO_RADAR_RESULT: RadarResult = {
       },
     },
     {
-      title: "Seniority signals are thin",
-      why: "7 years of experience for a Senior-level role but limited scope and leadership cues in bullets.",
-      how: "Add cross-functional scope, team size, system-level decisions, and mentorship to your bullets.",
+      title: "Keyword optimization gap",
+      why: "9 job description keywords not found in your resume. ATS systems and recruiters scan for exact matches.",
+      how: "Mirror the exact phrases from the job description in your skills section and experience bullets.",
     },
   ],
   diagnostics: {
