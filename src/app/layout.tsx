@@ -50,7 +50,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${caveat.variable} antialiased flex min-h-screen flex-col font-sans`}
+        className={`${caveat.variable} antialiased flex min-h-screen flex-col overflow-x-hidden font-sans`}
       >
         <Header />
         <main className="flex-1">{children}</main>

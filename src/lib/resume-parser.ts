@@ -393,9 +393,12 @@ function extractExperience(sections: SectionMap): ExperienceEntry[] {
           // Current entry already has dates or no entry → new entry
           if (currentEntry) entries.push(currentEntry);
           // Only use pendingProjectName for the very first entry (before any position header)
-          const useProject = entries.length === 0 && !currentEntry && pendingProjectName;
+          const projectCompany: string | undefined =
+            entries.length === 0 && !currentEntry && pendingProjectName
+              ? pendingProjectName
+              : undefined;
           currentEntry = {
-            company: useProject ? pendingProjectName || undefined : undefined,
+            company: projectCompany,
             start: dateMatch.start,
             end: dateMatch.end,
             bullets: [],

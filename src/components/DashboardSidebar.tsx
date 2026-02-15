@@ -23,10 +23,10 @@ export default function DashboardSidebar({
 
   return (
     <>
-      {/* Mobile toggle */}
+      {/* Mobile toggle — small pill instead of floating box */}
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="fixed left-3 top-20 z-40 rounded-lg border border-gray-200 bg-white p-2 shadow-sm lg:hidden"
+        className="fixed left-2 top-[4.5rem] z-40 rounded-full border border-gray-200 bg-white/90 p-1.5 shadow-sm backdrop-blur-sm lg:hidden"
         aria-label="Toggle sidebar"
       >
         <svg className="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">

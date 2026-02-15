@@ -83,7 +83,7 @@ const TRUST_ITEMS = [
 
 export default function LandingPage() {
   return (
-    <div>
+    <div className="overflow-x-hidden">
       {/* Hero */}
       <section className="relative overflow-hidden bg-gradient-to-b from-blue-50 via-white to-white px-4 pb-24 pt-20">
         {/* Decorative blobs */}

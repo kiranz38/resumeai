@@ -55,7 +55,7 @@ function AnalyzePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialTab = searchParams.get("tab");
-  const [phase, setPhase] = useState<Phase>(initialTab === "jobs" ? "jobs" : "hub");
+  const [phase, setPhase] = useState<Phase>(initialTab === "jobs" ? "jobs" : "resume_input");
   const [resumeMode, setResumeMode] = useState<InputMode>("upload");
   const [resumeText, setResumeText] = useState("");
   const [jobDescription, setJobDescription] = useState("");
@@ -143,7 +143,7 @@ function AnalyzePage() {
         dismissOnboarding();
         setPhase("jobs");
       } else {
-        setPhase("hub");
+        setPhase("resume_input");
       }
     },
     [dismissOnboarding],
@@ -404,7 +404,7 @@ function AnalyzePage() {
   const stepIndex = getStepIndex(phase);
 
   return (
-    <div className="flex min-h-[calc(100vh-4rem)]">
+    <div className="flex min-h-[calc(100vh-4rem)] w-full max-w-full overflow-x-hidden">
       {/* Sidebar */}
       <DashboardSidebar
         activeNav={activeNav}
@@ -413,7 +413,7 @@ function AnalyzePage() {
       />
 
       {/* Main content area */}
-      <main className="min-w-0 flex-1 overflow-x-hidden px-4 py-8 lg:px-8">
+      <div className="min-w-0 flex-1 overflow-x-hidden px-4 py-8 lg:px-8">
         {/* Error / Warning banners */}
         {error && (
           <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -794,7 +794,7 @@ function AnalyzePage() {
             <ApplyPackFlow resumeText={resumeText} />
           </div>
         )}
-      </main>
+      </div>
 
       {/* Spotlight overlay */}
       {showOnboarding && (
