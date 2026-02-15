@@ -19,6 +19,7 @@ import ModernAtsResume from "@/components/templates/ModernAtsResume";
 import ProfessionalCoverLetter from "@/components/templates/ProfessionalCoverLetter";
 import PaywallPlanPicker from "@/components/PaywallPlanPicker";
 import { trackEvent } from "@/lib/analytics";
+import { PRO_PRICE, CAREER_PASS_PRICE } from "@/lib/constants";
 import type { RadarResult } from "@/lib/types";
 import { scoreRadar, tailoredToCandidateProfile } from "@/lib/radar-scorer";
 import { updateSessionRadarAfter } from "@/lib/job-sessions";
@@ -273,6 +274,19 @@ function ProResultsPage() {
         } catch {
           // Non-critical — generation may still work in dev mode
         }
+      }
+
+      // Fire GA4 purchase event when arriving from checkout
+      if (sessionId || devToken) {
+        const purchasePlan = planParam || "pro";
+        const purchaseValue = purchasePlan === "pass" ? CAREER_PASS_PRICE : PRO_PRICE;
+        trackEvent("purchase", {
+          value: purchaseValue,
+          currency: "USD",
+          transaction_id: sessionId || `dev_${Date.now()}`,
+          items: purchasePlan,
+        });
+        trackEvent("checkout_completed", { plan: purchasePlan });
       }
 
       if (sessionId || pendingPro) {

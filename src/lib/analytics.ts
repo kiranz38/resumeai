@@ -18,7 +18,8 @@ type EventParams = Record<string, string | number | boolean>;
  * — Conversion —
  * - pro_cta_clicked                    Pro upgrade CTA clicked
  * - checkout_started                   Stripe checkout initiated
- * - checkout_completed                 Stripe payment confirmed
+ * - checkout_completed                 Stripe payment confirmed (plan)
+ * - purchase                           GA4 purchase event (value, currency, transaction_id, items)
  * - pro_generate_clicked               Generate Pro clicked
  * - pro_viewed                         Pro results loaded
  * - pro_generation_completed           Pro output received

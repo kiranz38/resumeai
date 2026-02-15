@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { trackEvent } from "@/lib/analytics";
-import { CAREER_PASS_DISPLAY } from "@/lib/constants";
+import { CAREER_PASS_DISPLAY, CAREER_PASS_PRICE } from "@/lib/constants";
 import { isValidTokenFormat, isValidPlan } from "@/lib/sanitizer";
 
 export default function CareerWelcomeWrapper() {
@@ -53,6 +53,17 @@ function CareerWelcomePage() {
           }
         })
         .catch(() => {});
+    }
+
+    // Fire GA4 purchase event when arriving from checkout
+    if (sessionId || devToken) {
+      trackEvent("purchase", {
+        value: CAREER_PASS_PRICE,
+        currency: "USD",
+        transaction_id: sessionId || `dev_${Date.now()}`,
+        items: "pass",
+      });
+      trackEvent("checkout_completed", { plan: "pass" });
     }
 
     setPlan(planParam || sessionStorage.getItem("rt_entitlement_plan") || "pass");
