@@ -18,6 +18,7 @@ import { generateMockProResult } from "./mock-llm";
 import { trackServerEvent } from "./analytics-server";
 import { runQualityGate } from "./quality-gate";
 import { ensureScoreImprovement } from "./score-booster";
+import { classifyJobFamily } from "./domain";
 
 // ── Circuit Breaker ──
 
@@ -187,7 +188,11 @@ export async function generateProDocuments(
     };
   }
 
-  // 4. Attempt LLM call with timeout and retries
+  // 4. Classify job family (for logging and domain-aware pipeline)
+  const { family, confidence } = classifyJobFamily(candidateProfile, jobProfile);
+  console.log(`[llm-gateway] Job family: ${family} (confidence: ${confidence})`);
+
+  // 5. Attempt LLM call with timeout and retries
   try {
     const result = await attemptWithRetry(
       candidateProfile,
@@ -204,13 +209,20 @@ export async function generateProDocuments(
         issues.map((i) => `${i.type}:${i.location}`));
     }
 
+    // Enforce no-injection (strip skills not in candidate + JD)
+    const noInjectionOutput = enforceSkillsNoInjection(gatedOutput, candidateProfile, jobProfile);
+
     // Run score booster (ensures radarAfter >= radarBefore + 15, keyword injection)
     const { output: boostedOutput, radarBefore, radarAfter, boosted, boostActions } =
-      ensureScoreImprovement(gatedOutput, candidateProfile, jobProfile);
+      ensureScoreImprovement(noInjectionOutput, candidateProfile, jobProfile);
     if (boosted) {
       console.log(`[llm-gateway] ScoreBooster applied ${boostActions.length} action(s):`,
         boostActions);
     }
+
+    // Final quality gate pass on boosted output (score booster may have added content)
+    const { output: finalOutput } = runQualityGate(boostedOutput);
+
     console.log(`[llm-gateway] Radar: before=${radarBefore.score} after=${radarAfter.score} (${radarAfter.label})`);
 
     recordSuccess();
@@ -221,7 +233,7 @@ export async function generateProDocuments(
       radarAfter: radarAfter.score,
       boosted,
     });
-    return { output: boostedOutput, source: "llm", radarBefore, radarAfter };
+    return { output: finalOutput, source: "llm", radarBefore, radarAfter };
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Unknown LLM error";
     console.error("[llm-gateway] LLM call failed after retries:", msg);
@@ -316,9 +328,79 @@ function generateFallbackWithRadar(
 ): { output: ProOutput; radarBefore: RadarResult; radarAfter: RadarResult } {
   const raw = generateMockProResult(candidate, job, resumeText);
   const { output } = runQualityGate(raw);
+  const noInjection = enforceSkillsNoInjection(output, candidate, job);
   const { output: boosted, radarBefore, radarAfter } =
-    ensureScoreImprovement(output, candidate, job);
-  return { output: boosted, radarBefore, radarAfter };
+    ensureScoreImprovement(noInjection, candidate, job);
+  // Final quality gate pass on boosted output
+  const { output: finalOutput } = runQualityGate(boosted);
+  return { output: finalOutput, radarBefore, radarAfter };
+}
+
+// ── No-injection enforcement ──
+
+/**
+ * Strip skills that are NOT in the allowed set (candidate skills + JD terms).
+ * Defense-in-depth: the LLM prompt and mock generator already constrain skills,
+ * but this catches any injected skills that slip through.
+ */
+function enforceSkillsNoInjection(
+  output: ProOutput,
+  candidate: CandidateProfile,
+  job: JobProfile,
+): ProOutput {
+  const allowed = new Set([
+    ...candidate.skills.map((s) => s.toLowerCase()),
+    ...job.requiredSkills.map((s) => s.toLowerCase()),
+    ...job.preferredSkills.map((s) => s.toLowerCase()),
+    ...job.keywords.map((s) => s.toLowerCase()),
+  ]);
+
+  // Also allow skills already in the candidate's bullets/summary text
+  const candidateText = [
+    candidate.summary || "",
+    candidate.headline || "",
+    ...candidate.experience.flatMap((e) => [e.title || "", ...e.bullets]),
+  ].join(" ").toLowerCase();
+
+  let stripped = 0;
+  const skills = output.tailoredResume.skills
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => {
+        const lower = item.toLowerCase().trim();
+        if (!lower) return false;
+
+        // Exact match in allowed set
+        if (allowed.has(lower)) return true;
+
+        // Substring match (e.g., "React" matches "React.js")
+        for (const term of allowed) {
+          if (lower.includes(term) || term.includes(lower)) return true;
+        }
+
+        // Found in original candidate text
+        if (candidateText.includes(lower)) return true;
+
+        // Short skills (1-2 words) are likely legitimate
+        if (lower.split(/\s+/).length <= 2) return true;
+
+        stripped++;
+        return false;
+      }),
+    }))
+    .filter((group) => group.items.length > 0);
+
+  if (stripped > 0) {
+    console.log(`[llm-gateway] No-injection: stripped ${stripped} injected skill(s)`);
+  }
+
+  return {
+    ...output,
+    tailoredResume: {
+      ...output.tailoredResume,
+      skills,
+    },
+  };
 }
 
 // ── Observability ──

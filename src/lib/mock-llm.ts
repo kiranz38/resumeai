@@ -1,28 +1,37 @@
 import type { CandidateProfile, JobProfile } from "./types";
 import type { ProOutput } from "./schema";
+import { classifyJobFamily, getStrategy, analyzeBullet, familyToStrategyKey } from "./domain";
+import type { RewriteStrategy, JobFamily } from "./domain";
 
 /**
  * Mock LLM generator - produces realistic Pro results without calling any API.
  * Used when MOCK_LLM=true or ANTHROPIC_API_KEY is not set.
+ *
+ * Uses domain classification + strategy pattern to generate profession-appropriate
+ * output across all job families (engineering, sales, marketing, finance, ops, etc.).
  */
 export function generateMockProResult(
   candidate: CandidateProfile,
   job: JobProfile,
   _resumeText: string
 ): ProOutput {
+  // Classify the job family and get the appropriate strategy
+  const { family } = classifyJobFamily(candidate, job);
+  const strategy = getStrategy(family);
+
   const candidateName = candidate.name || "the candidate";
   const jobTitle = job.title || "the target role";
   const company = job.company || "the company";
 
-  const bulletRewrites = generateBulletRewrites(candidate);
+  const bulletRewrites = generateBulletRewrites(candidate, strategy);
   const keywordChecklist = generateKeywordChecklist(candidate, job);
   const experienceGaps = generateExperienceGaps(candidate, job);
-  const coverLetter = generateCoverLetter(candidate, job);
-  const tailoredResume = generateTailoredResume(candidate, job);
+  const coverLetter = generateCoverLetter(candidate, job, family, strategy);
+  const tailoredResume = generateTailoredResume(candidate, job, family, strategy);
   const recruiterFeedback = generateRecruiterFeedback(candidate, job);
   const nextActions = generateNextActions(candidate, job);
 
-  const summary = `${candidateName}'s resume shows solid experience but needs optimization for the ${jobTitle} role at ${company}. Key gaps include missing technologies and insufficient system-level impact in bullet points. The tailored version addresses these by rewriting bullets with stronger metrics, adding missing keywords, and restructuring the skills section to match the job requirements. Focus areas: add missing tech skills, quantify impact, and lead with architecture-level accomplishments.`;
+  const summary = `${candidateName}'s resume shows solid experience but needs optimization for the ${jobTitle} role at ${company}. Key gaps include missing skills from the job description and insufficient quantified impact in bullet points. The tailored version addresses these by rewriting bullets with stronger action verbs, adding missing keywords, and restructuring the skills section to match the job requirements.`;
 
   // Generate radar scores
   const skillsMatch = Math.min(100, Math.round(40 + candidate.skills.length * 3));
@@ -33,20 +42,14 @@ export function generateMockProResult(
 
   // Before/after preview
   const firstBullet = candidate.experience[0]?.bullets[0] || "Worked on various projects";
+  const rewrittenFirst = bulletRewrites[0]?.rewritten;
   const beforeAfterPreview = {
     before: firstBullet,
-    after: bulletRewrites[0]?.rewritten || `Architected and delivered scalable solutions for ${jobTitle}, driving measurable improvements in system reliability`,
+    after: rewrittenFirst || strategy.rewriteBullet(firstBullet, analyzeBullet(firstBullet)),
   };
 
-  // Interview talking points
-  const interviewTalkingPoints = [
-    `Discuss your experience with ${candidate.skills.slice(0, 2).join(" and ")} in a production environment`,
-    `Prepare a system design walkthrough for a project similar to ${jobTitle}`,
-    candidate.experience.length > 1
-      ? `Highlight your career progression from ${candidate.experience[candidate.experience.length - 1]?.title || "early roles"} to ${candidate.experience[0]?.title || "current role"}`
-      : "Describe a technical challenge you solved and the tradeoffs involved",
-    `Have a performance optimization story ready with specific metrics`,
-  ];
+  // Interview talking points (profession-agnostic)
+  const interviewTalkingPoints = buildInterviewTalkingPoints(candidate, job);
 
   return {
     summary,
@@ -63,14 +66,18 @@ export function generateMockProResult(
   };
 }
 
-function generateBulletRewrites(candidate: CandidateProfile): ProOutput["bulletRewrites"] {
+function generateBulletRewrites(
+  candidate: CandidateProfile,
+  strategy: RewriteStrategy,
+): ProOutput["bulletRewrites"] {
   const rewrites: ProOutput["bulletRewrites"] = [];
 
   for (const exp of candidate.experience) {
     const section = `${exp.title || ""} at ${exp.company || ""}`.trim();
 
     for (const bullet of exp.bullets) {
-      const rewritten = rewriteBullet(bullet);
+      const signals = analyzeBullet(bullet);
+      const rewritten = strategy.rewriteBullet(bullet, signals);
       if (rewritten !== bullet) {
         rewrites.push({
           original: bullet,
@@ -102,50 +109,17 @@ function generateBulletRewrites(candidate: CandidateProfile): ProOutput["bulletR
   return rewrites.slice(0, 20);
 }
 
-function rewriteBullet(bullet: string): string {
-  let improved = bullet;
-
-  const replacements: [RegExp, string][] = [
-    [/^Responsible for\s+/i, "Spearheaded "],
-    [/^Helped\s+/i, "Collaborated to "],
-    [/^Assisted\s+(with\s+)?/i, "Supported "],
-    [/^Worked on\s+/i, "Developed and delivered "],
-    [/^Participated in\s+/i, "Contributed to "],
-    [/^Involved in\s+/i, "Drove "],
-    [/^Was part of\s+/i, "Collaborated across teams on "],
-    [/^Created\s+/i, "Designed and implemented "],
-    [/^Built\s+/i, "Architected and built "],
-    [/^Made\s+/i, "Engineered "],
-    [/^Managed\s+/i, "Led and managed "],
-    [/^Used\s+/i, "Leveraged "],
-  ];
-
-  for (const [pattern, replacement] of replacements) {
-    if (pattern.test(improved)) {
-      improved = improved.replace(pattern, replacement);
-      break;
-    }
-  }
-
-  if (!/\d/.test(improved)) {
-    improved = improved.replace(/\.$/, "");
-    if (improved.length < 120) {
-      improved += ", resulting in measurable performance improvements";
-    }
-  }
-
-  return improved;
-}
-
 function enhanceBullet(bullet: string): string {
   let enhanced = bullet;
 
+  // Capitalize first letter
   if (/^[a-z]/.test(enhanced)) {
     enhanced = enhanced.charAt(0).toUpperCase() + enhanced.slice(1);
   }
 
-  if (!enhanced.includes("team") && !enhanced.includes("cross-functional")) {
-    enhanced = enhanced.replace(/\.$/, "") + " in cross-functional collaboration with stakeholders";
+  // Ensure bullet ends with a period (complete sentence)
+  if (!/[.!?]$/.test(enhanced.trim())) {
+    enhanced = enhanced.trim() + ".";
   }
 
   return enhanced;
@@ -248,7 +222,12 @@ function generateExperienceGaps(
   return gaps.slice(0, 10);
 }
 
-function generateCoverLetter(candidate: CandidateProfile, job: JobProfile): ProOutput["coverLetter"] {
+function generateCoverLetter(
+  candidate: CandidateProfile,
+  job: JobProfile,
+  family: JobFamily,
+  strategy: RewriteStrategy,
+): ProOutput["coverLetter"] {
   const name = candidate.name || "the candidate";
   const title = job.title || "the open position";
   const company = job.company || "the company";
@@ -259,41 +238,52 @@ function generateCoverLetter(candidate: CandidateProfile, job: JobProfile): ProO
   const years = candidate.experience.length > 0 ? Math.max(candidate.experience.length * 2, 3) : 3;
 
   return {
-    paragraphs: [
-      "Dear Hiring Manager,",
-      `I am writing to express my strong interest in the ${title} position at ${company}. With ${years}+ years of experience in software development and a background in ${topSkills}, I am confident in my ability to contribute meaningfully to your team.`,
-      `In ${recentRole}, I have ${topBullet.charAt(0).toLowerCase()}${topBullet.slice(1).replace(/\.$/, "")}. This experience has given me a solid foundation in building scalable solutions and collaborating with cross-functional teams to deliver results.`,
-      `What excites me most about this opportunity is the chance to apply my skills to ${company}'s mission. ${job.responsibilities.length > 0 ? `I am particularly drawn to the focus on ${job.responsibilities[0].toLowerCase().replace(/\.$/, "")}.` : "I am eager to contribute to meaningful technical challenges and grow alongside talented engineers."}`,
-      `I would welcome the opportunity to discuss how my experience and skills align with your team's needs. I am excited about the possibility of contributing to ${company} and would be glad to share more details about my background.`,
-      `Best regards,\n${name}`,
-    ],
+    paragraphs: strategy.draftCoverLetter({
+      name,
+      title,
+      company,
+      topSkills,
+      recentRole,
+      topBullet,
+      years,
+      responsibilities: job.responsibilities,
+      family,
+    }),
   };
 }
 
 function generateTailoredResume(
   candidate: CandidateProfile,
-  job: JobProfile
+  job: JobProfile,
+  family: JobFamily,
+  strategy: RewriteStrategy,
 ): ProOutput["tailoredResume"] {
   const name = candidate.name || "Your Name";
-  const headline = job.title || candidate.headline || "Software Engineer";
+  // Use candidate's existing headline if it matches the target role; otherwise blend
+  const headline = candidate.headline && candidate.headline.length > 3
+    ? candidate.headline
+    : job.title || "Professional";
   const years = estimateYears(candidate);
 
-  // Build structured skills
-  const skills = buildSkillGroups(candidate, job);
+  // Build structured skills (profession-aware)
+  const skills = buildSkillGroups(candidate, job, strategy);
 
   // Build structured experience — preserve ALL original bullets and add extras
   const experience = candidate.experience.map((exp) => {
-    const improved = exp.bullets.map((b) => rewriteBullet(b));
-    // Add supplementary bullets to match or exceed original content length
-    if (improved.length < 4) {
+    const improved = exp.bullets.map((b) => {
+      const signals = analyzeBullet(b);
+      return strategy.rewriteBullet(b, signals);
+    });
+    // Add supplementary bullets only if needed to reach minimum of 3
+    if (improved.length < 3) {
+      const role = exp.title || job.title || "the role";
       const extras = [
-        `Collaborated with cross-functional teams to deliver key initiatives on schedule`,
-        `Drove continuous improvement through code reviews, documentation, and mentoring`,
-        `Contributed to system architecture decisions impacting scalability and reliability`,
-        `Participated in agile ceremonies and sprint planning to align priorities`,
+        `Contributed to key decisions that improved team outcomes and operational efficiency.`,
+        `Collaborated with cross-functional team members to maintain quality standards for ${role} deliverables.`,
+        `Delivered results on schedule through structured planning and clear documentation.`,
       ];
       for (const extra of extras) {
-        if (improved.length >= Math.max(4, exp.bullets.length)) break;
+        if (improved.length >= Math.max(3, exp.bullets.length)) break;
         improved.push(extra);
       }
     }
@@ -312,7 +302,14 @@ function generateTailoredResume(
     year: edu.end,
   }));
 
-  const summary = `Results-driven ${headline} with ${years > 0 ? years + "+" : "N"} years of experience building scalable applications and leading technical initiatives. Skilled in ${candidate.skills.slice(0, 5).join(", ")}. Seeking to leverage expertise in ${job.keywords.slice(0, 3).join(", ")} to drive impact as ${job.title || "an engineer"} at ${job.company || "your organization"}.`;
+  const summary = strategy.draftSummary({
+    headline,
+    years,
+    skills: candidate.skills,
+    jobTitle: job.title || "the target role",
+    company: job.company || "your organization",
+    family,
+  });
 
   // Pass through projects from the parsed resume
   const projects = candidate.projects.length > 0
@@ -336,41 +333,77 @@ function generateTailoredResume(
   };
 }
 
+/**
+ * Generic skill grouper — groups skills by JD relevance with
+ * profession-appropriate category labels.
+ */
 function buildSkillGroups(
   candidate: CandidateProfile,
-  job: JobProfile
+  job: JobProfile,
+  strategy: RewriteStrategy,
 ): Array<{ category: string; items: string[] }> {
-  const categories: Record<string, string[]> = {
-    "Languages": [],
-    "Frontend": [],
-    "Backend": [],
-    "Cloud & DevOps": [],
-    "Databases": [],
-    "Tools & Methods": [],
-  };
-
+  // Collect unique skills: candidate skills + JD keywords (no invented skills)
   const allSkills = [...new Set([...candidate.skills, ...job.keywords.filter((k) => k.length < 25)])];
 
+  // Split into JD-aligned vs other
+  const jdTerms = new Set([
+    ...job.requiredSkills.map((s) => s.toLowerCase()),
+    ...job.preferredSkills.map((s) => s.toLowerCase()),
+    ...job.keywords.map((s) => s.toLowerCase()),
+  ]);
+
+  const core: string[] = [];
+  const additional: string[] = [];
+
   for (const skill of allSkills) {
-    const lower = skill.toLowerCase();
-    if (/^(javascript|typescript|python|java|c\+\+|c#|go|rust|ruby|php|swift|kotlin|scala|r|sql)$/i.test(lower)) {
-      categories["Languages"].push(skill);
-    } else if (/^(react|angular|vue|svelte|next|nuxt|html|css|tailwind|sass|bootstrap)$/i.test(lower)) {
-      categories["Frontend"].push(skill);
-    } else if (/^(node|express|django|flask|spring|rails|laravel|graphql|rest|grpc)$/i.test(lower)) {
-      categories["Backend"].push(skill);
-    } else if (/^(aws|gcp|azure|docker|kubernetes|terraform|ci|github|jenkins|linux|bash)$/i.test(lower)) {
-      categories["Cloud & DevOps"].push(skill);
-    } else if (/^(postgresql|mysql|mongodb|redis|elasticsearch|dynamodb|cassandra|sqlite|nosql)$/i.test(lower)) {
-      categories["Databases"].push(skill);
+    if (jdTerms.has(skill.toLowerCase())) {
+      core.push(skill);
     } else {
-      categories["Tools & Methods"].push(skill);
+      additional.push(skill);
     }
   }
 
-  return Object.entries(categories)
-    .filter(([, items]) => items.length > 0)
-    .map(([category, items]) => ({ category, items }));
+  // Family-appropriate labels
+  const labelMap: Record<string, { core: string; additional: string }> = {
+    engineering: { core: "Technical Skills", additional: "Tools & Methods" },
+    business: { core: "Core Competencies", additional: "Additional Skills" },
+    sales: { core: "Sales & Revenue Skills", additional: "Business Tools" },
+    marketing: { core: "Marketing Skills", additional: "Tools & Platforms" },
+    finance: { core: "Financial Skills", additional: "Tools & Compliance" },
+  };
+
+  const key = familyToStrategyKey(strategy.family);
+  const labels = labelMap[key] || labelMap.business;
+
+  const groups: Array<{ category: string; items: string[] }> = [];
+  if (core.length > 0) groups.push({ category: labels.core, items: core });
+  if (additional.length > 0) groups.push({ category: labels.additional, items: additional });
+
+  // Fallback if no categorization happened
+  if (groups.length === 0 && allSkills.length > 0) {
+    groups.push({ category: "Skills", items: allSkills });
+  }
+
+  return groups;
+}
+
+/**
+ * Build profession-agnostic interview talking points.
+ */
+function buildInterviewTalkingPoints(candidate: CandidateProfile, job: JobProfile): string[] {
+  const topSkills = candidate.skills.slice(0, 2).join(" and ");
+  const jobTitle = job.title || "the role";
+
+  return [
+    topSkills
+      ? `Discuss your experience with ${topSkills} and how it applies to ${jobTitle}`
+      : `Prepare examples of your most relevant experience for ${jobTitle}`,
+    `Prepare a walkthrough of a challenging project where you delivered measurable results`,
+    candidate.experience.length > 1
+      ? `Highlight your career progression from ${candidate.experience[candidate.experience.length - 1]?.title || "early roles"} to ${candidate.experience[0]?.title || "current role"}`
+      : "Describe a challenge you solved and the tradeoffs involved",
+    `Have a story ready about collaborating with others to achieve a goal`,
+  ];
 }
 
 function generateRecruiterFeedback(candidate: CandidateProfile, job: JobProfile): string[] {
@@ -382,11 +415,11 @@ function generateRecruiterFeedback(candidate: CandidateProfile, job: JobProfile)
     `Recruiter Assessment for ${title}`,
     `Overall Fit: ${years >= 5 ? "Strong" : years >= 3 ? "Moderate" : "Developing"} candidate with relevant foundation.`,
     `${years}+ years of progressive experience showing career growth`,
-    `${candidate.skills.length > 5 ? "Diverse" : "Focused"} technical skill set with ${candidate.skills.slice(0, 3).join(", ")}`,
+    `${candidate.skills.length > 5 ? "Diverse" : "Focused"} skill set with ${candidate.skills.slice(0, 3).join(", ")}`,
     candidate.experience.flatMap((e) => e.bullets).filter((b) => /\d/.test(b)).length > 0
       ? "Good use of metrics in experience bullets"
       : "Experience bullets show clear responsibilities",
-    "Some key technologies from the job requirements are not reflected in the resume",
+    "Some key skills from the job requirements are not reflected in the resume",
     "Could benefit from more quantifiable achievements and scope indicators",
     candidate.summary
       ? "Summary could be more targeted to this specific role"
@@ -402,19 +435,19 @@ function generateNextActions(candidate: CandidateProfile, job: JobProfile): stri
     actions.push("Add a professional summary targeting the specific role and company");
   }
 
-  const missingTech = job.keywords.filter(
+  const missingSkills = job.keywords.filter(
     (k) => !candidate.skills.some((s) => s.toLowerCase() === k.toLowerCase())
   );
-  if (missingTech.length > 0) {
-    actions.push(`Add missing technical skills to your resume: ${missingTech.slice(0, 5).join(", ")}`);
+  if (missingSkills.length > 0) {
+    actions.push(`Add missing skills to your resume: ${missingSkills.slice(0, 5).join(", ")}`);
   }
 
-  actions.push("Quantify every bullet point with metrics (users, revenue, percentage improvements)");
-  actions.push("Reorganize skills section by category (Languages, Frontend, Backend, Cloud, etc.)");
+  actions.push("Quantify every bullet point with metrics (scope, volume, percentages, outcomes)");
+  actions.push("Reorganize skills section to highlight job-relevant competencies first");
   actions.push("Tailor your most recent role's bullets to mirror the job description language");
 
   if (job.company) {
-    actions.push(`Research ${job.company}'s tech stack and culture to customize your cover letter`);
+    actions.push(`Research ${job.company}'s priorities and culture to customize your cover letter`);
   }
 
   actions.push("Proofread the final version and have a peer review it before submitting");

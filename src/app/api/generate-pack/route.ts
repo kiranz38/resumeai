@@ -8,6 +8,7 @@ import { proCache, hashInputs } from "@/lib/cache";
 import { checkRelevance } from "@/lib/radar-scorer";
 import { trackServerEvent } from "@/lib/analytics-server";
 import { verifyEntitlement, decrementQuota, checkEntitlementBurst } from "@/lib/entitlement";
+import { validateJD } from "@/lib/jd-validator";
 import type { ProOutput } from "@/lib/schema";
 
 /**
@@ -173,6 +174,13 @@ export async function POST(request: Request) {
               stage: "parsing",
               pct: 10,
             });
+
+            // Validate JD quality
+            const jdValidation = validateJD(jdText);
+            if (!jdValidation.valid) {
+              throw new Error(jdValidation.reason || "Invalid job description");
+            }
+
             const jobProfile = parseJobDescription(jdText);
 
             const relevance = checkRelevance(candidateProfile, jobProfile);

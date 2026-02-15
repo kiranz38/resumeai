@@ -250,7 +250,7 @@ function addSkillBullet(
   // Build a contextual bullet using the first missing skill
   const skill = missingRequired[0];
   const role = output.tailoredResume.experience[0];
-  const bullet = `Applied ${skill} to deliver scalable solutions aligned with project goals and team standards.`;
+  const bullet = `Applied ${skill} to deliver results aligned with project goals and team standards.`;
 
   const experience = output.tailoredResume.experience.map((exp, i) => {
     if (i !== 0) return exp;

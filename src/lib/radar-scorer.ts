@@ -409,45 +409,44 @@ function buildDiagnostics(
     })
     .filter(Boolean);
 
-  // Missing keyword clusters
+  // Missing keyword clusters — grouped by JD source (profession-agnostic)
   const candidateText = buildCandidateText(candidate);
   const clusters: Array<{ cluster: string; keywords: string[] }> = [];
-  const clusterMap: Record<string, string[]> = {
-    "Backend Languages": [],
-    Cloud: [],
-    "DevOps & Infra": [],
-    Frontend: [],
-    Databases: [],
-    Leadership: [],
-  };
 
+  const requiredSet = new Set(job.requiredSkills.map((s) => s.toLowerCase()));
+  const preferredSet = new Set(job.preferredSkills.map((s) => s.toLowerCase()));
+
+  const requiredMissing: string[] = [];
+  const preferredMissing: string[] = [];
+  const otherMissing: string[] = [];
+
+  const seen = new Set<string>();
   for (const kw of [
     ...job.requiredSkills,
     ...job.preferredSkills,
     ...job.keywords,
   ]) {
     const lower = kw.toLowerCase();
-    if (candidateText.includes(lower)) continue;
+    if (seen.has(lower) || candidateText.includes(lower)) continue;
+    seen.add(lower);
 
-    if (/python|go|java|rust|ruby|c\+\+|c#|kotlin|scala/i.test(kw)) {
-      clusterMap["Backend Languages"].push(kw);
-    } else if (/aws|gcp|azure|cloud/i.test(kw)) {
-      clusterMap["Cloud"].push(kw);
-    } else if (/docker|kubernetes|terraform|ci\/cd|devops|ansible/i.test(kw)) {
-      clusterMap["DevOps & Infra"].push(kw);
-    } else if (/react|vue|angular|next|frontend|css|html/i.test(kw)) {
-      clusterMap["Frontend"].push(kw);
-    } else if (/sql|postgres|mongo|redis|dynamo|database/i.test(kw)) {
-      clusterMap["Databases"].push(kw);
-    } else if (/lead|mentor|manage|architect|design/i.test(kw)) {
-      clusterMap["Leadership"].push(kw);
+    if (requiredSet.has(lower)) {
+      requiredMissing.push(kw);
+    } else if (preferredSet.has(lower)) {
+      preferredMissing.push(kw);
+    } else {
+      otherMissing.push(kw);
     }
   }
 
-  for (const [cluster, keywords] of Object.entries(clusterMap)) {
-    if (keywords.length > 0) {
-      clusters.push({ cluster, keywords: [...new Set(keywords)] });
-    }
+  if (requiredMissing.length > 0) {
+    clusters.push({ cluster: "Required Skills", keywords: requiredMissing });
+  }
+  if (preferredMissing.length > 0) {
+    clusters.push({ cluster: "Preferred Skills", keywords: preferredMissing });
+  }
+  if (otherMissing.length > 0) {
+    clusters.push({ cluster: "Additional Keywords", keywords: otherMissing });
   }
 
   return {

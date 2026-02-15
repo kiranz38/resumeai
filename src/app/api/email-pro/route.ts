@@ -4,6 +4,7 @@ import { rateLimitRoute } from "@/lib/rate-limiter";
 import { parseAndValidate, EmailProRequestSchema } from "@/lib/sanitizer";
 import { ProOutputSchema, type ProOutput } from "@/lib/schema";
 import { validateEmailForDelivery } from "@/lib/email-validator";
+import { runQualityGate } from "@/lib/quality-gate";
 
 export async function POST(request: Request) {
   try {
@@ -36,7 +37,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid report data." }, { status: 400 });
     }
 
-    const validOutput = parsed.data;
+    // Run quality gate on the output to catch any stale/unprocessed data
+    const { output: validOutput } = runQualityGate(parsed.data);
 
     // Stripe session verification (if Stripe is configured and session ID provided)
     if (process.env.STRIPE_SECRET_KEY && stripeSessionId) {

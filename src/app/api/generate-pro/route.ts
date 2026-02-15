@@ -9,6 +9,7 @@ import { proCache, hashInputs } from "@/lib/cache";
 import { verifyEntitlement, decrementQuota, checkEntitlementBurst } from "@/lib/entitlement";
 import { checkRelevance } from "@/lib/radar-scorer";
 import { trackServerEvent } from "@/lib/analytics-server";
+import { validateJD } from "@/lib/jd-validator";
 
 export async function POST(request: Request) {
   try {
@@ -76,6 +77,18 @@ export async function POST(request: Request) {
     // Preprocess inputs
     const resumeText = preprocessResume(data.resumeText);
     const jobDescriptionText = preprocessJobDescription(data.jobDescriptionText);
+
+    // Validate JD quality
+    const jdValidation = validateJD(jobDescriptionText);
+    if (!jdValidation.valid) {
+      return NextResponse.json(
+        { error: jdValidation.reason },
+        { status: 400 },
+      );
+    }
+    if (jdValidation.warnings.length > 0) {
+      console.log("[generate-pro] JD validation warnings:", jdValidation.warnings);
+    }
 
     // Check cache
     const cacheKey = hashInputs("pro", resumeText, jobDescriptionText);

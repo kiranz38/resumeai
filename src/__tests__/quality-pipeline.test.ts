@@ -4,6 +4,8 @@ import { validateConsistency, resumeTextForScoring } from "@/lib/consistency-val
 import { dedupeBullets, dedupeProOutput } from "@/lib/dedupe-bullets";
 import { runQualityGate } from "@/lib/quality-gate";
 import { ensureScoreImprovement } from "@/lib/score-booster";
+import { generateMockProResult } from "@/lib/mock-llm";
+import { BANNED_PHRASES, PROMPT_VERSION } from "@/lib/llm/prompts";
 import type { CandidateProfile, JobProfile } from "@/lib/types";
 import type { ProOutput } from "@/lib/schema";
 
@@ -414,5 +416,278 @@ describe("Full Quality Pipeline", () => {
     for (const line of boosted.recruiterFeedback) {
       expect(line.toLowerCase()).not.toContain("no typescript shown");
     }
+  });
+});
+
+// ── REGRESSION TESTS (pro-v3.0) ──
+
+describe("Regression: Cover Letter Duplication", () => {
+  it("never produces duplicate Dear Hiring Manager greetings", () => {
+    const output = makeMockProOutput({
+      coverLetter: {
+        paragraphs: [
+          "Dear Hiring Manager,",
+          "Dear Hiring Manager,",
+          "Body paragraph 1.",
+          "Body paragraph 2.",
+          "Best regards,\nJane Doe",
+          "Sincerely, Jane Doe",
+        ],
+      },
+    });
+
+    const { output: fixed } = runQualityGate(output);
+    const greetings = fixed.coverLetter.paragraphs.filter((p) =>
+      /^dear/i.test(p.trim()),
+    );
+    expect(greetings).toHaveLength(1);
+  });
+
+  it("never produces duplicate signoffs", () => {
+    const output = makeMockProOutput({
+      coverLetter: {
+        paragraphs: [
+          "Dear Hiring Manager,",
+          "Body paragraph.",
+          "Best regards,\nJane",
+          "Sincerely, Jane Doe",
+        ],
+      },
+    });
+
+    const { output: fixed } = runQualityGate(output);
+    const signoffs = fixed.coverLetter.paragraphs.filter((p) =>
+      /^(sincerely|regards|best\s+regards)/i.test(p.trim()),
+    );
+    expect(signoffs).toHaveLength(1);
+  });
+
+  it("caps cover letter at 5 paragraphs max", () => {
+    const output = makeMockProOutput({
+      coverLetter: {
+        paragraphs: [
+          "Dear Hiring Manager,",
+          "Para 1.",
+          "Para 2.",
+          "Para 3.",
+          "Para 4.",
+          "Para 5.",
+          "Para 6.",
+          "Sincerely, Jane Doe",
+        ],
+      },
+    });
+
+    const { output: fixed } = runQualityGate(output);
+    expect(fixed.coverLetter.paragraphs.length).toBeLessThanOrEqual(5);
+  });
+});
+
+describe("Regression: Banned Phrases", () => {
+  it("removes banned phrases from bullets", () => {
+    const output = makeMockProOutput({
+      tailoredResume: {
+        ...makeMockProOutput().tailoredResume,
+        experience: [
+          {
+            company: "Corp",
+            title: "Dev",
+            period: "2020 – Present",
+            bullets: [
+              "Built app resulting in measurable performance improvements.",
+              "Led team in cross-functional collaboration with stakeholders.",
+              "Worked in a fast-paced environment delivering features.",
+            ],
+          },
+        ],
+      },
+    });
+
+    const { output: fixed } = runQualityGate(output);
+    const allBullets = fixed.tailoredResume.experience.flatMap((e) => e.bullets);
+    const lower = allBullets.join(" ").toLowerCase();
+
+    for (const phrase of BANNED_PHRASES) {
+      expect(lower).not.toContain(phrase.toLowerCase());
+    }
+  });
+
+  it("removes banned phrases from cover letter", () => {
+    const output = makeMockProOutput({
+      coverLetter: {
+        paragraphs: [
+          "Dear Hiring Manager,",
+          "I am writing to express my strong interest in the role. What excites me most is the team.",
+          "I am confident in my ability to deliver value.",
+          "Best regards,\nJane",
+        ],
+      },
+    });
+
+    const { output: fixed } = runQualityGate(output);
+    const lower = fixed.coverLetter.paragraphs.join(" ").toLowerCase();
+
+    expect(lower).not.toContain("i am writing to express my strong interest");
+    expect(lower).not.toContain("what excites me most");
+    expect(lower).not.toContain("i am confident in my ability");
+  });
+
+  it("removes banned phrases from summary", () => {
+    const output = makeMockProOutput({
+      tailoredResume: {
+        ...makeMockProOutput().tailoredResume,
+        summary: "Engineer driving measurable improvements in a fast-paced environment.",
+      },
+    });
+
+    const { output: fixed } = runQualityGate(output);
+    expect(fixed.tailoredResume.summary.toLowerCase()).not.toContain(
+      "driving measurable improvements",
+    );
+    expect(fixed.tailoredResume.summary.toLowerCase()).not.toContain(
+      "fast-paced environment",
+    );
+  });
+});
+
+describe("Regression: Dangling Bullets", () => {
+  it("fixes bullets ending with dangling clause", () => {
+    const output = makeMockProOutput({
+      tailoredResume: {
+        ...makeMockProOutput().tailoredResume,
+        experience: [
+          {
+            company: "Corp",
+            title: "Dev",
+            period: "2020 – Present",
+            bullets: [
+              "Built a React dashboard for internal users, leading to.",
+              "Optimized database queries, resulting in.",
+              "Implemented CI/CD pipeline, delivering.",
+            ],
+          },
+        ],
+      },
+    });
+
+    const { output: fixed, issues } = runQualityGate(output);
+    const allBullets = fixed.tailoredResume.experience.flatMap((e) => e.bullets);
+
+    for (const bullet of allBullets) {
+      // No bullet should end with a dangling clause
+      expect(bullet).not.toMatch(/,\s*(leading to|resulting in|delivering)\s*\.?\s*$/i);
+    }
+    expect(issues.some((i) => i.type === "dangling_bullet")).toBe(true);
+  });
+});
+
+describe("Regression: Skills Validation", () => {
+  it("removes sentences from skills items", () => {
+    const output = makeMockProOutput({
+      tailoredResume: {
+        ...makeMockProOutput().tailoredResume,
+        skills: [
+          {
+            category: "Languages",
+            items: [
+              "TypeScript",
+              "JavaScript",
+              "Strong leadership skills demonstrated through mentoring junior developers and conducting code reviews across teams",
+            ],
+          },
+        ],
+      },
+    });
+
+    const { output: fixed, issues } = runQualityGate(output);
+    for (const group of fixed.tailoredResume.skills) {
+      for (const item of group.items) {
+        expect(item.split(/\s+/).length).toBeLessThanOrEqual(6);
+      }
+    }
+    expect(issues.some((i) => i.type === "skills_sentence")).toBe(true);
+  });
+});
+
+describe("Regression: Prompt Version", () => {
+  it("exports generic-western-v1 as the current prompt version", () => {
+    expect(PROMPT_VERSION).toBe("generic-western-v1");
+  });
+});
+
+describe("Regression: Mock LLM Output Quality", () => {
+  it("mock output contains no banned phrases before quality gate", () => {
+    const output = generateMockProResult(mockCandidate, mockJob, "resume text");
+
+    // Collect all text from the output
+    const allText = [
+      output.summary,
+      output.tailoredResume.summary,
+      ...output.tailoredResume.experience.flatMap((e) => e.bullets),
+      ...output.coverLetter.paragraphs,
+      ...output.recruiterFeedback,
+      ...output.nextActions,
+    ].join(" ").toLowerCase();
+
+    // Check critical banned phrases
+    expect(allText).not.toContain("resulting in measurable performance improvements");
+    expect(allText).not.toContain("in cross-functional collaboration with stakeholders");
+    expect(allText).not.toContain("i am writing to express my strong interest");
+    expect(allText).not.toContain("what excites me most");
+    expect(allText).not.toContain("driving measurable improvements");
+  });
+
+  it("mock cover letter has exactly 4 paragraphs", () => {
+    const output = generateMockProResult(mockCandidate, mockJob, "resume text");
+    expect(output.coverLetter.paragraphs.length).toBe(4);
+  });
+
+  it("mock cover letter has exactly 1 greeting and 1 signoff", () => {
+    const output = generateMockProResult(mockCandidate, mockJob, "resume text");
+    const greetings = output.coverLetter.paragraphs.filter((p) =>
+      /^dear/i.test(p.trim()),
+    );
+    const signoffs = output.coverLetter.paragraphs.filter((p) =>
+      /^(best regards|sincerely|thank you)/i.test(p.trim()),
+    );
+    expect(greetings).toHaveLength(1);
+    expect(signoffs).toHaveLength(1);
+  });
+
+  it("mock bullets are complete sentences (no dangling endings)", () => {
+    const output = generateMockProResult(mockCandidate, mockJob, "resume text");
+    const allBullets = output.tailoredResume.experience.flatMap((e) => e.bullets);
+
+    for (const bullet of allBullets) {
+      // No dangling participle endings
+      expect(bullet).not.toMatch(
+        /,\s*(leading to|resulting in|delivering|achieving)\s*\.?\s*$/i,
+      );
+    }
+  });
+
+  it("mock skills items are short labels, not sentences", () => {
+    const output = generateMockProResult(mockCandidate, mockJob, "resume text");
+    for (const group of output.tailoredResume.skills) {
+      for (const item of group.items) {
+        expect(item.split(/\s+/).length).toBeLessThanOrEqual(6);
+        expect(item.length).toBeLessThanOrEqual(50);
+      }
+    }
+  });
+
+  it("quality gate pass on mock output produces zero critical issues", () => {
+    const output = generateMockProResult(mockCandidate, mockJob, "resume text");
+    const { output: gated, issues } = runQualityGate(output);
+
+    // After quality gate, no banned phrases should remain in any section
+    const allText = [
+      gated.tailoredResume.summary,
+      ...gated.tailoredResume.experience.flatMap((e) => e.bullets),
+      ...gated.coverLetter.paragraphs,
+    ].join(" ").toLowerCase();
+
+    expect(allText).not.toContain("resulting in measurable performance improvements");
+    expect(allText).not.toContain("in cross-functional collaboration with stakeholders");
   });
 });
