@@ -30,10 +30,12 @@ export function sanitizeText(input: string): string {
 // ── Payload size validation ──
 
 const MAX_PAYLOAD_BYTES: Record<string, number> = {
-  analyze: 200_000,       // ~200KB
-  "generate-pro": 200_000,
-  checkout: 1_000,        // tiny
-  "email-pro": 500_000,   // includes ProOutput JSON
+  analyze: 100_000,        // ~100KB (25k resume + 15k JD + overhead)
+  "generate-pro": 100_000,
+  "generate-pack": 400_000, // resume + up to 10 JDs
+  checkout: 1_000,          // tiny
+  "email-pro": 500_000,     // includes ProOutput JSON
+  "send-report": 200_000,
 };
 
 /**
@@ -57,22 +59,38 @@ export const AnalyzeRequestSchema = z.object({
   resumeText: z
     .string()
     .min(1, "Resume text is required.")
-    .max(50_000, "Resume text is too long. Please limit to 50,000 characters."),
+    .max(25_000, "Resume text is too long. Please limit to 25,000 characters."),
   jobDescriptionText: z
     .string()
     .min(1, "Job description text is required.")
-    .max(30_000, "Job description is too long. Please limit to 30,000 characters."),
+    .max(15_000, "Job description is too long. Please limit to 15,000 characters."),
 });
 
 export const GenerateProRequestSchema = z.object({
   resumeText: z
     .string()
     .min(1, "Resume text is required.")
-    .max(50_000, "Resume text is too long."),
+    .max(25_000, "Resume text is too long. Please limit to 25,000 characters."),
   jobDescriptionText: z
     .string()
     .min(1, "Job description text is required.")
-    .max(30_000, "Job description is too long."),
+    .max(15_000, "Job description is too long. Please limit to 15,000 characters."),
+});
+
+export const GeneratePackRequestSchema = z.object({
+  resumeText: z
+    .string()
+    .min(1, "Resume text is required.")
+    .max(25_000, "Resume text is too long. Please limit to 25,000 characters."),
+  jobs: z
+    .array(
+      z.object({
+        title: z.string().min(1).max(200),
+        jd: z.string().min(30, "Job description must be at least 30 characters.").max(15_000),
+      })
+    )
+    .min(1, "At least one job is required.")
+    .max(10, "Maximum 10 jobs allowed."),
 });
 
 export const CheckoutRequestSchema = z.object({}).passthrough();

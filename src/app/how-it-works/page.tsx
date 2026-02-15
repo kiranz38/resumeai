@@ -31,6 +31,12 @@ const STEPS = [
     description:
       "Use the copy buttons and downloadable report to update your resume. Each suggestion includes specific guidance on what to change and where. Watch your Match Score improve in real time as you edit.",
   },
+  {
+    number: "5",
+    title: "Bulk generate for multiple jobs",
+    description:
+      "Applying to several roles? Use our Job Board to search real listings, select up to 5, and bulk generate a tailored CV for each one — all in parallel. Or paste job descriptions manually. Each CV is uniquely optimized for that specific role.",
+  },
 ];
 
 export default function HowItWorksPage() {

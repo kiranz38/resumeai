@@ -86,6 +86,40 @@ export function scoreRadar(
   };
 }
 
+// ── Quick relevance check (blocks generation for irrelevant resumes) ──
+
+/**
+ * Fast relevance gate — checks if the candidate has enough overlap
+ * with the job to produce a meaningful tailored CV.
+ *
+ * Uses hard-skills match + keyword coverage (the two most indicative
+ * signals for job relevance). If the combined score falls below the
+ * threshold, the resume has essentially zero relevant experience and
+ * any tailored output would fabricate content.
+ */
+export function checkRelevance(
+  candidate: CandidateProfile,
+  job: JobProfile,
+): { relevant: boolean; score: number; reason?: string } {
+  const hardSkills = computeHardSkills(candidate, job);
+  const keywordOpt = computeKeywordOptimization(candidate, job);
+
+  // Weighted relevance score (0-100): 60% skills, 40% keywords
+  const relevanceScore = Math.round(hardSkills * 0.6 + keywordOpt * 0.4);
+
+  if (relevanceScore < 10) {
+    return {
+      relevant: false,
+      score: relevanceScore,
+      reason:
+        "Your resume doesn't have enough relevant experience or skills for this role. " +
+        "A tailored CV requires some matching background to work with — we won't fabricate experience you don't have.",
+    };
+  }
+
+  return { relevant: true, score: relevanceScore };
+}
+
 // ── Re-score from tailored resume (Pro output) ──
 
 export function computeRadarFromTailored(
@@ -273,17 +307,17 @@ function buildBlocker(
         )
         .slice(0, 3);
       return {
-        title: "Hard skills gap",
-        why: `Key required skills not found: ${missing.length > 0 ? missing.join(", ") : "several required skills missing"}. These are explicitly required in the job description.`,
-        how: "Add missing hard skills to your Skills section and weave them into experience bullets where you've used them.",
+        title: "Opportunity to strengthen hard skills",
+        why: `Could further emphasize: ${missing.length > 0 ? missing.join(", ") : "several key skills"}. These are highlighted in the job description.`,
+        how: "Add these skills to your Skills section and weave them into experience bullets where you've used them.",
       };
     }
     case "softSkills": {
       const softCount = allBullets.filter((b) => SOFT_SKILL_VERBS.test(b)).length;
       return {
-        title: "Weak soft skill signals",
-        why: `Only ${softCount} of ${allBullets.length} bullets show leadership, communication, or teamwork. Employers want to see collaboration and people skills.`,
-        how: "Add bullets about mentoring, leading meetings, cross-team collaboration, stakeholder communication, or conflict resolution.",
+        title: "Could highlight more soft skills",
+        why: `${softCount} of ${allBullets.length} bullets show leadership, communication, or teamwork. Highlighting more could strengthen your profile.`,
+        how: "Consider adding bullets about mentoring, leading meetings, cross-team collaboration, stakeholder communication, or conflict resolution.",
       };
     }
     case "measurableResults": {
@@ -291,9 +325,9 @@ function buildBlocker(
       const withoutMetrics = allBullets.filter((b) => !METRIC_PATTERNS.test(b));
       const sample = withoutMetrics[0];
       return {
-        title: "Weak measurable results",
-        why: `Only ${withMetrics.length} of ${allBullets.length} bullets include metrics. Hiring managers scan for numbers first.`,
-        how: "Add %, $, time saved, team size, or user count to each bullet. Even estimates are better than nothing.",
+        title: "Opportunity to add measurable results",
+        why: `${withMetrics.length} of ${allBullets.length} bullets include metrics. Adding more numbers could strengthen your impact.`,
+        how: "Consider adding %, $, time saved, team size, or user count to more bullets. Even estimates help demonstrate impact.",
         ...(sample
           ? {
               beforeAfter: {
@@ -316,9 +350,9 @@ function buildBlocker(
         if (!candidateText.includes(term)) missingCount++;
       }
       return {
-        title: "Keyword optimization gap",
-        why: `${missingCount} job description keywords not found in your resume. ATS systems and recruiters scan for exact matches.`,
-        how: "Mirror the exact phrases from the job description in your skills section and experience bullets.",
+        title: "Could strengthen keyword alignment",
+        why: `${missingCount} job description keywords could be better represented. ATS systems and recruiters scan for exact matches.`,
+        how: "Consider mirroring the exact phrases from the job description in your skills section and experience bullets.",
       };
     }
     case "formattingBestPractices": {
@@ -330,9 +364,9 @@ function buildBlocker(
       if (!candidate.summary) issues.push("missing professional summary");
       if (candidate.education.length === 0) issues.push("no education section");
       return {
-        title: "Formatting & best practices issues",
-        why: `Issues found: ${issues.length > 0 ? issues.join(", ") : "several formatting concerns"}.`,
-        how: "Keep bullets under 150 characters, start with strong verbs, add a professional summary, and ensure education is listed.",
+        title: "Optional formatting enhancements",
+        why: `Areas to refine: ${issues.length > 0 ? issues.join(", ") : "a few formatting details"}.`,
+        how: "Consider keeping bullets under 150 characters, starting with strong verbs, adding a professional summary, and listing education.",
         ...(vagueB[0]
           ? {
               beforeAfter: {
@@ -426,9 +460,9 @@ function buildDiagnostics(
 // ── Helpers ──
 
 function scoreToLabel(score: number): RadarLabel {
-  if (score >= 75) return "Strong match";
-  if (score >= 50) return "Needs improvement";
-  return "Weak match";
+  if (score >= 75) return "Strong Match";
+  if (score >= 60) return "Good Match";
+  return "Moderate Match";
 }
 
 function clamp(n: number): number {

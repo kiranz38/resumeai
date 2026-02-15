@@ -68,7 +68,7 @@ export async function POST(request: Request) {
     const resend = new Resend(process.env.RESEND_API_KEY);
 
     const { error: sendError } = await resend.emails.send({
-      from: "ResumeMate AI <reports@resumemate.ai>",
+      from: "ResumeMate AI <onboarding@resend.dev>",
       to: email,
       subject: "Your ResumeMate AI Pro Pack",
       html: buildEmailHTML(textReport),

@@ -81,7 +81,7 @@ export interface RadarBreakdown {
   formattingBestPractices: number; // 0-100, weight 15%
 }
 
-export type RadarLabel = "Strong match" | "Needs improvement" | "Weak match";
+export type RadarLabel = "Strong Match" | "Good Match" | "Moderate Match";
 
 export interface RadarBlocker {
   title: string;

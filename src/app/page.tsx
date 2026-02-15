@@ -61,6 +61,16 @@ const BENEFITS = [
       </svg>
     ),
   },
+  {
+    title: "Bulk CV Generator",
+    description:
+      "Applying to multiple roles? Select jobs from our Job Board or paste up to 5 job descriptions — get a tailored CV for each, generated in parallel.",
+    icon: (
+      <svg className="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+      </svg>
+    ),
+  },
 ];
 
 const TRUST_ITEMS = [
@@ -221,6 +231,10 @@ export default function LandingPage() {
               <li className="flex items-start gap-2">
                 <span className="mt-0.5 text-green-500">&#10003;</span>
                 Downloadable report
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 text-green-500">&#10003;</span>
+                Bulk CV Generator — select from Job Board or paste JDs
               </li>
             </ul>
             <Link

@@ -3,6 +3,8 @@
  * Keyed by hash of (resumeText + jobDescriptionText) to avoid redundant computation.
  */
 
+import { createHash } from "crypto";
+
 const DEFAULT_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const MAX_ENTRIES = 100;
 const CLEANUP_INTERVAL = 60_000;
@@ -91,16 +93,8 @@ export const analysisCache = new TTLCache<unknown>(10 * 60 * 1000, 50);
 export const proCache = new TTLCache<unknown>(15 * 60 * 1000, 20);
 
 /**
- * Generate a simple hash key from input strings.
- * Uses a fast, non-cryptographic hash suitable for cache keys.
+ * Generate a collision-resistant cache key from input strings using SHA-256.
  */
 export function hashInputs(...inputs: string[]): string {
-  const combined = inputs.join("|");
-  let hash = 0;
-  for (let i = 0; i < combined.length; i++) {
-    const char = combined.charCodeAt(i);
-    hash = ((hash << 5) - hash + char) | 0;
-  }
-  // Use first 100 chars + length + hash for uniqueness
-  return `${combined.slice(0, 100)}_${combined.length}_${hash.toString(36)}`;
+  return createHash("sha256").update(inputs.join("|")).digest("hex");
 }

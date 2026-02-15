@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
 import { rateLimitRoute } from "@/lib/rate-limiter";
+import { verifyEntitlementToken } from "@/lib/entitlement";
+import { validateEmailForDelivery } from "@/lib/email-validator";
+import { trackServerEvent } from "@/lib/analytics-server";
 
 export async function POST(request: Request) {
   try {
     // Rate limit
-    const { response: rateLimited } = rateLimitRoute(request, "email-pro");
+    const { response: rateLimited } = rateLimitRoute(request, "send-report");
     if (rateLimited) return rateLimited;
 
     if (!process.env.RESEND_API_KEY) {
@@ -14,11 +17,31 @@ export async function POST(request: Request) {
       );
     }
 
+    // Verify entitlement (require payment for email delivery, skipped in dev)
+    const enforceEntitlement =
+      process.env.NODE_ENV === "production" && process.env.ENFORCE_ENTITLEMENT !== "false";
+    if (enforceEntitlement) {
+      const authHeader = request.headers.get("authorization");
+      const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+      if (!token || !verifyEntitlementToken(token)) {
+        return NextResponse.json(
+          { error: "Valid entitlement token required." },
+          { status: 403 }
+        );
+      }
+    }
+
     const body = await request.json();
     const { email, reportText } = body;
 
     if (!email || typeof email !== "string" || !email.includes("@")) {
       return NextResponse.json({ error: "Valid email is required." }, { status: 400 });
+    }
+
+    // Validate email (disposable domain blocking)
+    const emailCheck = validateEmailForDelivery(email);
+    if (!emailCheck.valid) {
+      return NextResponse.json({ error: emailCheck.reason }, { status: 400 });
     }
 
     if (!reportText || typeof reportText !== "string") {
@@ -30,7 +53,7 @@ export async function POST(request: Request) {
     const resend = new Resend(process.env.RESEND_API_KEY);
 
     const { error } = await resend.emails.send({
-      from: "ResumeMate AI <reports@resumemate.ai>",
+      from: "ResumeMate AI <onboarding@resend.dev>",
       to: email,
       subject: "Your ResumeMate AI Pro Report",
       text: `Here is your ResumeMate AI Pro Report:\n\n${reportText.slice(0, 50_000)}`,
@@ -55,6 +78,7 @@ export async function POST(request: Request) {
     }
 
     console.log("[send-report] Email sent to:", email.replace(/(.{2}).*(@.*)/, "$1***$2"));
+    trackServerEvent("send_report_email_sent");
 
     return NextResponse.json({ success: true });
   } catch (error) {

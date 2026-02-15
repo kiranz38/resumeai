@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import FAQ from "@/components/FAQ";
+import CheckoutButton from "@/components/CheckoutButton";
 import { PRO_PRICE_DISPLAY, CAREER_PASS_DISPLAY } from "@/lib/constants";
 
 export const metadata: Metadata = {
@@ -63,6 +64,7 @@ export default function PricingPage() {
                 "Gaps & fixes",
                 "3 bullet rewrite previews",
                 "Actionable suggestions",
+                "Job Board — search real listings by country",
               ].map((item) => (
                 <li key={item} className="flex items-start gap-2">
                   <span className="mt-0.5 text-green-500">&#10003;</span>
@@ -102,6 +104,7 @@ export default function PricingPage() {
                 "Recruiter-style feedback",
                 "All 12-20 bullet rewrites",
                 "Experience gap analysis",
+                "Bulk CV Generator — select from Job Board or paste JDs",
                 "PDF, DOCX, and TXT exports",
                 "Email delivery of report",
               ].map((item) => (
@@ -111,12 +114,11 @@ export default function PricingPage() {
                 </li>
               ))}
             </ul>
-            <Link
-              href="/analyze"
-              className="mt-8 block rounded-lg bg-blue-600 px-6 py-2.5 text-center text-sm font-semibold text-white hover:bg-blue-700"
-            >
-              Get started
-            </Link>
+            <CheckoutButton
+              plan="pro"
+              label="Get started"
+              className="mt-8 block w-full rounded-lg bg-blue-600 px-6 py-2.5 text-center text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+            />
             <p className="mt-3 text-center text-xs text-gray-400">
               No subscription. No surprises.
             </p>
@@ -148,12 +150,11 @@ export default function PricingPage() {
             <p className="mt-2 text-xs text-gray-400 italic">
               Applying to multiple roles? This is for you.
             </p>
-            <Link
-              href="/analyze"
-              className="mt-6 block rounded-lg border border-indigo-300 bg-indigo-50 px-6 py-2.5 text-center text-sm font-semibold text-indigo-700 hover:bg-indigo-100"
-            >
-              Get Career Pass
-            </Link>
+            <CheckoutButton
+              plan="pass"
+              label="Get Career Pass"
+              className="mt-6 block w-full rounded-lg border border-indigo-300 bg-indigo-50 px-6 py-2.5 text-center text-sm font-semibold text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
+            />
           </div>
         </div>
 

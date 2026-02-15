@@ -10,8 +10,8 @@ interface ScoreCardProps {
 
 function getScoreColor(score: number): { bg: string; text: string; ring: string; fill: string } {
   if (score >= 75) return { bg: "bg-green-50", text: "text-green-700", ring: "stroke-green-500", fill: "bg-green-500" };
-  if (score >= 50) return { bg: "bg-yellow-50", text: "text-yellow-700", ring: "stroke-yellow-500", fill: "bg-yellow-500" };
-  return { bg: "bg-red-50", text: "text-red-700", ring: "stroke-red-500", fill: "bg-red-500" };
+  if (score >= 60) return { bg: "bg-blue-50", text: "text-blue-700", ring: "stroke-blue-500", fill: "bg-blue-500" };
+  return { bg: "bg-yellow-50", text: "text-yellow-700", ring: "stroke-yellow-500", fill: "bg-yellow-500" };
 }
 
 export default function ScoreCard({ label, score, description, variant = "default", radarLabel }: ScoreCardProps) {

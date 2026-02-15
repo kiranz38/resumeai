@@ -24,6 +24,30 @@ export function generateMockProResult(
 
   const summary = `${candidateName}'s resume shows solid experience but needs optimization for the ${jobTitle} role at ${company}. Key gaps include missing technologies and insufficient system-level impact in bullet points. The tailored version addresses these by rewriting bullets with stronger metrics, adding missing keywords, and restructuring the skills section to match the job requirements. Focus areas: add missing tech skills, quantify impact, and lead with architecture-level accomplishments.`;
 
+  // Generate radar scores
+  const skillsMatch = Math.min(100, Math.round(40 + candidate.skills.length * 3));
+  const experienceAlignment = Math.min(100, Math.round(30 + candidate.experience.length * 15));
+  const impactStrength = Math.min(100, Math.round(25 + candidate.experience.flatMap(e => e.bullets).filter(b => /\d/.test(b)).length * 8));
+  const atsReadiness = Math.min(100, Math.round(35 + keywordChecklist.filter(k => k.found).length * 4));
+  const overall = Math.round(skillsMatch * 0.3 + experienceAlignment * 0.3 + impactStrength * 0.25 + atsReadiness * 0.15);
+
+  // Before/after preview
+  const firstBullet = candidate.experience[0]?.bullets[0] || "Worked on various projects";
+  const beforeAfterPreview = {
+    before: firstBullet,
+    after: bulletRewrites[0]?.rewritten || `Architected and delivered scalable solutions for ${jobTitle}, driving measurable improvements in system reliability`,
+  };
+
+  // Interview talking points
+  const interviewTalkingPoints = [
+    `Discuss your experience with ${candidate.skills.slice(0, 2).join(" and ")} in a production environment`,
+    `Prepare a system design walkthrough for a project similar to ${jobTitle}`,
+    candidate.experience.length > 1
+      ? `Highlight your career progression from ${candidate.experience[candidate.experience.length - 1]?.title || "early roles"} to ${candidate.experience[0]?.title || "current role"}`
+      : "Describe a technical challenge you solved and the tradeoffs involved",
+    `Have a performance optimization story ready with specific metrics`,
+  ];
+
   return {
     summary,
     tailoredResume,
@@ -33,6 +57,9 @@ export function generateMockProResult(
     bulletRewrites,
     experienceGaps,
     nextActions,
+    radar: { overall, skillsMatch, experienceAlignment, impactStrength, atsReadiness },
+    beforeAfterPreview,
+    interviewTalkingPoints,
   };
 }
 

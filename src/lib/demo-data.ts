@@ -359,7 +359,7 @@ Sarah Chen`,
 
 export const DEMO_RADAR_RESULT: RadarResult = {
   score: 54,
-  label: "Needs improvement",
+  label: "Moderate Match",
   breakdown: {
     hardSkills: 38,
     softSkills: 58,

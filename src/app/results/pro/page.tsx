@@ -17,6 +17,7 @@ import {
 import { proOutputToDocument } from "@/lib/pro-document";
 import ModernAtsResume from "@/components/templates/ModernAtsResume";
 import ProfessionalCoverLetter from "@/components/templates/ProfessionalCoverLetter";
+import PaywallPlanPicker from "@/components/PaywallPlanPicker";
 import { trackEvent } from "@/lib/analytics";
 import type { RadarResult } from "@/lib/types";
 import { scoreRadar, tailoredToCandidateProfile } from "@/lib/radar-scorer";
@@ -97,6 +98,8 @@ function ProResultsPage() {
   const [sendingEmail, setSendingEmail] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [viewMode, setViewMode] = useState<"edit" | "preview">("edit");
+  const [fromPack, setFromPack] = useState(false);
+  const [needsPayment, setNeedsPayment] = useState<{ message: string; plan?: string } | null>(null);
 
   const [radarBefore, setRadarBefore] = useState<RadarResult | null>(null);
   const [radarAfter, setRadarAfter] = useState<RadarResult | null>(null);
@@ -241,6 +244,34 @@ function ProResultsPage() {
       const sessionId = searchParams.get("session_id");
       const pendingPro = sessionStorage.getItem("rt_pending_pro");
 
+      // Handle dev_token from checkout redirect
+      const devToken = searchParams.get("dev_token");
+      const planParam = searchParams.get("plan");
+      if (devToken) {
+        sessionStorage.setItem("rt_entitlement_token", devToken);
+        if (planParam) sessionStorage.setItem("rt_entitlement_plan", planParam);
+      }
+
+      // Handle Stripe session_id: exchange for entitlement token
+      if (sessionId && !devToken) {
+        try {
+          const entRes = await fetch("/api/entitlement", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sessionId, plan: planParam || "pro" }),
+          });
+          if (entRes.ok) {
+            const entData = await entRes.json();
+            if (entData.token) {
+              sessionStorage.setItem("rt_entitlement_token", entData.token);
+              sessionStorage.setItem("rt_entitlement_plan", entData.claims?.plan || "pro");
+            }
+          }
+        } catch {
+          // Non-critical — generation may still work in dev mode
+        }
+      }
+
       if (sessionId || pendingPro) {
         const resumeText = sessionStorage.getItem("rt_resume_text");
         const jdText = sessionStorage.getItem("rt_jd_text");
@@ -252,41 +283,50 @@ function ProResultsPage() {
 
         sessionStorage.removeItem("rt_pending_pro");
 
-        // Progressive loading messages with percentage
+        // Progressive loading messages — friendly and engaging during long wait
         setLoadingProgress(5);
-        setLoadingMessage("Parsing your resume...");
+        setLoadingMessage("Reading through your experience...");
         await delay(400);
         setLoadingProgress(15);
-        setLoadingMessage("Analyzing job description keywords...");
+        setLoadingMessage("Matching your skills against the job requirements...");
         await delay(400);
         setLoadingProgress(25);
-        setLoadingMessage("Generating your tailored resume with AI...");
+        setLoadingMessage("Grab a coffee — we're building your hiring-manager-ready resume");
 
         // Start a progress ticker that slowly advances while waiting for the API
         const progressInterval = setInterval(() => {
           setLoadingProgress((prev) => {
             if (prev >= 90) return prev;
-            // Slow down as we approach 90%
             const increment = prev < 50 ? 2 : prev < 70 ? 1 : 0.5;
             return Math.min(prev + increment, 90);
           });
         }, 1000);
 
-        // Update message at various thresholds
+        // Update message at various thresholds — keep it conversational
         const messageTimeout1 = setTimeout(() => {
-          setLoadingMessage("Writing cover letter and bullet rewrites...");
+          setLoadingMessage("Crafting your tailored bullet points and cover letter...");
         }, 8000);
         const messageTimeout2 = setTimeout(() => {
-          setLoadingMessage("Analyzing keyword gaps and formatting...");
+          setLoadingMessage("Running your resume through our recruiter simulation engine...");
         }, 20000);
         const messageTimeout3 = setTimeout(() => {
-          setLoadingMessage("Almost done, finalizing your Pro report...");
+          setLoadingMessage("Polishing the final details — almost there!");
         }, 40000);
+        const messageTimeout4 = setTimeout(() => {
+          setLoadingMessage("Still working on it — great resumes take a little extra time");
+        }, 60000);
 
         try {
+          // Build headers with entitlement token if available
+          const headers: Record<string, string> = { "Content-Type": "application/json" };
+          const entToken = sessionStorage.getItem("rt_entitlement_token");
+          if (entToken) {
+            headers["Authorization"] = `Bearer ${entToken}`;
+          }
+
           const response = await fetch("/api/generate-pro", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers,
             body: JSON.stringify({ resumeText, jobDescriptionText: jdText }),
           });
 
@@ -294,47 +334,76 @@ function ProResultsPage() {
           clearTimeout(messageTimeout1);
           clearTimeout(messageTimeout2);
           clearTimeout(messageTimeout3);
+          clearTimeout(messageTimeout4);
 
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
+            if (response.status === 402) {
+              // Payment required — show plan picker
+              clearInterval(progressInterval);
+              clearTimeout(messageTimeout1);
+              clearTimeout(messageTimeout2);
+              clearTimeout(messageTimeout3);
+              setNeedsPayment({ message: errorData.error, plan: errorData.plan });
+              setLoading(false);
+              return;
+            }
             throw new Error(errorData.error || `Generation failed (${response.status})`);
           }
 
           setLoadingProgress(95);
-          setLoadingMessage("Processing results...");
+          setLoadingMessage("Your tailored resume is ready — loading it now!");
 
-          const data: ProOutput = await response.json();
-          saveBaseProOutput(data);
-          setBase(data);
+          const data = await response.json();
+
+          // Store updated entitlement token (quota decremented)
+          if (data._entitlement?.token) {
+            sessionStorage.setItem("rt_entitlement_token", data._entitlement.token);
+          }
+
+          saveBaseProOutput(data as ProOutput);
+          setBase(data as ProOutput);
           setLoadingProgress(100);
           setLoading(false);
           trackEvent("pro_viewed");
 
-          // Compute radar delta
+          // Use server-provided radar scores (computed from final tailored resume)
           try {
-            let beforeScore = 0;
-            const beforeStr = sessionStorage.getItem("rt_radar_before");
-            if (beforeStr) {
-              const beforeData = JSON.parse(beforeStr);
-              setRadarBefore(beforeData);
-              beforeScore = beforeData.score || 0;
+            if (data._radar?.before) {
+              setRadarBefore(data._radar.before);
+            } else {
+              // Fallback: load from sessionStorage
+              const beforeStr = sessionStorage.getItem("rt_radar_before");
+              if (beforeStr) setRadarBefore(JSON.parse(beforeStr));
             }
-            const analysisStr = sessionStorage.getItem("rt_analysis");
-            if (analysisStr) {
-              const analysis = JSON.parse(analysisStr);
-              const candidateProfile = tailoredToCandidateProfile(data.tailoredResume);
-              const after = scoreRadar(candidateProfile, analysis.jobProfile);
-              setRadarAfter(after);
-              setLiveRadarScore(after.score);
-              trackEvent("radar_improvement_shown", {
-                before: beforeScore,
-                after: after.score,
-              });
-              // Update job session with after score
-              const sessionId = sessionStorage.getItem("rt_current_session_id");
-              if (sessionId) {
-                updateSessionRadarAfter(sessionId, after.score);
+
+            if (data._radar?.after) {
+              setRadarAfter(data._radar.after);
+              setLiveRadarScore(data._radar.after.score);
+            } else {
+              // Fallback: compute client-side
+              const analysisStr = sessionStorage.getItem("rt_analysis");
+              if (analysisStr) {
+                const analysis = JSON.parse(analysisStr);
+                const candidateProfile = tailoredToCandidateProfile(data.tailoredResume);
+                const after = scoreRadar(candidateProfile, analysis.jobProfile);
+                setRadarAfter(after);
+                setLiveRadarScore(after.score);
               }
+            }
+
+            const beforeScore = data._radar?.before?.score ?? 0;
+            const afterScore = data._radar?.after?.score ?? 0;
+
+            trackEvent("radar_improvement_shown", {
+              before: beforeScore,
+              after: afterScore,
+            });
+
+            // Update job session with after score
+            const currentSessionId = sessionStorage.getItem("rt_current_session_id");
+            if (currentSessionId && afterScore > 0) {
+              updateSessionRadarAfter(currentSessionId, afterScore);
             }
           } catch {
             // Non-critical
@@ -344,6 +413,7 @@ function ProResultsPage() {
           clearTimeout(messageTimeout1);
           clearTimeout(messageTimeout2);
           clearTimeout(messageTimeout3);
+          clearTimeout(messageTimeout4);
 
           const errorMessage = err instanceof Error ? err.message : "Generation failed";
           setLoadingError(errorMessage);
@@ -360,6 +430,11 @@ function ProResultsPage() {
         const savedEdits = loadEdits(cached);
         if (savedEdits) setEdits(savedEdits);
         setLoading(false);
+        // Check if we came from the pack results page
+        if (sessionStorage.getItem("rt_from_pack") === "true") {
+          setFromPack(true);
+          sessionStorage.removeItem("rt_from_pack");
+        }
         trackEvent("pro_viewed");
         return;
       }
@@ -407,6 +482,23 @@ function ProResultsPage() {
       setSendingEmail(false);
     }
   };
+
+  // Show plan picker if payment is required (402 from API)
+  if (needsPayment) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-16">
+        <div className="mb-8 text-center">
+          <h1 className="text-2xl font-bold text-gray-900">Choose a Plan</h1>
+          <p className="mt-2 text-gray-600">Select a plan to generate your tailored resume.</p>
+        </div>
+        <PaywallPlanPicker
+          message={needsPayment.message}
+          defaultPlan={needsPayment.plan === "pro" ? "pass" : undefined}
+          context="generation_402"
+        />
+      </div>
+    );
+  }
 
   if (loading || !result || !base) {
     return (
@@ -461,7 +553,7 @@ function ProResultsPage() {
               )}
 
               <p className="mt-3 text-sm text-gray-400">
-                This typically takes 30-60 seconds
+                Our AI is tailoring every section to this specific role — this usually takes about a minute
               </p>
             </>
           )}
@@ -479,6 +571,21 @@ function ProResultsPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 pb-28 pt-10">
+      {/* Back to pack link (top) */}
+      {fromPack && (
+        <div className="mb-4" data-print-hide>
+          <Link
+            href="/results/pack"
+            className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to Pack Results
+          </Link>
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-6" data-print-hide>
         <div className="mb-1 inline-block rounded-full bg-blue-600 px-3 py-0.5 text-xs font-semibold text-white">
@@ -515,7 +622,7 @@ function ProResultsPage() {
               )}
             </div>
             <span className={`ml-2 text-sm font-semibold ${
-              radarAfter.score >= 75 ? "text-green-700" : radarAfter.score >= 50 ? "text-yellow-700" : "text-red-700"
+              radarAfter.score >= 75 ? "text-green-700" : radarAfter.score >= 60 ? "text-blue-700" : "text-yellow-700"
             }`}>
               {radarAfter.label}
             </span>
@@ -926,64 +1033,133 @@ function ProResultsPage() {
         </div>
       )}
 
-      {/* Email delivery */}
-      <div className="mt-8 rounded-xl border border-gray-200 bg-white p-6" data-print-hide>
-        <h2 className="mb-2 text-lg font-semibold text-gray-900">Email Your Report</h2>
-        <p className="mb-4 text-sm text-gray-500">Get your Resume, Cover Letter, and Insights PDFs delivered to your inbox.</p>
+      {/* Email delivery — hidden when email is not configured */}
+      {process.env.NEXT_PUBLIC_EMAIL_ENABLED !== "false" && (
+        <div className="mt-8 rounded-xl border border-gray-200 bg-white p-6" data-print-hide>
+          <h2 className="mb-2 text-lg font-semibold text-gray-900">Email Your Report</h2>
+          <p className="mb-4 text-sm text-gray-500">Get your Resume, Cover Letter, and Insights PDFs delivered to your inbox.</p>
 
-        {emailSent ? (
-          <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-            Report sent! Check your inbox.
-          </div>
-        ) : (
-          <div className="flex gap-3">
-            <input
-              type="email"
-              value={emailInput}
-              onChange={(e) => setEmailInput(e.target.value)}
-              placeholder="your@email.com"
-              className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-            <button
-              onClick={handleSendEmail}
-              disabled={sendingEmail || !emailInput.includes("@")}
-              className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-            >
-              {sendingEmail ? "Sending..." : "Send"}
-            </button>
-          </div>
-        )}
-        {emailError && <p className="mt-2 text-sm text-red-600">{emailError}</p>}
-      </div>
+          {emailSent ? (
+            <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+              Report sent! Check your inbox.
+            </div>
+          ) : (
+            <div className="flex gap-3">
+              <input
+                type="email"
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
+                placeholder="your@email.com"
+                className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+              <button
+                onClick={handleSendEmail}
+                disabled={sendingEmail || !emailInput.includes("@")}
+                className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                {sendingEmail ? "Sending..." : "Send"}
+              </button>
+            </div>
+          )}
+          {emailError && <p className="mt-2 text-sm text-red-600">{emailError}</p>}
+        </div>
+      )}
 
       {/* Navigation */}
       <div className="mt-8 flex items-center justify-between" data-print-hide>
-        <Link href="/results" className="text-base font-medium text-blue-600 hover:underline">
-          Back to free analysis
-        </Link>
+        {fromPack ? (
+          <Link href="/results/pack" className="text-base font-medium text-blue-600 hover:underline">
+            Back to Pack Results
+          </Link>
+        ) : (
+          <Link href="/results" className="text-base font-medium text-blue-600 hover:underline">
+            Back to free analysis
+          </Link>
+        )}
         <Link href="/analyze" className="text-base font-medium text-blue-600 hover:underline">
           Analyze another resume
         </Link>
       </div>
 
-      {/* Optimize another job (return trigger) */}
-      <div className="mt-8 rounded-xl border border-blue-200 bg-blue-50 p-6 text-center" data-print-hide>
-        <h3 className="text-lg font-semibold text-blue-900">Applying elsewhere?</h3>
-        <p className="mt-1 text-sm text-blue-700">Optimize another role in seconds.</p>
-        <button
-          onClick={() => {
-            trackEvent("optimize_another_job_clicked");
-            sessionStorage.removeItem("rt_jd_text");
-            window.location.href = "/analyze";
-          }}
-          className="mt-3 rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
-        >
-          Optimize another job
-        </button>
-      </div>
+      {/* Optimize another job (plan-aware) */}
+      {(() => {
+        const currentPlan = sessionStorage.getItem("rt_entitlement_plan");
+        const isPass = currentPlan === "pass";
+        return (
+          <div
+            className={`mt-8 rounded-xl border p-6 text-center ${
+              isPass ? "border-indigo-200 bg-indigo-50" : "border-blue-200 bg-blue-50"
+            }`}
+            data-print-hide
+          >
+            <h3 className={`text-lg font-semibold ${isPass ? "text-indigo-900" : "text-blue-900"}`}>
+              Applying elsewhere?
+            </h3>
+            {isPass ? (
+              <>
+                <p className="mt-1 text-sm text-indigo-700">
+                  Your Career Pass is active. Optimize another role in seconds.
+                </p>
+                <div className="mt-3 flex justify-center gap-3">
+                  <button
+                    onClick={() => {
+                      trackEvent("optimize_another_job_clicked", { plan: "pass" });
+                      sessionStorage.removeItem("rt_jd_text");
+                      window.location.href = "/analyze";
+                    }}
+                    className="rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700"
+                  >
+                    Optimize another job
+                  </button>
+                  <Link
+                    href="/career"
+                    className="rounded-lg border border-indigo-300 px-6 py-2.5 text-sm font-semibold text-indigo-700 hover:bg-indigo-100"
+                  >
+                    Career Dashboard
+                  </Link>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="mt-1 text-sm text-blue-700">
+                  Get Career Pass for 50 job analyses over 30 days.
+                </p>
+                <div className="mt-3 flex justify-center gap-3">
+                  <button
+                    onClick={() => {
+                      trackEvent("optimize_another_job_clicked", { plan: "pro" });
+                      sessionStorage.removeItem("rt_jd_text");
+                      window.location.href = "/analyze";
+                    }}
+                    className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+                  >
+                    Optimize another job
+                  </button>
+                  <Link
+                    href="/pricing"
+                    className="rounded-lg border border-indigo-300 bg-indigo-50 px-6 py-2.5 text-sm font-semibold text-indigo-700 hover:bg-indigo-100"
+                  >
+                    Get Career Pass
+                  </Link>
+                </div>
+              </>
+            )}
+          </div>
+        );
+      })()}
 
-      {/* Coming soon badges */}
-      <div className="mt-8 grid gap-4 md:grid-cols-2" data-print-hide>
+      {/* Feature cards */}
+      <div className="mt-8 grid gap-4 md:grid-cols-3" data-print-hide>
+        <Link
+          href="/analyze"
+          className="rounded-xl border border-blue-200 bg-blue-50 p-5 transition-shadow hover:shadow-sm"
+        >
+          <div className="mb-2 inline-block rounded-full bg-blue-100 px-3 py-0.5 text-xs font-semibold text-blue-700">
+            Available now
+          </div>
+          <h4 className="text-sm font-semibold text-gray-900">Bulk CV Generator</h4>
+          <p className="mt-1 text-sm text-gray-500">Select jobs from our Job Board or paste up to 5 JDs — get a tailored CV for each.</p>
+        </Link>
         <div className="rounded-xl border border-gray-200 bg-gray-50 p-5 opacity-70">
           <div className="mb-2 inline-block rounded-full bg-gray-200 px-3 py-0.5 text-xs font-semibold text-gray-600">
             Coming soon
@@ -1001,14 +1177,14 @@ function ProResultsPage() {
       </div>
 
       {/* ── Sticky Action Bar ── */}
-      <StickyActionBar result={result} liveRadarScore={liveRadarScore} radarBefore={radarBefore} />
+      <StickyActionBar result={result} liveRadarScore={liveRadarScore} radarBefore={radarBefore} radarAfter={radarAfter} />
     </div>
   );
 }
 
 // ── Sticky Action Bar ──
 
-function StickyActionBar({ result, liveRadarScore, radarBefore }: { result: ProOutput; liveRadarScore?: number | null; radarBefore?: RadarResult | null }) {
+function StickyActionBar({ result, liveRadarScore, radarBefore, radarAfter }: { result: ProOutput; liveRadarScore?: number | null; radarBefore?: RadarResult | null; radarAfter?: RadarResult | null }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [downloading, setDownloading] = useState(false);
 
@@ -1074,13 +1250,7 @@ function StickyActionBar({ result, liveRadarScore, radarBefore }: { result: ProO
     trackEvent("export_insights_pdf_clicked");
     try {
       const { generateInsightsPDF } = await import("@/lib/export-pdf");
-      // Try to get radar data from sessionStorage
-      let radar;
-      try {
-        const radarStr = sessionStorage.getItem("rt_radar_before");
-        if (radarStr) radar = JSON.parse(radarStr);
-      } catch { /* ignore */ }
-      const blob = await generateInsightsPDF(result, radar);
+      const blob = await generateInsightsPDF(result, radarAfter ?? undefined, radarBefore ?? undefined);
       downloadBlob(blob, "Insights.pdf");
     } catch (error) {
       console.error("Insights PDF export failed:", error);
@@ -1109,8 +1279,8 @@ function StickyActionBar({ result, liveRadarScore, radarBefore }: { result: ProO
           {liveRadarScore != null && (
             <span className={`rounded-full px-3 py-1 text-sm font-bold ${
               liveRadarScore >= 75 ? "bg-green-100 text-green-700" :
-              liveRadarScore >= 50 ? "bg-yellow-100 text-yellow-700" :
-              "bg-red-100 text-red-700"
+              liveRadarScore >= 60 ? "bg-blue-100 text-blue-700" :
+              "bg-yellow-100 text-yellow-700"
             }`}>
               Match: {liveRadarScore}
               {radarBefore && liveRadarScore > radarBefore.score && (

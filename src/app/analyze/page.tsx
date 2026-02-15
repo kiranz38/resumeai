@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback, useRef, useMemo, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState, useCallback, useRef, useMemo, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { trackEvent } from "@/lib/analytics";
 import { detectResume } from "@/lib/resume-detector";
 import { saveJobSession } from "@/lib/job-sessions";
@@ -45,9 +45,19 @@ function getStepIndex(phase: Phase): number {
   }
 }
 
-export default function AnalyzePage() {
+export default function AnalyzePageWrapper() {
+  return (
+    <Suspense fallback={<div className="flex min-h-[50vh] items-center justify-center"><p className="text-sm text-gray-500">Loading...</p></div>}>
+      <AnalyzePage />
+    </Suspense>
+  );
+}
+
+function AnalyzePage() {
   const router = useRouter();
-  const [phase, setPhase] = useState<Phase>("hub");
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get("tab");
+  const [phase, setPhase] = useState<Phase>(initialTab === "jobs" ? "jobs" : "hub");
   const [resumeMode, setResumeMode] = useState<InputMode>("upload");
   const [resumeText, setResumeText] = useState("");
   const [jobDescription, setJobDescription] = useState("");
@@ -56,7 +66,9 @@ export default function AnalyzePage() {
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<string>("");
   const [resumeWarning, setResumeWarning] = useState<string | null>(null);
-  const [activeNav, setActiveNav] = useState<"dashboard" | "jobs">("dashboard");
+  const [activeNav, setActiveNav] = useState<"dashboard" | "jobs">(initialTab === "jobs" ? "jobs" : "dashboard");
+  const [autoFilledJobTitle, setAutoFilledJobTitle] = useState<string | null>(null);
+  const [pendingPackJobCount, setPendingPackJobCount] = useState(0);
 
   // Onboarding state
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -327,18 +339,52 @@ export default function AnalyzePage() {
 
   // Pre-fill JD from job board
   const handleJobSelect = useCallback(
-    (jdText: string) => {
+    (jdText: string, jobTitle?: string) => {
       setJobDescription(jdText);
+      setAutoFilledJobTitle(jobTitle || null);
       setPhase("resume_input");
       setActiveNav("dashboard");
     },
     [],
   );
 
+  // Bulk generate from job board: pre-fill pack jobs, go to resume step
+  const handleBulkGenerateFromJobs = useCallback(
+    (selectedJobs: Array<{ title: string; jd: string }>) => {
+      // Store selected jobs in sessionStorage so ApplyPackFlow or results/pack can use them
+      sessionStorage.setItem(
+        "rt_pending_pack_jobs",
+        JSON.stringify(selectedJobs),
+      );
+      setPendingPackJobCount(selectedJobs.length);
+      setActiveNav("dashboard");
+      // If resume is already provided, go directly to pack generation
+      if (resumeText.trim().length >= 50) {
+        sessionStorage.setItem("rt_resume_text", resumeText);
+        sessionStorage.setItem("rt_pack_jobs", JSON.stringify(selectedJobs));
+        router.push("/results/pack");
+      } else {
+        // Need resume first
+        setPhase("pack_resume");
+      }
+    },
+    [resumeText, router],
+  );
+
   // Apply pack resume continue
   const handlePackResumeContinue = useCallback(() => {
-    setPhase("pack_jds");
-  }, []);
+    // Check if we have pending pack jobs from job board selection
+    const pendingJobs = sessionStorage.getItem("rt_pending_pack_jobs");
+    if (pendingJobs) {
+      // Skip manual JD entry — go straight to generation with job board selections
+      sessionStorage.setItem("rt_resume_text", resumeText);
+      sessionStorage.setItem("rt_pack_jobs", pendingJobs);
+      sessionStorage.removeItem("rt_pending_pack_jobs");
+      router.push("/results/pack");
+    } else {
+      setPhase("pack_jds");
+    }
+  }, [resumeText, router]);
 
   // Back navigation
   const handleBack = useCallback(() => {
@@ -425,8 +471,8 @@ export default function AnalyzePage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                   </svg>
                 }
-                title="Apply Pack"
-                description="Tailor your resume for multiple jobs at once. Bulk generation with one click."
+                title="Bulk CV Generator"
+                description="Add up to 5 job descriptions and get a tailored CV for each one — all generated in one go."
                 badge="From $19.99"
                 onClick={handleApplyPack}
               />
@@ -566,10 +612,30 @@ export default function AnalyzePage() {
               <h2 className="mb-4 text-lg font-semibold text-gray-900">
                 Job Description
               </h2>
+
+              {/* Auto-fill banner when JD came from Job Board */}
+              {autoFilledJobTitle && jobDescription.trim().length > 0 && (
+                <div className="mb-4 flex items-start gap-3 rounded-lg border border-green-200 bg-green-50 px-4 py-3">
+                  <svg className="mt-0.5 h-5 w-5 flex-shrink-0 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <div>
+                    <p className="text-sm font-medium text-green-800">
+                      Auto-filled from Job Board
+                    </p>
+                    <p className="mt-0.5 text-sm text-green-700">
+                      Job description for <span className="font-medium">{autoFilledJobTitle}</span> has been loaded automatically. You can edit it below or proceed as-is.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <textarea
                 value={jobDescription}
                 onChange={(e) => {
                   setJobDescription(e.target.value);
+                  // Clear auto-fill banner if user manually edits
+                  if (autoFilledJobTitle) setAutoFilledJobTitle(null);
                   if (
                     e.target.value.length > 30 &&
                     !sessionStorage.getItem("rt_jd_tracked")
@@ -650,11 +716,15 @@ export default function AnalyzePage() {
         {/* ── Job Board Phase ── */}
         {phase === "jobs" && (
           <div className="animate-slide-up-in mx-auto max-w-4xl">
-            <JobBoard onSelectJob={handleJobSelect} />
+            <JobBoard
+              onSelectJob={handleJobSelect}
+              onBulkGenerate={handleBulkGenerateFromJobs}
+              resumeText={resumeText.trim().length >= 50 ? resumeText : undefined}
+            />
           </div>
         )}
 
-        {/* ── Apply Pack Resume Phase ── */}
+        {/* ── Bulk CV Generator Resume Phase ── */}
         {phase === "pack_resume" && (
           <div className="animate-slide-up-in mx-auto max-w-2xl">
             <div className="mb-6">
@@ -669,12 +739,30 @@ export default function AnalyzePage() {
               </button>
             </div>
             <h2 className="mb-2 text-lg font-semibold text-gray-900">
-              Apply Pack — Your Resume
+              Bulk CV Generator — Your Resume
             </h2>
             <p className="mb-4 text-sm text-gray-500">
-              First, provide your resume. Then you&apos;ll add multiple job
-              descriptions.
+              {pendingPackJobCount > 0
+                ? `Provide your resume and we'll generate ${pendingPackJobCount} tailored CV${pendingPackJobCount !== 1 ? "s" : ""} — one for each job you selected.`
+                : "First, provide your resume. Then you'll add up to 5 job descriptions and we'll generate a tailored CV for each one."}
             </p>
+
+            {/* Auto-fill banner when jobs came from Job Board */}
+            {pendingPackJobCount > 0 && (
+              <div className="mb-4 flex items-start gap-3 rounded-lg border border-green-200 bg-green-50 px-4 py-3">
+                <svg className="mt-0.5 h-5 w-5 flex-shrink-0 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <div>
+                  <p className="text-sm font-medium text-green-800">
+                    {pendingPackJobCount} job description{pendingPackJobCount !== 1 ? "s" : ""} loaded from Job Board
+                  </p>
+                  <p className="mt-0.5 text-sm text-green-700">
+                    No need to paste anything — just upload your resume and we&apos;ll handle the rest.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {resumeMode === "upload" ? (
               <ResumeUploader
@@ -721,14 +809,16 @@ export default function AnalyzePage() {
                   onClick={handlePackResumeContinue}
                   className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
                 >
-                  Continue to Job Descriptions
+                  {pendingPackJobCount > 0
+                    ? `Generate ${pendingPackJobCount} Tailored CV${pendingPackJobCount !== 1 ? "s" : ""}`
+                    : "Continue to Job Descriptions"}
                 </button>
               </div>
             )}
           </div>
         )}
 
-        {/* ── Apply Pack JDs Phase ── */}
+        {/* ── Bulk CV Generator JDs Phase ── */}
         {phase === "pack_jds" && (
           <div className="animate-slide-up-in mx-auto max-w-3xl">
             <div className="mb-6">

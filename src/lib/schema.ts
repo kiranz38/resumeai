@@ -116,6 +116,19 @@ export const ProExperienceGapSchema = z.object({
   severity: z.enum(["high", "medium", "low"]),
 });
 
+export const RadarScoreSchema = z.object({
+  overall: z.number().min(0).max(100),
+  skillsMatch: z.number().min(0).max(100),
+  experienceAlignment: z.number().min(0).max(100),
+  impactStrength: z.number().min(0).max(100),
+  atsReadiness: z.number().min(0).max(100),
+});
+
+export const BeforeAfterPreviewSchema = z.object({
+  before: z.string(),
+  after: z.string(),
+});
+
 export const ProOutputSchema = z.object({
   summary: z.string(),
   tailoredResume: TailoredResumeSchema,
@@ -125,6 +138,11 @@ export const ProOutputSchema = z.object({
   bulletRewrites: z.array(ProBulletRewriteSchema),
   experienceGaps: z.array(ProExperienceGapSchema),
   nextActions: z.array(z.string()),
+  radar: RadarScoreSchema.optional(),
+  beforeAfterPreview: BeforeAfterPreviewSchema.optional(),
+  interviewTalkingPoints: z.array(z.string()).optional(),
 });
 
 export type ProOutput = z.infer<typeof ProOutputSchema>;
+export type RadarScore = z.infer<typeof RadarScoreSchema>;
+export type BeforeAfterPreview = z.infer<typeof BeforeAfterPreviewSchema>;

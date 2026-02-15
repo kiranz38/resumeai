@@ -486,7 +486,7 @@ function drawBlockerCard(
 
 // ── Insights Renderer (Professional) ──
 
-export async function renderInsightsPdf(result: ProOutput, radar?: RadarResult): Promise<jsPDF> {
+export async function renderInsightsPdf(result: ProOutput, radar?: RadarResult, _radarBefore?: RadarResult): Promise<jsPDF> {
   const { jsPDF: JsPDF } = await import("jspdf");
   const pdf = new JsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const ctx = createPdfContext(pdf);

@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
-import {
-  APPLY_PACK_5_DISPLAY,
-  APPLY_PACK_10_DISPLAY,
-} from "@/lib/constants";
+import { useRouter } from "next/navigation";
+import { APPLY_PACK_5_DISPLAY } from "@/lib/constants";
 import { trackEvent } from "@/lib/analytics";
+
+const isDev = process.env.NODE_ENV === "development";
 
 interface PackJob {
   id: string;
@@ -25,21 +25,18 @@ function createEmptyJob(): PackJob {
   };
 }
 
-const MAX_JOBS = 10;
+const MAX_JOBS = 5;
 
 export default function ApplyPackFlow({ resumeText }: ApplyPackFlowProps) {
+  const router = useRouter();
   const [jobs, setJobs] = useState<PackJob[]>(() => [createEmptyJob()]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Memoized pricing based on job count
   const pricing = useMemo(() => {
-    const count = jobs.length;
-    if (count <= 5) {
-      return { display: APPLY_PACK_5_DISPLAY, product: "apply_pack_5" as const };
-    }
-    return { display: APPLY_PACK_10_DISPLAY, product: "apply_pack_10" as const };
-  }, [jobs.length]);
+    return { display: APPLY_PACK_5_DISPLAY, product: "apply_pack_5" as const };
+  }, []);
 
   const validJobs = useMemo(
     () => jobs.filter((j) => j.title.trim() && j.jd.trim().length >= 30),
@@ -66,7 +63,7 @@ export default function ApplyPackFlow({ resumeText }: ApplyPackFlowProps) {
     });
   }, []);
 
-  const handleCheckout = useCallback(async () => {
+  const handleGenerate = useCallback(async () => {
     if (validJobs.length === 0) {
       setError("Please add at least one job with a title and description.");
       return;
@@ -83,8 +80,15 @@ export default function ApplyPackFlow({ resumeText }: ApplyPackFlowProps) {
         JSON.stringify(validJobs.map((j) => ({ title: j.title, jd: j.jd }))),
       );
 
-      trackEvent("apply_pack_checkout", { jobCount: validJobs.length });
+      trackEvent("apply_pack_generate", { jobCount: validJobs.length });
 
+      if (isDev) {
+        // Skip Stripe in development — go straight to generation
+        router.push("/results/pack");
+        return;
+      }
+
+      // Production: Stripe checkout
       const response = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -103,11 +107,11 @@ export default function ApplyPackFlow({ resumeText }: ApplyPackFlowProps) {
       }
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Checkout failed. Please try again.",
+        err instanceof Error ? err.message : "Failed. Please try again.",
       );
       setIsLoading(false);
     }
-  }, [validJobs, resumeText, pricing.product]);
+  }, [validJobs, resumeText, pricing.product, router]);
 
   return (
     <div>
@@ -127,9 +131,17 @@ export default function ApplyPackFlow({ resumeText }: ApplyPackFlowProps) {
         Job Descriptions ({jobs.length}/{MAX_JOBS})
       </h2>
       <p className="mb-4 text-sm text-gray-500">
-        Add the job descriptions you want tailored resumes for. We&apos;ll generate a
-        Pro pack for each one.
+        Paste up to {MAX_JOBS} different job descriptions below. We&apos;ll generate a
+        separate tailored CV and cover letter for each one, matched to your resume.
       </p>
+      <div className="mb-4 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3">
+        <p className="text-sm text-blue-700">
+          <span className="font-medium">How it works:</span> Your resume stays the same — for each
+          job description you add, we rewrite and tailor your CV to highlight the most relevant
+          experience, skills, and keywords for that specific role. You&apos;ll get {MAX_JOBS} unique,
+          job-ready CVs.
+        </p>
+      </div>
 
       {error && (
         <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -185,19 +197,24 @@ export default function ApplyPackFlow({ resumeText }: ApplyPackFlowProps) {
         </button>
       )}
 
-      {/* Pricing + CTA */}
+      {/* CTA */}
       <div className="mt-6 flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 p-4">
         <div>
           <p className="text-sm text-gray-600">
             {validJobs.length} job{validJobs.length !== 1 ? "s" : ""} ready
           </p>
-          <p className="text-lg font-bold text-gray-900">{pricing.display}</p>
-          <p className="text-xs text-gray-400">
-            {jobs.length <= 5 ? "Up to 5 jobs" : "6-10 jobs"}
-          </p>
+          {!isDev && (
+            <>
+              <p className="text-lg font-bold text-gray-900">{pricing.display}</p>
+              <p className="text-xs text-gray-400">Up to {MAX_JOBS} jobs</p>
+            </>
+          )}
+          {isDev && (
+            <p className="text-xs text-gray-400">Dev mode — Stripe skipped</p>
+          )}
         </div>
         <button
-          onClick={handleCheckout}
+          onClick={handleGenerate}
           disabled={isLoading || validJobs.length === 0}
           className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
         >

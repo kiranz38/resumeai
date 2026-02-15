@@ -20,20 +20,23 @@ const windows = new Map<string, SlidingWindowEntry>();
 const CLEANUP_INTERVAL = 60_000;
 let lastCleanup = Date.now();
 
+/** Max window across all routes (24h) — used for cleanup staleness threshold */
+const MAX_WINDOW_MS = 86_400_000;
+
 function cleanup() {
   const now = Date.now();
   if (now - lastCleanup < CLEANUP_INTERVAL) return;
   lastCleanup = now;
 
   for (const [key, bucket] of buckets) {
-    // Remove buckets idle for > 5 minutes
-    if (now - bucket.lastRefill > 300_000) {
+    // Remove buckets idle for longer than the max window
+    if (now - bucket.lastRefill > MAX_WINDOW_MS) {
       buckets.delete(key);
     }
   }
   for (const [key, entry] of windows) {
-    // Prune old timestamps
-    entry.timestamps = entry.timestamps.filter((t) => now - t < 300_000);
+    // Prune timestamps older than the max window
+    entry.timestamps = entry.timestamps.filter((t) => now - t < MAX_WINDOW_MS);
     if (entry.timestamps.length === 0) {
       windows.delete(key);
     }
@@ -53,10 +56,13 @@ export interface RouteBudget {
 
 /** Pre-defined budgets per route */
 export const ROUTE_BUDGETS: Record<string, RouteBudget> = {
-  analyze: { capacity: 20, refillRate: 0.33, windowMs: 60_000, windowMax: 20 },
-  "generate-pro": { capacity: 5, refillRate: 0.08, windowMs: 60_000, windowMax: 5 },
-  checkout: { capacity: 5, refillRate: 0.08, windowMs: 60_000, windowMax: 5 },
-  "email-pro": { capacity: 3, refillRate: 0.05, windowMs: 60_000, windowMax: 3 },
+  analyze:        { capacity: 20, refillRate: 0.33,  windowMs: 3_600_000,  windowMax: 20 },  // 20/hour
+  "generate-pro": { capacity: 10, refillRate: 0.00012, windowMs: 86_400_000, windowMax: 10 }, // 10/day per IP
+  "generate-pack":{ capacity: 2,  refillRate: 0.03,  windowMs: 300_000,    windowMax: 2 },   // 2/5min
+  checkout:       { capacity: 5,  refillRate: 0.08,  windowMs: 60_000,     windowMax: 5 },   // 5/min
+  "email-pro":    { capacity: 3,  refillRate: 0.001, windowMs: 3_600_000,  windowMax: 3 },   // 3/hour
+  "send-report":  { capacity: 3,  refillRate: 0.001, windowMs: 3_600_000,  windowMax: 3 },   // 3/hour
+  export:         { capacity: 30, refillRate: 0.01,  windowMs: 86_400_000, windowMax: 30 },  // 30/day
 };
 
 export interface RateLimitResult {

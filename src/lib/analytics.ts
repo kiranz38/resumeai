@@ -23,6 +23,12 @@ type EventParams = Record<string, string | number | boolean>;
  * - pro_viewed                         Pro results loaded
  * - pro_generation_completed           Pro output received
  *
+ * — Career Pass —
+ * - plan_selected                      Plan chosen in PaywallPlanPicker (plan, context)
+ * - career_pass_welcome_viewed         Welcome page loaded after purchase
+ * - career_dashboard_viewed            Career dashboard page loaded
+ * - checkout_button_clicked            Checkout button on pricing page (plan, source)
+ *
  * — Engagement —
  * - radar_improvement_shown            Before/after radar delta displayed (before, after)
  * - export_clicked                     Any export button (type: zip | pdf | docx | txt | cover_pdf | insights_pdf)
@@ -34,7 +40,7 @@ type EventParams = Record<string, string | number | boolean>;
  * - export_cover_letter_pdf_clicked
  * - export_insights_pdf_clicked
  * - email_report_sent                  Email delivery triggered
- * - optimize_another_job_clicked       Return trigger on Pro page
+ * - optimize_another_job_clicked       Return trigger on Pro page (plan)
  * - demo_clicked                       Demo CTA clicked
  */
 export function trackEvent(eventName: string, params?: EventParams) {

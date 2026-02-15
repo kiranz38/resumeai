@@ -2,6 +2,8 @@
 
 import { useState, useCallback, useRef, useMemo, useEffect } from "react";
 import { JOB_BOARD_COUNTRIES } from "@/lib/constants";
+import { quickMatchScore, matchScoreDisplay, LOW_MATCH_THRESHOLD } from "@/lib/quick-match";
+import LowMatchDialog from "@/components/LowMatchDialog";
 
 interface JobListing {
   job_id: string;
@@ -20,9 +22,17 @@ interface JobListing {
   job_salary_period: string | null;
 }
 
+type JobWithScore = JobListing & { matchScore?: number };
+
 interface JobBoardProps {
-  onSelectJob: (jdText: string) => void;
+  onSelectJob: (jdText: string, jobTitle?: string) => void;
+  onBulkGenerate?: (jobs: Array<{ title: string; jd: string }>) => void;
+  /** Resume text from user session — enables match score ranking */
+  resumeText?: string;
 }
+
+const MAX_BULK_SELECT = 5;
+const DEFAULT_QUERY = "hiring";
 
 // Simple in-memory cache for search results
 const searchCache = new Map<
@@ -84,17 +94,129 @@ function stripHtml(html: string): string {
     .trim();
 }
 
-export default function JobBoard({ onSelectJob }: JobBoardProps) {
+export default function JobBoard({ onSelectJob, onBulkGenerate, resumeText }: JobBoardProps) {
   const [query, setQuery] = useState("");
   const [country, setCountry] = useState("us");
   const [jobs, setJobs] = useState<JobListing[]>([]);
+  const [defaultJobs, setDefaultJobs] = useState<JobListing[]>([]);
+  const [isDefaultView, setIsDefaultView] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [hasSearched, setHasSearched] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const abortRef = useRef<AbortController | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Low-match permission dialog state
+  const [lowMatchDialog, setLowMatchDialog] = useState<{
+    jobTitle: string;
+    matchScore: number;
+    lowMatchCount?: number;
+    totalCount?: number;
+    onProceed: () => void;
+  } | null>(null);
+
+  // ── Sorted jobs with match scores ──
+  const sortedJobs = useMemo<JobWithScore[]>(() => {
+    const source = isDefaultView ? defaultJobs : jobs;
+    if (!source.length) return [];
+
+    const withScores: JobWithScore[] = source.map((job) => ({
+      ...job,
+      matchScore: resumeText
+        ? quickMatchScore(resumeText, stripHtml(job.job_description))
+        : undefined,
+    }));
+
+    if (resumeText) {
+      // Sort by match score descending — best matches first
+      return withScores.sort((a, b) => (b.matchScore ?? 0) - (a.matchScore ?? 0));
+    }
+
+    // No resume → sort alphabetically by job title
+    return withScores.sort((a, b) => a.job_title.localeCompare(b.job_title));
+  }, [isDefaultView, defaultJobs, jobs, resumeText]);
+
+  const toggleSelect = useCallback((jobId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(jobId)) {
+        next.delete(jobId);
+      } else if (next.size < MAX_BULK_SELECT) {
+        next.add(jobId);
+      }
+      return next;
+    });
+  }, []);
+
+  const clearSelection = useCallback(() => {
+    setSelectedIds(new Set());
+  }, []);
+
+  // ── Quick Analyze with low-match gate ──
+  const handleQuickAnalyze = useCallback(
+    (job: JobWithScore) => {
+      const jdText = stripHtml(job.job_description);
+      const title = `${job.job_title} at ${job.employer_name}`;
+
+      if (
+        job.matchScore !== undefined &&
+        job.matchScore < LOW_MATCH_THRESHOLD
+      ) {
+        setLowMatchDialog({
+          jobTitle: title,
+          matchScore: job.matchScore,
+          onProceed: () => {
+            setLowMatchDialog(null);
+            onSelectJob(jdText, title);
+          },
+        });
+        return;
+      }
+
+      onSelectJob(jdText, title);
+    },
+    [onSelectJob],
+  );
+
+  // ── Bulk Generate with low-match gate ──
+  const handleBulkGenerate = useCallback(() => {
+    if (!onBulkGenerate || selectedIds.size === 0) return;
+
+    const selected = sortedJobs
+      .filter((j) => selectedIds.has(j.job_id))
+      .map((j) => ({
+        title: `${j.job_title} at ${j.employer_name}`,
+        jd: stripHtml(j.job_description),
+        matchScore: j.matchScore,
+      }));
+
+    const lowMatchJobs = selected.filter(
+      (j) => j.matchScore !== undefined && j.matchScore < LOW_MATCH_THRESHOLD,
+    );
+
+    const proceed = () => {
+      setLowMatchDialog(null);
+      onBulkGenerate(
+        selected.map((j) => ({ title: j.title, jd: j.jd })),
+      );
+    };
+
+    if (lowMatchJobs.length > 0) {
+      setLowMatchDialog({
+        jobTitle: lowMatchJobs[0].title,
+        matchScore: Math.min(...lowMatchJobs.map((j) => j.matchScore ?? 0)),
+        lowMatchCount: lowMatchJobs.length,
+        totalCount: selected.length,
+        onProceed: proceed,
+      });
+      return;
+    }
+
+    proceed();
+  }, [onBulkGenerate, selectedIds, sortedJobs]);
 
   const fetchJobs = useCallback(
     async (q: string, ctry: string, searchPage: number) => {
@@ -161,35 +283,75 @@ export default function JobBoard({ onSelectJob }: JobBoardProps) {
     [],
   );
 
+  // ── Fetch default/featured jobs on mount + whenever country changes ──
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadDefaults = async () => {
+      setIsLoading(true);
+      setDefaultJobs([]);
+      try {
+        const params = new URLSearchParams({
+          q: DEFAULT_QUERY,
+          country,
+          page: "1",
+        });
+        const response = await fetch(`/api/jobs?${params}`);
+        if (response.ok && !cancelled) {
+          const data = await response.json();
+          setDefaultJobs(data.jobs || []);
+          setTotalPages(data.totalPages || 0);
+        }
+      } catch {
+        // Silent fail for defaults — user can still search manually
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+
+    // Reset to default view when country changes
+    setIsDefaultView(true);
+    setHasSearched(false);
+    setJobs([]);
+    setQuery("");
+    loadDefaults();
+
+    return () => { cancelled = true; };
+  }, [country]);
+
   // Debounced live search: fires when query >= 3 chars
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     const q = query.trim();
     if (q.length < MIN_QUERY_LENGTH) {
-      // Clear results if user deletes back below threshold
-      if (hasSearched && q.length === 0) {
-        setJobs([]);
+      // User cleared search — restore default view
+      if (q.length === 0 && !isDefaultView) {
+        setIsDefaultView(true);
         setHasSearched(false);
-        setTotalPages(0);
       }
       return;
     }
 
     debounceRef.current = setTimeout(() => {
+      setIsDefaultView(false);
       fetchJobs(q, country, 1);
     }, DEBOUNCE_MS);
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [query, country, fetchJobs, hasSearched]);
+  }, [query, country, fetchJobs, isDefaultView]);
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
       if (debounceRef.current) clearTimeout(debounceRef.current);
-      fetchJobs(query.trim(), country, 1);
+      const q = query.trim();
+      if (q.length >= MIN_QUERY_LENGTH) {
+        setIsDefaultView(false);
+        fetchJobs(q, country, 1);
+      }
     },
     [fetchJobs, query, country],
   );
@@ -212,13 +374,41 @@ export default function JobBoard({ onSelectJob }: JobBoardProps) {
     [],
   );
 
+  const showJobs = sortedJobs.length > 0;
+  const showEmptyDefault = isDefaultView && defaultJobs.length === 0 && !isLoading;
+  const showNoResults = !isDefaultView && hasSearched && !isLoading && jobs.length === 0;
+
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Job Board</h1>
-        <p className="mt-1 text-gray-500">
-          Start typing to search real jobs, then analyze your CV match instantly.
-        </p>
+    <div className="relative pb-20">
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Job Board</h1>
+          <p className="mt-1 text-gray-500">
+            Search real jobs, then analyze your CV match or select multiple to bulk generate tailored CVs.
+          </p>
+        </div>
+
+        {/* Sticky Bulk Generate button — top-right, always visible when jobs selected */}
+        {onBulkGenerate && selectedIds.size > 0 && (
+          <div className="sticky top-4 z-30 flex flex-shrink-0 items-center gap-2">
+            <button
+              onClick={clearSelection}
+              className="rounded-lg border border-gray-200 px-2.5 py-2 text-xs text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+              title="Clear selection"
+            >
+              Clear
+            </button>
+            <button
+              onClick={handleBulkGenerate}
+              className="animate-pulse-ring inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-lg hover:bg-blue-700"
+            >
+              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-white/20 text-xs font-bold">
+                {selectedIds.size}
+              </div>
+              Bulk Generate
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Search form */}
@@ -241,7 +431,7 @@ export default function JobBoard({ onSelectJob }: JobBoardProps) {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Start typing a job title, keyword, or company..."
+            placeholder="Search by job title, keyword, or company..."
             className="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-4 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
           {isLoading && (
@@ -275,8 +465,22 @@ export default function JobBoard({ onSelectJob }: JobBoardProps) {
         </select>
       </form>
 
+      {/* Resume match info banner */}
+      {resumeText && showJobs && (
+        <div className="mb-4 rounded-lg border border-indigo-100 bg-indigo-50 px-4 py-2.5 text-sm text-indigo-700">
+          Jobs are ranked by how well they match your uploaded resume. Higher match scores appear first.
+        </div>
+      )}
+
+      {/* Selection hint */}
+      {showJobs && onBulkGenerate && selectedIds.size === 0 && (
+        <div className="mb-4 rounded-lg border border-blue-100 bg-blue-50 px-4 py-2.5 text-sm text-blue-700">
+          <span className="font-medium">Tip:</span> Select up to {MAX_BULK_SELECT} jobs to bulk generate tailored CVs for each one.
+        </div>
+      )}
+
       {/* Typing hint */}
-      {!hasSearched && query.length > 0 && query.length < MIN_QUERY_LENGTH && (
+      {!hasSearched && isDefaultView && query.length > 0 && query.length < MIN_QUERY_LENGTH && (
         <p className="mb-4 text-center text-sm text-gray-400">
           Type {MIN_QUERY_LENGTH - query.length} more character
           {MIN_QUERY_LENGTH - query.length > 1 ? "s" : ""} to search...
@@ -289,8 +493,33 @@ export default function JobBoard({ onSelectJob }: JobBoardProps) {
         </div>
       )}
 
-      {/* Empty state */}
-      {!hasSearched && !query && (
+      {/* Section header */}
+      {showJobs && (
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-400">
+            {isDefaultView ? "Featured Jobs" : "Search Results"}
+          </h2>
+          <span className="text-xs text-gray-400">
+            {sortedJobs.length} job{sortedJobs.length !== 1 ? "s" : ""}
+            {resumeText ? " — sorted by match" : " — A-Z"}
+          </span>
+        </div>
+      )}
+
+      {/* Initial loading */}
+      {isLoading && !showJobs && (
+        <div className="flex items-center justify-center py-16">
+          <div className="text-center">
+            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+            <p className="mt-3 text-sm text-gray-500">
+              {isDefaultView ? "Loading featured jobs..." : "Searching..."}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Empty state — no defaults loaded */}
+      {showEmptyDefault && !query && (
         <div className="py-16 text-center">
           <svg
             className="mx-auto h-16 w-16 text-gray-200"
@@ -314,8 +543,8 @@ export default function JobBoard({ onSelectJob }: JobBoardProps) {
         </div>
       )}
 
-      {/* No results */}
-      {hasSearched && !isLoading && jobs.length === 0 && (
+      {/* No search results */}
+      {showNoResults && (
         <div className="py-12 text-center text-gray-500">
           <svg
             className="mx-auto h-12 w-12 text-gray-300"
@@ -336,20 +565,53 @@ export default function JobBoard({ onSelectJob }: JobBoardProps) {
         </div>
       )}
 
-      {/* Results */}
+      {/* ── Job listings ── */}
       <div className="space-y-3">
-        {jobs.map((job) => {
+        {sortedJobs.map((job) => {
           const salary = formatSalary(job);
           const location = [job.job_city, job.job_state, job.job_country]
             .filter(Boolean)
             .join(", ");
+          const isSelected = selectedIds.has(job.job_id);
+          const canSelect = isSelected || selectedIds.size < MAX_BULK_SELECT;
+          const scoreInfo = job.matchScore !== undefined
+            ? matchScoreDisplay(job.matchScore)
+            : null;
 
           return (
             <div
               key={job.job_id}
-              className="group rounded-xl border border-gray-200 bg-white p-4 transition-all hover:border-blue-200 hover:shadow-sm"
+              className={`group rounded-xl border bg-white p-4 transition-all hover:shadow-sm ${
+                isSelected
+                  ? "border-blue-400 bg-blue-50/30 ring-1 ring-blue-200"
+                  : "border-gray-200 hover:border-blue-200"
+              }`}
             >
               <div className="flex gap-4">
+                {/* Checkbox for multi-select */}
+                {onBulkGenerate && (
+                  <div className="flex flex-shrink-0 items-start pt-1">
+                    <button
+                      onClick={() => toggleSelect(job.job_id)}
+                      disabled={!canSelect}
+                      className={`flex h-5 w-5 items-center justify-center rounded border transition-colors ${
+                        isSelected
+                          ? "border-blue-600 bg-blue-600"
+                          : canSelect
+                            ? "border-gray-300 hover:border-blue-400"
+                            : "cursor-not-allowed border-gray-200 opacity-50"
+                      }`}
+                      aria-label={isSelected ? "Deselect job" : "Select job"}
+                    >
+                      {isSelected && (
+                        <svg className="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                )}
+
                 {/* Company logo placeholder */}
                 <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-gray-100">
                   {job.employer_logo ? (
@@ -367,9 +629,19 @@ export default function JobBoard({ onSelectJob }: JobBoardProps) {
                 </div>
 
                 <div className="min-w-0 flex-1">
-                  <h3 className="font-semibold text-gray-900">
-                    {job.job_title}
-                  </h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="truncate font-semibold text-gray-900">
+                      {job.job_title}
+                    </h3>
+                    {/* Match score badge */}
+                    {scoreInfo && job.matchScore !== undefined && (
+                      <span
+                        className={`flex-shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${scoreInfo.bgClass} ${scoreInfo.colorClass}`}
+                      >
+                        {job.matchScore}% {scoreInfo.label}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-sm text-gray-600">{job.employer_name}</p>
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
                     {location && <span>{location}</span>}
@@ -398,11 +670,11 @@ export default function JobBoard({ onSelectJob }: JobBoardProps) {
                   </div>
                 </div>
 
-                {/* Primary CTA — Analyze CV Match */}
+                {/* Primary CTA */}
                 <div className="flex flex-shrink-0 items-center">
                   <button
-                    onClick={() => onSelectJob(stripHtml(job.job_description))}
-                    className="animate-pulse-ring inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700"
+                    onClick={() => handleQuickAnalyze(job)}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700"
                   >
                     <svg
                       className="h-4 w-4"
@@ -417,7 +689,7 @@ export default function JobBoard({ onSelectJob }: JobBoardProps) {
                         d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                       />
                     </svg>
-                    Analyze CV Match
+                    Quick Analyze
                   </button>
                 </div>
               </div>
@@ -426,8 +698,8 @@ export default function JobBoard({ onSelectJob }: JobBoardProps) {
         })}
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
+      {/* Pagination (search results only) */}
+      {!isDefaultView && totalPages > 1 && (
         <div className="mt-6 flex items-center justify-center gap-3">
           <button
             onClick={() => handlePageChange(page - 1)}
@@ -447,6 +719,56 @@ export default function JobBoard({ onSelectJob }: JobBoardProps) {
             Next
           </button>
         </div>
+      )}
+
+      {/* ── Floating Bulk Generate Bar (bottom) ── */}
+      {onBulkGenerate && selectedIds.size > 0 && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-white/95 px-4 py-3 shadow-lg backdrop-blur-sm">
+          <div className="mx-auto flex max-w-4xl items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-sm font-bold text-blue-700">
+                {selectedIds.size}
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-900">
+                  {selectedIds.size} job{selectedIds.size !== 1 ? "s" : ""} selected
+                </p>
+                <p className="text-xs text-gray-500">
+                  A tailored CV will be generated for each
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={clearSelection}
+                className="text-sm text-gray-500 hover:text-gray-700"
+              >
+                Clear
+              </button>
+              <button
+                onClick={handleBulkGenerate}
+                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                Bulk Generate CVs
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Low Match Permission Dialog ── */}
+      {lowMatchDialog && (
+        <LowMatchDialog
+          jobTitle={lowMatchDialog.jobTitle}
+          matchScore={lowMatchDialog.matchScore}
+          lowMatchCount={lowMatchDialog.lowMatchCount}
+          totalCount={lowMatchDialog.totalCount}
+          onConfirm={lowMatchDialog.onProceed}
+          onCancel={() => setLowMatchDialog(null)}
+        />
       )}
     </div>
   );

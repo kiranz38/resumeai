@@ -15,13 +15,13 @@ const PRO_FEATURES = [
   "Recruiter-style feedback",
   "All bullet rewrites (12-20)",
   "Experience gap analysis with suggestions",
+  "Bulk CV Generator — select from Job Board or paste up to 5 JDs",
   "Downloadable PDF, DOCX, and TXT exports",
   "Email delivery of your report",
 ];
 
 export default function ProUpgradeCard({ onUpgrade }: ProUpgradeCardProps) {
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isUnlocked, setIsUnlocked] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleUnlockPro = async () => {
@@ -29,44 +29,6 @@ export default function ProUpgradeCard({ onUpgrade }: ProUpgradeCardProps) {
     trackEvent("pro_generate_clicked");
     onUpgrade?.();
 
-    const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-    const isDev = process.env.NODE_ENV === "development";
-
-    if (stripeKey && !isDev) {
-      // Stripe is configured — save resume data, then redirect to checkout
-      // After payment success, the /results/pro page will trigger generation
-      try {
-        const resumeText = sessionStorage.getItem("rt_resume_text");
-        const jdText = sessionStorage.getItem("rt_jd_text");
-
-        if (!resumeText || !jdText) {
-          setError("Resume data not found. Please re-analyze your resume first.");
-          return;
-        }
-
-        // Mark that we need to generate after payment
-        sessionStorage.setItem("rt_pending_pro", "true");
-
-        const response = await fetch("/api/checkout", {
-          method: "POST",
-        });
-
-        if (!response.ok) {
-          const data = await response.json().catch(() => ({}));
-          throw new Error(data.error || "Checkout failed");
-        }
-
-        const { url } = await response.json();
-        if (url) {
-          window.location.href = url;
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Unable to start checkout. Please try again.");
-      }
-      return;
-    }
-
-    // No Stripe (or dev mode) — skip payment, go directly to Pro page
     const resumeText = sessionStorage.getItem("rt_resume_text");
     const jdText = sessionStorage.getItem("rt_jd_text");
 
@@ -75,14 +37,38 @@ export default function ProUpgradeCard({ onUpgrade }: ProUpgradeCardProps) {
       return;
     }
 
-    // Set pending flag so the Pro page triggers generation with progress bar
+    // Mark pending generation
     sessionStorage.setItem("rt_pending_pro", "true");
-    window.location.href = "/results/pro";
-  };
 
-  if (isUnlocked) {
-    return null;
-  }
+    try {
+      setIsGenerating(true);
+      const res = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: "pro" }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Checkout failed");
+      }
+
+      const data = await res.json();
+
+      if (data.devMode && data.token) {
+        // Dev mode: store token and redirect directly
+        sessionStorage.setItem("rt_entitlement_token", data.token);
+        sessionStorage.setItem("rt_entitlement_plan", "pro");
+        window.location.href = data.url;
+      } else if (data.url) {
+        // Production: redirect to Stripe checkout
+        window.location.href = data.url;
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to start checkout. Please try again.");
+      setIsGenerating(false);
+    }
+  };
 
   return (
     <div className="relative overflow-hidden rounded-xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 p-8">

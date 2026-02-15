@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
-import { markSessionProcessed } from "@/lib/entitlement";
+import { markSessionProcessed, mintEntitlement, type Plan } from "@/lib/entitlement";
+import { trackServerEvent } from "@/lib/analytics-server";
 
 /**
  * Stripe webhook endpoint.
@@ -27,36 +28,41 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid signature." }, { status: 400 });
   }
 
-  // Handle events
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
 
-      // Idempotency check
+      // Idempotency
       const isNew = markSessionProcessed(session.id);
       if (!isNew) {
         console.log("[webhook/stripe] Duplicate event for session:", session.id);
         return NextResponse.json({ received: true });
       }
 
-      // Verify payment
       if (session.payment_status !== "paid") {
         console.warn("[webhook/stripe] Session not paid:", session.id);
         break;
       }
 
-      // Verify product metadata
-      if (session.metadata?.product !== "full_tailor_pack") {
-        console.warn("[webhook/stripe] Unknown product:", session.metadata?.product);
-        break;
+      // Determine plan from metadata
+      const metaPlan = session.metadata?.plan;
+      const metaProduct = session.metadata?.product;
+      let plan: Plan = "pro";
+      if (metaPlan === "pass" || metaProduct === "career_pass") {
+        plan = "pass";
       }
 
-      console.log("[webhook/stripe] Payment confirmed for session:", session.id);
+      // Mint entitlement token (will be exchanged by client via /api/entitlement)
+      const token = mintEntitlement(session.id, plan);
+      console.log(`[webhook/stripe] Payment confirmed: session=${session.id} plan=${plan}`);
+      trackServerEvent("checkout_completed", { plan });
+
+      // Token is stored server-side for retrieval by /api/entitlement
+      // The client exchanges session_id for the token
       break;
     }
 
     default:
-      // Unhandled event type — acknowledge receipt
       break;
   }
 

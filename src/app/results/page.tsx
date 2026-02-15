@@ -10,7 +10,7 @@ import KeywordList from "@/components/KeywordList";
 import StrengthsList from "@/components/StrengthsList";
 import GapsList from "@/components/GapsList";
 import RewritePreviews from "@/components/RewritePreviews";
-import ProUpgradeCard from "@/components/ProUpgradeCard";
+import PaywallPlanPicker from "@/components/PaywallPlanPicker";
 import { trackEvent } from "@/lib/analytics";
 import { DEMO_RADAR_RESULT } from "@/lib/demo-data";
 import { loadJobSessions, type JobSession } from "@/lib/job-sessions";
@@ -157,8 +157,8 @@ export default function ResultsPage() {
                   <div className="flex items-center gap-3">
                     <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
                       session.radarBefore >= 75 ? "bg-green-100 text-green-700" :
-                      session.radarBefore >= 50 ? "bg-yellow-100 text-yellow-700" :
-                      "bg-red-100 text-red-700"
+                      session.radarBefore >= 60 ? "bg-blue-100 text-blue-700" :
+                      "bg-yellow-100 text-yellow-700"
                     }`}>
                       {session.radarBefore}
                     </span>
@@ -342,12 +342,13 @@ export default function ResultsPage() {
         </div>
       )}
 
-      {/* Pro upgrade CTA */}
-      {!isDemo && (
+      {/* Plan upgrade CTA — hidden in demo or when Pro is disabled */}
+      {!isDemo && process.env.NEXT_PUBLIC_PRO_ENABLED !== "false" && (
         <div className="mt-10" id="pro-upgrade">
-          <ProUpgradeCard onUpgrade={() => {
-            trackEvent("pro_cta_clicked");
-          }} />
+          <h2 className="mb-4 text-center text-xl font-bold text-gray-900">
+            Unlock the full analysis
+          </h2>
+          <PaywallPlanPicker context="free_results" />
         </div>
       )}
 
