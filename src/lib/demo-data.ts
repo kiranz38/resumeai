@@ -1,4 +1,4 @@
-import type { ResumeTailorResult } from "./schema";
+import type { ResumeTailorResult, ProOutput } from "./schema";
 import type { RadarResult } from "./types";
 
 export const DEMO_RESUME_TEXT = `SARAH CHEN
@@ -355,6 +355,174 @@ Sarah Chen`,
   ],
   summary:
     "Your resume shows solid engineering experience with good metrics and progression. The main gaps are in specific technologies the role requires (Python/Go, Kubernetes, GraphQL, IaC) and in demonstrating senior-level system design and technical leadership. Focus on expanding your cloud/infrastructure skills and adding architecture-level accomplishments to strengthen your candidacy.",
+};
+
+// ── Static demo ProOutput for CV preview (no API call) ──
+
+export const DEMO_PRO_OUTPUT: ProOutput = {
+  summary:
+    "Your resume has been tailored for the Senior Full-Stack Engineer role at CloudScale Inc. Key improvements include a professional summary, restructured skills by category, strengthened bullet points with measurable outcomes, and a targeted cover letter.",
+  tailoredResume: {
+    name: "John Chen",
+    headline: "Senior Full-Stack Engineer",
+    summary:
+      "Senior Full-Stack Engineer with 7+ years of experience building and scaling web applications. Proven track record leading cross-functional teams, optimizing API performance, and delivering customer-facing platforms serving 50K+ users. Passionate about cloud-native architecture, developer productivity, and mentoring engineers.",
+    email: "john.chen@email.com",
+    location: "San Francisco, CA",
+    links: ["linkedin.com/in/johnchen"],
+    skills: [
+      { category: "Languages", items: ["JavaScript", "TypeScript", "Python"] },
+      { category: "Frontend", items: ["React", "Next.js", "HTML", "CSS"] },
+      { category: "Backend", items: ["Node.js", "Express", "GraphQL"] },
+      {
+        category: "Cloud & DevOps",
+        items: ["AWS (EC2, S3, Lambda, RDS)", "Docker", "Kubernetes", "GitHub Actions", "CI/CD"],
+      },
+      { category: "Databases", items: ["PostgreSQL", "MongoDB", "Redis"] },
+      { category: "Methodologies", items: ["Agile/Scrum", "System Design", "Technical Leadership"] },
+    ],
+    experience: [
+      {
+        company: "Acme Corp",
+        title: "Senior Software Engineer",
+        period: "2021 – Present",
+        bullets: [
+          "Architected and led development of a customer-facing analytics dashboard serving 50K+ MAU, defining technical architecture and coordinating delivery across 5 engineers",
+          "Designed and optimized high-throughput API layer using Node.js and Express, achieving 35% latency reduction through caching strategies and query optimization serving 100K+ daily requests",
+          "Mentored 3 junior engineers through structured code reviews and pair programming, contributing to 40% improvement in team code quality metrics and onboarding velocity",
+          "Partnered with product and design stakeholders to translate business requirements into technical specifications for Q3 platform roadmap, influencing 4 key feature decisions",
+          "Led system design initiative evaluating microservices vs monolithic architectures for real-time data processing, resulting in a scalable event-driven pipeline handling 10K events/sec",
+        ],
+      },
+      {
+        company: "StartupXYZ",
+        title: "Software Engineer",
+        period: "2019 – 2021",
+        bullets: [
+          "Built and maintained React component library powering an e-commerce platform processing $2M+ annual revenue, improving page load performance by 35% through code splitting and lazy loading",
+          "Designed and implemented CI/CD pipeline using GitHub Actions with automated testing and staged rollouts, reducing deployment cycle from 2 hours to 15 minutes (87% improvement)",
+          "Established testing strategy with unit and integration tests achieving 85% code coverage, reducing production incidents by 25% quarter-over-quarter",
+          "Managed production incident response in on-call rotation, developing runbooks and monitoring dashboards that reduced mean time to resolution by 45%",
+        ],
+      },
+      {
+        company: "WebAgency",
+        title: "Junior Developer",
+        period: "2017 – 2019",
+        bullets: [
+          "Delivered 20+ responsive client websites using HTML, CSS, and JavaScript, managing concurrent projects and client relationships from requirements through launch",
+          "Maintained and enhanced WordPress sites with custom plugin development, improving site performance and extending platform functionality for diverse client needs",
+          "Collaborated with senior engineers on PostgreSQL database optimization, contributing to query performance improvements that reduced page load times by 50%",
+        ],
+      },
+    ],
+    education: [
+      {
+        school: "UC Berkeley",
+        degree: "B.S. Computer Science",
+        year: "2017",
+      },
+    ],
+  },
+  coverLetter: {
+    paragraphs: [
+      "Dear Hiring Manager,",
+      "I'm writing to express my strong interest in the Senior Full-Stack Engineer position at CloudScale Inc. With 7+ years of experience building and scaling web applications, I'm excited about the opportunity to contribute to your cloud infrastructure management platform.",
+      "In my current role as Senior Software Engineer at Acme Corp, I've led development of a customer-facing dashboard serving 50K+ monthly active users, making key architecture decisions and optimizing API performance. This experience building scalable, user-facing platforms directly aligns with CloudScale's mission to serve enterprise customers.",
+      "What draws me to this role specifically is the combination of platform engineering and customer impact. At StartupXYZ, I built the CI/CD pipeline that reduced deployment cycles by 87%, and I'm eager to apply that DevOps mindset to CloudScale's infrastructure management challenges. My experience mentoring engineers and collaborating with product stakeholders has prepared me for the technical leadership this role requires.",
+      "I'd welcome the opportunity to discuss how my experience with scalable web platforms, API design, and team leadership can contribute to CloudScale's Platform team.",
+      "Best regards,\nJohn Chen",
+    ],
+  },
+  keywordChecklist: [
+    { keyword: "TypeScript", found: true, section: "Skills" },
+    { keyword: "React", found: true, section: "Skills" },
+    { keyword: "Next.js", found: true, section: "Skills" },
+    { keyword: "Python", found: true, section: "Skills" },
+    { keyword: "Node.js", found: true, section: "Skills" },
+    { keyword: "AWS", found: true, section: "Skills" },
+    { keyword: "Docker", found: true, section: "Skills" },
+    { keyword: "Kubernetes", found: true, section: "Skills" },
+    { keyword: "CI/CD", found: true, section: "Skills" },
+    { keyword: "GraphQL", found: true, section: "Skills" },
+    { keyword: "system design", found: true, section: "Experience" },
+    { keyword: "Go", found: false, suggestion: "Add Go to skills if you have experience" },
+    { keyword: "Terraform", found: false, suggestion: "Add infrastructure-as-code tools to skills" },
+    { keyword: "GCP", found: false, suggestion: "Mention multi-cloud experience if applicable" },
+    { keyword: "microservices", found: true, section: "Experience" },
+  ],
+  recruiterFeedback: [
+    "Strong progression from Junior Developer to Senior Software Engineer shows growth trajectory",
+    "Quantified achievements in most bullets — hiring managers love seeing numbers",
+    "Good demonstration of technical leadership through mentoring and cross-functional collaboration",
+    "Consider adding a line about cloud security or compliance experience for this enterprise platform role",
+    "The system design bullet is excellent — it directly addresses a key requirement",
+  ],
+  bulletRewrites: [
+    {
+      original: "Led development of customer-facing dashboard serving 50K monthly active users",
+      rewritten:
+        "Architected and led development of a customer-facing analytics dashboard serving 50K+ MAU, defining technical architecture and coordinating delivery across 5 engineers",
+      section: "Acme Corp",
+      notes: "Added architecture ownership and team coordination to demonstrate senior-level scope.",
+    },
+    {
+      original: "Built REST API endpoints using Node.js and Express, reducing response times by 35%",
+      rewritten:
+        "Designed and optimized high-throughput API layer using Node.js and Express, achieving 35% latency reduction through caching strategies and query optimization serving 100K+ daily requests",
+      section: "Acme Corp",
+      notes: "Elevated from 'built' to 'designed and optimized' with scale context.",
+    },
+    {
+      original: "Developed React components for e-commerce platform processing $2M annual revenue",
+      rewritten:
+        "Built and maintained React component library powering an e-commerce platform processing $2M+ annual revenue, improving page load performance by 35% through code splitting and lazy loading",
+      section: "StartupXYZ",
+      notes: "Added performance optimization angle and component library ownership.",
+    },
+    {
+      original: "Implemented CI/CD pipeline using GitHub Actions, reducing deployment time from 2 hours to 15 minutes",
+      rewritten:
+        "Designed and implemented CI/CD pipeline using GitHub Actions with automated testing and staged rollouts, reducing deployment cycle from 2 hours to 15 minutes (87% improvement)",
+      section: "StartupXYZ",
+      notes: "Added DevOps maturity signals relevant to the target role's CI/CD requirements.",
+    },
+  ],
+  experienceGaps: [
+    {
+      gap: "Limited Go experience",
+      suggestion: "If you have any Go experience (even side projects), add it prominently to Skills and a bullet point.",
+      severity: "medium",
+    },
+    {
+      gap: "No infrastructure-as-code tools mentioned",
+      suggestion: "Add Terraform, Pulumi, or CloudFormation experience if applicable.",
+      severity: "medium",
+    },
+    {
+      gap: "Single cloud provider depth",
+      suggestion: "Expand beyond AWS — mention any GCP or Azure experience to show multi-cloud awareness.",
+      severity: "low",
+    },
+  ],
+  nextActions: [
+    "Review the tailored resume and customize any estimated metrics with real numbers",
+    "Add Go experience to Skills if applicable — it's a core requirement",
+    "Consider adding Terraform or Pulumi if you have IaC experience",
+    "Use the cover letter as a starting point and personalize the opening paragraph",
+    "Export your resume as PDF and test it through an ATS scanner",
+  ],
+  radar: {
+    overall: 78,
+    skillsMatch: 72,
+    experienceAlignment: 82,
+    impactStrength: 80,
+    atsReadiness: 76,
+  },
+  beforeAfterPreview: {
+    before: "Led development of customer-facing dashboard serving 50K monthly active users",
+    after: "Architected and led development of a customer-facing analytics dashboard serving 50K+ MAU, defining technical architecture and coordinating delivery across 5 engineers",
+  },
 };
 
 export const DEMO_RADAR_RESULT: RadarResult = {

@@ -18,6 +18,7 @@ import { proOutputToDocument } from "@/lib/pro-document";
 import ModernAtsResume from "@/components/templates/ModernAtsResume";
 import ProfessionalCoverLetter from "@/components/templates/ProfessionalCoverLetter";
 import PaywallPlanPicker from "@/components/PaywallPlanPicker";
+import ShareCard from "@/components/ShareCard";
 import { trackEvent } from "@/lib/analytics";
 import { TRIAL_PRICE, PRO_PRICE, CAREER_PASS_PRICE, PRO_PRICE_DISPLAY } from "@/lib/constants";
 import type { RadarResult } from "@/lib/types";
@@ -102,6 +103,7 @@ function ProResultsPage() {
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [viewMode, setViewMode] = useState<"edit" | "preview">("edit");
   const [fromPack, setFromPack] = useState(false);
+  const [isDemo, setIsDemo] = useState(false);
   const [needsPayment, setNeedsPayment] = useState<{ message: string; plan?: string } | null>(null);
   const [currentPlan, setCurrentPlan] = useState<string | null>(null);
 
@@ -451,6 +453,11 @@ function ProResultsPage() {
         if (savedEdits) setEdits(savedEdits);
         setLoading(false);
         setCurrentPlan(sessionStorage.getItem("rt_entitlement_plan"));
+        // Check if we're in demo mode
+        if (sessionStorage.getItem("rt_is_demo") === "true") {
+          setIsDemo(true);
+          sessionStorage.removeItem("rt_is_demo");
+        }
         // Check if we came from the pack results page
         if (sessionStorage.getItem("rt_from_pack") === "true") {
           setFromPack(true);
@@ -622,8 +629,8 @@ function ProResultsPage() {
 
       {/* Header */}
       <div className="mb-6" data-print-hide>
-        <div className={`mb-1 inline-block rounded-full px-3 py-0.5 text-xs font-semibold text-white ${currentPlan === "trial" ? "bg-emerald-600" : "bg-blue-600"}`}>
-          {currentPlan === "trial" ? "Career Trial" : "Pro"}
+        <div className={`mb-1 inline-block rounded-full px-3 py-0.5 text-xs font-semibold text-white ${isDemo ? "bg-gray-500" : currentPlan === "trial" ? "bg-emerald-600" : "bg-blue-600"}`}>
+          {isDemo ? "Demo" : currentPlan === "trial" ? "Career Trial" : "Pro"}
         </div>
         <h1 className="text-3xl font-bold text-gray-900">Your Full Tailor Pack</h1>
         <p className="mt-1 text-sm text-gray-600">{result.summary.slice(0, 150)}...</p>
@@ -636,6 +643,30 @@ function ProResultsPage() {
           </p>
         )}
       </div>
+
+      {/* Demo banner */}
+      {isDemo && (
+        <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3" data-print-hide>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-blue-700">
+              This is a demo with sample data.{" "}
+              <Link href="/analyze" className="font-medium underline">
+                Analyze your own resume
+              </Link>{" "}
+              for personalized results.
+            </p>
+            <Link
+              href="/analyze"
+              className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+            >
+              Try with your resume
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Trial plan banner — upgrade to Pro for PDF/DOCX */}
       {currentPlan === "trial" && (
@@ -1139,8 +1170,11 @@ function ProResultsPage() {
         </Link>
       </div>
 
-      {/* Optimize another job (plan-aware) */}
-      {(() => {
+      {/* Share card */}
+      <ShareCard className="mt-8" />
+
+      {/* Optimize another job (plan-aware) — hidden in demo */}
+      {!isDemo && (() => {
         const activePlan = currentPlan || sessionStorage.getItem("rt_entitlement_plan");
         const isPass = activePlan === "pass";
         const isTrialPlan = activePlan === "trial";

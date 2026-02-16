@@ -46,6 +46,9 @@ type EventParams = Record<string, string | number | boolean>;
  * - email_report_sent                  Email delivery triggered
  * - optimize_another_job_clicked       Return trigger on Pro page (plan)
  * - demo_clicked                       Demo CTA clicked
+ *
+ * — Social —
+ * - share_clicked                      Share button clicked (platform: twitter | facebook | whatsapp | reddit | native)
  */
 export function trackEvent(eventName: string, params?: EventParams) {
   if (typeof window === "undefined") return;

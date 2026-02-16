@@ -11,8 +11,10 @@ import StrengthsList from "@/components/StrengthsList";
 import GapsList from "@/components/GapsList";
 import RewritePreviews from "@/components/RewritePreviews";
 import PaywallPlanPicker from "@/components/PaywallPlanPicker";
+import ShareCard from "@/components/ShareCard";
 import { trackEvent } from "@/lib/analytics";
-import { DEMO_RADAR_RESULT } from "@/lib/demo-data";
+import { DEMO_RADAR_RESULT, DEMO_PRO_OUTPUT } from "@/lib/demo-data";
+import { saveBaseProOutput } from "@/lib/pro-store";
 import { loadJobSessions, type JobSession } from "@/lib/job-sessions";
 
 export default function ResultsPage() {
@@ -119,12 +121,27 @@ export default function ResultsPage() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
       {isDemo && (
-        <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
-          This is a demo with sample data.{" "}
-          <Link href="/analyze" className="font-medium underline">
-            Analyze your own resume
-          </Link>{" "}
-          for personalized results.
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
+          <p className="text-sm text-blue-700">
+            This is a demo with sample data.{" "}
+            <Link href="/analyze" className="font-medium underline">
+              Analyze your own resume
+            </Link>{" "}
+            for personalized results.
+          </p>
+          <button
+            onClick={() => {
+              saveBaseProOutput(DEMO_PRO_OUTPUT);
+              sessionStorage.setItem("rt_is_demo", "true");
+              router.push("/results/pro");
+            }}
+            className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+          >
+            Continue to CV
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
+          </button>
         </div>
       )}
 
@@ -349,6 +366,9 @@ export default function ResultsPage() {
           </ol>
         </div>
       )}
+
+      {/* Share card */}
+      <ShareCard className="mt-8" />
 
       {/* Plan upgrade CTA — hidden in demo or when Pro is disabled */}
       {!isDemo && process.env.NEXT_PUBLIC_PRO_ENABLED !== "false" && (

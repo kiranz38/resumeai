@@ -1,5 +1,6 @@
 import Link from "next/link";
 import FAQ from "@/components/FAQ";
+import ShareCard from "@/components/ShareCard";
 import { TRIAL_PRICE_DISPLAY, PRO_PRICE_DISPLAY, CAREER_PASS_DISPLAY } from "@/lib/constants";
 
 const FAQ_ITEMS = [
@@ -391,6 +392,13 @@ export default function LandingPage() {
             </svg>
             Upload Your Resume Now
           </Link>
+        </div>
+      </section>
+
+      {/* Share */}
+      <section className="px-4 pt-12">
+        <div className="mx-auto max-w-md">
+          <ShareCard />
         </div>
       </section>
 
