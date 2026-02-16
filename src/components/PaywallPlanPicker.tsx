@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { TRIAL_PRICE_DISPLAY, PRO_PRICE_DISPLAY, CAREER_PASS_DISPLAY } from "@/lib/constants";
 import { trackEvent } from "@/lib/analytics";
+import { validateJD } from "@/lib/jd-validator";
 import type { Plan } from "@/lib/entitlement";
 
 const TRUSTED_REDIRECT_HOSTS = new Set(["checkout.stripe.com", "pay.stripe.com"]);
@@ -70,11 +71,18 @@ export default function PaywallPlanPicker({
     trackEvent("plan_selected", { plan, context });
 
     try {
-      // Ensure resume data exists
+      // Ensure resume data exists and JD is valid
       const resumeText = sessionStorage.getItem("rt_resume_text");
       const jdText = sessionStorage.getItem("rt_jd_text");
       if (!resumeText || !jdText) {
         setError("Resume data not found. Please re-analyze your resume first.");
+        setLoading(null);
+        return;
+      }
+
+      const jdCheck = validateJD(jdText);
+      if (!jdCheck.valid) {
+        setError(jdCheck.reason || "Job description is too short or invalid. Please go back and paste the full job listing.");
         setLoading(null);
         return;
       }

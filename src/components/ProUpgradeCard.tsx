@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { PRO_PRICE_DISPLAY } from "@/lib/constants";
 import { trackEvent } from "@/lib/analytics";
+import { validateJD } from "@/lib/jd-validator";
 
 /** Trusted domains for checkout redirects */
 const TRUSTED_REDIRECT_HOSTS = new Set(["checkout.stripe.com", "pay.stripe.com"]);
@@ -43,6 +44,12 @@ export default function ProUpgradeCard({ onUpgrade }: ProUpgradeCardProps) {
 
     if (!resumeText || !jdText) {
       setError("Resume data not found. Please re-analyze your resume first.");
+      return;
+    }
+
+    const jdCheck = validateJD(jdText);
+    if (!jdCheck.valid) {
+      setError(jdCheck.reason || "Job description is too short or invalid. Please go back and paste the full job listing.");
       return;
     }
 

@@ -20,6 +20,7 @@ import ProfessionalCoverLetter from "@/components/templates/ProfessionalCoverLet
 import PaywallPlanPicker from "@/components/PaywallPlanPicker";
 import ShareCard from "@/components/ShareCard";
 import { trackEvent } from "@/lib/analytics";
+import { validateJD } from "@/lib/jd-validator";
 import { PRO_PRICE_DISPLAY } from "@/lib/constants";
 import type { RadarResult } from "@/lib/types";
 import { scoreRadar, tailoredToCandidateProfile } from "@/lib/radar-scorer";
@@ -292,6 +293,15 @@ function ProResultsPage() {
 
         if (!resumeText || !jdText) {
           router.push("/analyze");
+          return;
+        }
+
+        // Validate JD before spending API credits
+        const jdCheck = validateJD(jdText);
+        if (!jdCheck.valid) {
+          setLoadingError(jdCheck.reason || "Job description is too short. Please go back and paste the full job listing.");
+          setLoadingMessage("Invalid job description");
+          setLoadingProgress(0);
           return;
         }
 
