@@ -36,29 +36,39 @@ function SuccessPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const initStarted = useRef(false);
 
-  const sessionId = searchParams.get("session_id") || searchParams.get("dev_token") || "";
+  const devToken = searchParams.get("dev_token");
+  const sessionId = searchParams.get("session_id") || "";
   const plan = searchParams.get("plan") || "pro";
   const redirect = searchParams.get("redirect") || "/results/pro";
+  const trackingId = devToken || sessionId;
 
   useEffect(() => {
     if (initStarted.current) return;
     initStarted.current = true;
 
-    if (!sessionId) {
+    if (!trackingId) {
       setStatus("error");
       setErrorMsg("No session ID found. Please try your purchase again.");
       return;
     }
 
     // ── Deduplication: skip if already tracked ──
-    const storageKey = `ga4_purchase_${sessionId}`;
+    const storageKey = `ga4_purchase_${trackingId}`;
     if (localStorage.getItem(storageKey) === "true") {
       // Already tracked — redirect immediately
       navigateToDestination();
       return;
     }
 
-    // ── Verify session server-side, then fire GA4 event ──
+    // ── Dev mode: skip Stripe verification, go straight through ──
+    if (devToken) {
+      localStorage.setItem(storageKey, "true");
+      setStatus("success");
+      setTimeout(() => navigateToDestination(), 600);
+      return;
+    }
+
+    // ── Production: verify session server-side, then fire GA4 event ──
     async function verifyAndTrack() {
       try {
         const res = await fetch("/api/verify-session", {
@@ -92,16 +102,6 @@ function SuccessPage() {
           });
         }
 
-        // Dev logging
-        if (process.env.NODE_ENV === "development") {
-          console.log("[GA4] purchase event fired:", {
-            transaction_id: data.transaction_id,
-            value: data.value,
-            currency: data.currency,
-            plan: data.plan,
-          });
-        }
-
         // ── Mark as tracked — prevents duplicates on refresh/back ──
         localStorage.setItem(storageKey, "true");
 
@@ -123,7 +123,6 @@ function SuccessPage() {
     // Preserve session_id/dev_token and plan in the redirect URL
     // so the destination page can exchange for entitlement token
     const sep = redirect.includes("?") ? "&" : "?";
-    const devToken = searchParams.get("dev_token");
     const params = devToken
       ? `dev_token=${encodeURIComponent(devToken)}&plan=${encodeURIComponent(plan)}`
       : `session_id=${encodeURIComponent(sessionId)}&plan=${encodeURIComponent(plan)}`;
