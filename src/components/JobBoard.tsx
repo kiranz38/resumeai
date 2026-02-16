@@ -79,7 +79,7 @@ function timeAgo(dateStr: string): string {
   return `${Math.floor(days / 30)}mo ago`;
 }
 
-const DEBOUNCE_MS = 400;
+const DEBOUNCE_MS = 300;
 const MIN_QUERY_LENGTH = 3;
 
 /** Strip HTML tags and decode entities to plain text (safe — no innerHTML) */
@@ -134,6 +134,39 @@ function deduplicateJobs(jobs: JobWithScore[]): JobWithScore[] {
     seen.add(key);
     return true;
   });
+}
+
+/** Skeleton card shown while loading — mimics a real job card layout */
+function JobSkeleton() {
+  return (
+    <div className="animate-pulse rounded-xl border border-gray-100 bg-white p-4">
+      <div className="flex gap-4">
+        <div className="h-12 w-12 flex-shrink-0 rounded-lg bg-gray-200" />
+        <div className="min-w-0 flex-1 space-y-2.5">
+          <div className="h-4 w-3/5 rounded bg-gray-200" />
+          <div className="h-3.5 w-2/5 rounded bg-gray-200" />
+          <div className="flex gap-2">
+            <div className="h-3 w-20 rounded bg-gray-100" />
+            <div className="h-3 w-16 rounded bg-gray-100" />
+            <div className="h-3 w-14 rounded bg-gray-100" />
+          </div>
+        </div>
+        <div className="hidden sm:block">
+          <div className="h-9 w-28 rounded-lg bg-gray-200" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function JobSkeletonList({ count = 6 }: { count?: number }) {
+  return (
+    <div className="space-y-3">
+      {Array.from({ length: count }, (_, i) => (
+        <JobSkeleton key={i} />
+      ))}
+    </div>
+  );
 }
 
 export default function JobBoard({ onSelectJob, onBulkGenerate, resumeText }: JobBoardProps) {
@@ -583,9 +616,17 @@ export default function JobBoard({ onSelectJob, onBulkGenerate, resumeText }: Jo
       {/* Section header */}
       {showJobs && (
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-400">
-            {isDefaultView ? "Featured Jobs" : "Search Results"}
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-400">
+              {isDefaultView ? "Featured Jobs" : "Search Results"}
+            </h2>
+            {isLoading && (
+              <div className="flex items-center gap-1.5 text-xs text-blue-500">
+                <div className="h-3 w-3 animate-spin rounded-full border-[1.5px] border-blue-500 border-t-transparent" />
+                Updating...
+              </div>
+            )}
+          </div>
           <span className="text-xs text-gray-400">
             {sortedJobs.length} job{sortedJobs.length !== 1 ? "s" : ""}
             {resumeText ? " — sorted by match" : " — A-Z"}
@@ -593,15 +634,16 @@ export default function JobBoard({ onSelectJob, onBulkGenerate, resumeText }: Jo
         </div>
       )}
 
-      {/* Initial loading */}
+      {/* Skeleton loading (no results yet) */}
       {isLoading && !showJobs && (
-        <div className="flex items-center justify-center py-16">
-          <div className="text-center">
-            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
-            <p className="mt-3 text-sm text-gray-500">
+        <div>
+          <div className="mb-3 flex items-center gap-2">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+            <span className="text-sm text-gray-500">
               {isDefaultView ? "Loading featured jobs..." : "Searching..."}
-            </p>
+            </span>
           </div>
+          <JobSkeletonList count={6} />
         </div>
       )}
 
@@ -653,7 +695,7 @@ export default function JobBoard({ onSelectJob, onBulkGenerate, resumeText }: Jo
       )}
 
       {/* ── Job listings ── */}
-      <div className="space-y-3">
+      <div className={`space-y-3 transition-opacity duration-200 ${isLoading && showJobs ? "opacity-60" : "opacity-100"}`}>
         {sortedJobs.map((job) => {
           const salary = formatSalary(job);
           const location = [job.job_city, job.job_state, job.job_country]

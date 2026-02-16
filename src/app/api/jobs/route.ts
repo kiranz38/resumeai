@@ -77,6 +77,21 @@ const COUNTRY_LOCATION_TERMS: Record<string, string[]> = {
 /** Allowed country codes */
 const VALID_COUNTRIES = new Set(Object.keys(COUNTRY_LABEL));
 
+/** Fetch with abort-based timeout (ms) */
+async function fetchWithTimeout(
+  url: string,
+  init: RequestInit & { timeout?: number } = {},
+): Promise<Response> {
+  const { timeout = 8000, ...fetchInit } = init;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
+  try {
+    return await fetch(url, { ...fetchInit, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 interface StandardJob {
   job_id: string;
   job_title: string;
@@ -152,25 +167,24 @@ export async function GET(request: Request) {
       return NextResponse.json(cached.data);
     }
 
-    // ── Strategy: JSearch → LinkedIn → Remotive ──
-    const result = await fetchJSearch(apiKey, q, country, page);
+    // ── Strategy: JSearch + LinkedIn in parallel → Remotive fallback ──
+    const [jsearchResult, linkedInResult] = await Promise.all([
+      fetchJSearch(apiKey, q, country, page),
+      fetchLinkedInJobs(apiKey, q, country, page),
+    ]);
 
-    if (result) {
-      setCache(cacheKey, result);
-      return NextResponse.json(result);
+    if (jsearchResult) {
+      setCache(cacheKey, jsearchResult);
+      return NextResponse.json(jsearchResult);
     }
-
-    // JSearch returned no results → try LinkedIn Jobs API
-    console.log(`[jobs] JSearch empty for "${q}" in ${country} — trying LinkedIn`);
-    const linkedInResult = await fetchLinkedInJobs(apiKey, q, country, page);
 
     if (linkedInResult) {
       setCache(cacheKey, linkedInResult);
       return NextResponse.json(linkedInResult);
     }
 
-    // LinkedIn also empty → fall back to Remotive
-    console.log(`[jobs] LinkedIn empty for "${q}" in ${country} — trying Remotive`);
+    // Both empty → fall back to Remotive (free, no key needed)
+    console.log(`[jobs] JSearch + LinkedIn empty for "${q}" in ${country} — trying Remotive`);
     return await fetchRemotiveFallback(q, country);
   } catch (error) {
     console.error("[jobs] Error:", error instanceof Error ? error.message : "Unknown");
@@ -190,9 +204,11 @@ async function revalidateInBackground(
   cacheKey: string,
 ) {
   try {
-    const result = await fetchJSearch(apiKey, q, country, page)
-      || await fetchLinkedInJobs(apiKey, q, country, page)
-      || null;
+    const [js, li] = await Promise.all([
+      fetchJSearch(apiKey, q, country, page),
+      fetchLinkedInJobs(apiKey, q, country, page),
+    ]);
+    const result = js || li || null;
     if (result) {
       setCache(cacheKey, result);
     }
@@ -234,9 +250,9 @@ async function fetchJSearch(
   }
 
   try {
-    const res1 = await fetch(
+    const res1 = await fetchWithTimeout(
       `https://jsearch.p.rapidapi.com/search?${params1}`,
-      { headers, next: { revalidate: 3600 } },
+      { headers, timeout: 8000 },
     );
 
     if (res1.ok) {
@@ -246,12 +262,12 @@ async function fetchJSearch(
         const totalPages = Math.ceil((json.total || jobs.length) / 10);
         return { jobs, totalPages, source: "jsearch" };
       }
-    } else if (res1.status === 403 || res1.status === 429) {
-      console.warn(`[jobs] JSearch ${res1.status} — skipping retry`);
+    } else if (res1.status === 401 || res1.status === 403 || res1.status === 429) {
+      console.warn(`[jobs] JSearch ${res1.status} — skipping to fallback`);
       return null;
     }
   } catch (err) {
-    console.error("[jobs] JSearch attempt 1 failed:", (err as Error).message);
+    console.warn("[jobs] JSearch attempt 1 failed:", (err as Error).message);
   }
 
   // Attempt 2: append country name to the query (works for GB, SG, etc.)
@@ -270,9 +286,9 @@ async function fetchJSearch(
   });
 
   try {
-    const res2 = await fetch(
+    const res2 = await fetchWithTimeout(
       `https://jsearch.p.rapidapi.com/search?${params2}`,
-      { headers, next: { revalidate: 3600 } },
+      { headers, timeout: 8000 },
     );
 
     if (res2.ok) {
@@ -330,19 +346,20 @@ async function fetchLinkedInJobs(
     let allJobs = getCached(bulkCacheKey)?.data as LinkedInJob[] | null;
 
     if (!allJobs) {
-      const res = await fetch(
+      const res = await fetchWithTimeout(
         "https://linkedin-job-search-api.p.rapidapi.com/active-jb-1h?limit=100&offset=0&description_type=text",
         {
           headers: {
             "x-rapidapi-key": apiKey,
             "x-rapidapi-host": "linkedin-job-search-api.p.rapidapi.com",
           },
+          timeout: 8000,
         },
       );
 
       if (!res.ok) {
-        if (res.status === 403 || res.status === 429) {
-          console.warn(`[jobs] LinkedIn API ${res.status} — not subscribed or quota exceeded`);
+        if (res.status === 401 || res.status === 403 || res.status === 429) {
+          console.warn(`[jobs] LinkedIn API ${res.status} — skipping to fallback`);
         }
         return null;
       }
@@ -419,8 +436,8 @@ async function fetchRemotiveFallback(query: string, country: string) {
     let allRemotiveJobs = getCached(bulkCacheKey)?.data as Array<Record<string, unknown>> | null;
 
     if (!allRemotiveJobs) {
-      const response = await fetch("https://remotive.com/api/remote-jobs", {
-        next: { revalidate: 3600 },
+      const response = await fetchWithTimeout("https://remotive.com/api/remote-jobs", {
+        timeout: 8000,
       });
 
       if (!response.ok) {
