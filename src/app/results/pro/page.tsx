@@ -317,12 +317,13 @@ function ProResultsPage() {
         setLoadingProgress(25);
         setLoadingMessage("Grab a coffee — we're building your hiring-manager-ready resume");
 
-        // Start a progress ticker that slowly advances while waiting for the API
+        // Start a progress ticker that advances steadily to 98%
         const progressInterval = setInterval(() => {
           setLoadingProgress((prev) => {
-            if (prev >= 90) return prev;
-            const increment = prev < 50 ? 2 : prev < 70 ? 1 : 0.5;
-            return Math.min(prev + increment, 90);
+            if (prev >= 98) return prev;
+            // Steady 1-2% increments all the way through
+            const increment = prev < 40 ? 2 : prev < 70 ? 1.5 : 1;
+            return Math.min(prev + increment, 98);
           });
         }, 1000);
 
@@ -334,11 +335,17 @@ function ProResultsPage() {
           setLoadingMessage("Running your resume through our recruiter simulation engine...");
         }, 20000);
         const messageTimeout3 = setTimeout(() => {
-          setLoadingMessage("Polishing the final details — almost there!");
-        }, 40000);
+          setLoadingMessage("Checking keyword coverage and ATS compatibility...");
+        }, 35000);
         const messageTimeout4 = setTimeout(() => {
-          setLoadingMessage("Still working on it — great resumes take a little extra time");
-        }, 60000);
+          setLoadingMessage("Polishing the final details — almost there!");
+        }, 50000);
+        const messageTimeout5 = setTimeout(() => {
+          setLoadingMessage("Wrapping up your tailored resume pack...");
+        }, 65000);
+        const messageTimeout6 = setTimeout(() => {
+          setLoadingMessage("Just a few more seconds — finalizing everything for you");
+        }, 80000);
 
         try {
           // Build headers with entitlement token if available
@@ -359,15 +366,13 @@ function ProResultsPage() {
           clearTimeout(messageTimeout2);
           clearTimeout(messageTimeout3);
           clearTimeout(messageTimeout4);
+          clearTimeout(messageTimeout5);
+          clearTimeout(messageTimeout6);
 
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             if (response.status === 402) {
               // Payment required — show plan picker
-              clearInterval(progressInterval);
-              clearTimeout(messageTimeout1);
-              clearTimeout(messageTimeout2);
-              clearTimeout(messageTimeout3);
               setNeedsPayment({ message: errorData.error, plan: errorData.plan });
               setLoading(false);
               return;
@@ -439,6 +444,8 @@ function ProResultsPage() {
           clearTimeout(messageTimeout2);
           clearTimeout(messageTimeout3);
           clearTimeout(messageTimeout4);
+          clearTimeout(messageTimeout5);
+          clearTimeout(messageTimeout6);
 
           const errorMessage = err instanceof Error ? err.message : "Generation failed";
           setLoadingError(errorMessage);
