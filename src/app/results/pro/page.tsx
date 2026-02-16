@@ -644,7 +644,7 @@ function ProResultsPage() {
             <div className="flex items-center gap-3">
               <span className="rounded-full bg-emerald-600 px-2.5 py-0.5 text-xs font-semibold text-white">Trial</span>
               <p className="text-sm text-emerald-800">
-                Full results unlocked! TXT export included. Upgrade to Pro for PDF, DOCX, and email delivery.
+                Full results unlocked! Upgrade to Pro for email delivery, re-generations, and bulk CV generation.
               </p>
             </div>
             <button
@@ -1091,7 +1091,7 @@ function ProResultsPage() {
         </div>
       )}
 
-      {/* Email delivery — hidden for trial (TXT only) and when email is not configured */}
+      {/* Email delivery — hidden for trial and when email is not configured */}
       {currentPlan !== "trial" && process.env.NEXT_PUBLIC_EMAIL_ENABLED !== "false" && (
         <div className="mt-8 rounded-xl border border-gray-200 bg-white p-6" data-print-hide>
           <h2 className="mb-2 text-lg font-semibold text-gray-900">Email Your Report</h2>
@@ -1383,16 +1383,16 @@ function StickyActionBar({ result, liveRadarScore, radarBefore, radarAfter, plan
           </button>
 
           <div className="relative flex">
-            {/* Main download button — ZIP for Pro/Pass, TXT for Trial */}
+            {/* Main download button — triggers ZIP */}
             <button
-              onClick={isTrial ? handleExportTXT : handleExportZIP}
+              onClick={handleExportZIP}
               disabled={downloading}
               className="inline-flex items-center gap-1.5 rounded-l-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-60 sm:gap-2 sm:px-5 sm:text-sm"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              {downloading ? "Preparing..." : isTrial ? "Download TXT" : "Download"}
+              {downloading ? "Preparing..." : "Download"}
             </button>
 
             {/* Dropdown chevron */}
@@ -1409,35 +1409,26 @@ function StickyActionBar({ result, liveRadarScore, radarBefore, radarAfter, plan
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(false)} />
                 <div className="absolute bottom-full right-0 z-20 mb-2 w-52 rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
-                  {!isTrial && (
-                    <>
-                      <button onClick={handleExportZIP} className="flex w-full items-center gap-2 px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50">
-                        Download Pack (ZIP)
-                      </button>
-                      <div className="my-1 border-t border-gray-100" />
-                      <button onClick={handleExportResumePDF} className="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                        Resume PDF
-                      </button>
-                      <button onClick={handleExportCoverLetterPDF} className="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                        Cover Letter PDF
-                      </button>
-                      <button onClick={handleExportInsightsPDF} className="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                        Insights PDF
-                      </button>
-                      <div className="my-1 border-t border-gray-100" />
-                      <button onClick={handleExportDOCX} className="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                        DOCX (Resume + Cover)
-                      </button>
-                    </>
-                  )}
+                  <button onClick={handleExportZIP} className="flex w-full items-center gap-2 px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50">
+                    Download Pack (ZIP)
+                  </button>
+                  <div className="my-1 border-t border-gray-100" />
+                  <button onClick={handleExportResumePDF} className="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                    Resume PDF
+                  </button>
+                  <button onClick={handleExportCoverLetterPDF} className="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                    Cover Letter PDF
+                  </button>
+                  <button onClick={handleExportInsightsPDF} className="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                    Insights PDF
+                  </button>
+                  <div className="my-1 border-t border-gray-100" />
+                  <button onClick={handleExportDOCX} className="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                    DOCX (Resume + Cover)
+                  </button>
                   <button onClick={handleExportTXT} className="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
                     Plain Text
                   </button>
-                  {isTrial && (
-                    <div className="border-t border-gray-100 px-4 py-2">
-                      <p className="text-xs text-gray-400">PDF + DOCX require Pro</p>
-                    </div>
-                  )}
                 </div>
               </>
             )}

@@ -279,7 +279,7 @@ export default function LandingPage() {
                   "Recruiter insights",
                   "Keyword checklist",
                   "Editable content",
-                  "TXT export",
+                  "PDF, DOCX, TXT exports",
                 ].map((f) => (
                   <li key={f} className="flex items-start gap-2">
                     <span className="mt-0.5 text-emerald-500">&#10003;</span>
@@ -314,11 +314,11 @@ export default function LandingPage() {
               <ul className="mt-5 space-y-2 text-sm text-gray-600">
                 {[
                   "Everything in Trial",
-                  "PDF + DOCX exports",
                   "Email delivery",
                   "Bulk CV Generator",
                   "Radar before/after",
-                  "Re-generate versions",
+                  "Re-generate versions (x2)",
+                  "Priority support",
                 ].map((f) => (
                   <li key={f} className="flex items-start gap-2">
                     <span className="mt-0.5 text-blue-500">&#10003;</span>

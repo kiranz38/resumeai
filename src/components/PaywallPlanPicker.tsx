@@ -31,16 +31,16 @@ const TRIAL_FEATURES = [
   "Recruiter insights",
   "Keyword checklist",
   "Editable content",
-  "TXT export",
+  "PDF, DOCX, TXT exports",
 ];
 
 const PRO_FEATURES = [
   "Everything in Trial",
-  "PDF + DOCX exports",
   "Email delivery",
   "Bulk CV Generator",
   "Radar before/after",
-  "Re-generate versions",
+  "Re-generate versions (x2)",
+  "Priority support",
 ];
 
 const PASS_FEATURES = [
