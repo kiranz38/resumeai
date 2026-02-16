@@ -398,6 +398,7 @@ export default function JobBoard({ onSelectJob, onBulkGenerate, resumeText }: Jo
   // ── Fetch default/featured jobs on mount + whenever country changes ──
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
 
     const loadDefaults = async () => {
       setIsLoading(true);
@@ -408,7 +409,10 @@ export default function JobBoard({ onSelectJob, onBulkGenerate, resumeText }: Jo
           country,
           page: "1",
         });
-        const response = await fetch(`/api/jobs?${params}`);
+        // 12s client timeout — if server takes longer, show empty state gracefully
+        const timer = setTimeout(() => controller.abort(), 12000);
+        const response = await fetch(`/api/jobs?${params}`, { signal: controller.signal });
+        clearTimeout(timer);
         if (response.ok && !cancelled) {
           const data = await response.json();
           setDefaultJobs(data.jobs || []);
@@ -430,7 +434,7 @@ export default function JobBoard({ onSelectJob, onBulkGenerate, resumeText }: Jo
     setQuery("");
     loadDefaults();
 
-    return () => { cancelled = true; };
+    return () => { cancelled = true; controller.abort(); };
   }, [country]);
 
   // Debounced live search: fires when query >= 3 chars
@@ -617,7 +621,7 @@ export default function JobBoard({ onSelectJob, onBulkGenerate, resumeText }: Jo
         </div>
       )}
 
-      {/* Section header */}
+      {/* Section header with top pagination */}
       {showJobs && (
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -631,10 +635,39 @@ export default function JobBoard({ onSelectJob, onBulkGenerate, resumeText }: Jo
               </div>
             )}
           </div>
-          <span className="text-xs text-gray-400">
-            {sortedJobs.length} job{sortedJobs.length !== 1 ? "s" : ""}
-            {resumeText ? " — sorted by match" : " — A-Z"}
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-gray-400">
+              {sortedJobs.length} job{sortedJobs.length !== 1 ? "s" : ""}
+              {resumeText ? " — sorted by match" : " — A-Z"}
+            </span>
+            {!isDefaultView && totalPages > 1 && (
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => handlePageChange(page - 1)}
+                  disabled={page <= 1 || isLoading}
+                  className="rounded-md border border-gray-200 p-1 text-gray-400 hover:bg-gray-50 hover:text-gray-600 disabled:cursor-not-allowed disabled:opacity-30"
+                  aria-label="Previous page"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <span className="min-w-[3.5rem] text-center text-xs text-gray-500">
+                  {page}/{totalPages}
+                </span>
+                <button
+                  onClick={() => handlePageChange(page + 1)}
+                  disabled={page >= totalPages || isLoading}
+                  className="rounded-md border border-gray-200 p-1 text-gray-400 hover:bg-gray-50 hover:text-gray-600 disabled:cursor-not-allowed disabled:opacity-30"
+                  aria-label="Next page"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

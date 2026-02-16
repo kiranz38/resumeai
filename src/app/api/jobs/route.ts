@@ -249,10 +249,12 @@ async function fetchJSearch(
     params1.set("country", country);
   }
 
+  let timedOut = false;
+
   try {
     const res1 = await fetchWithTimeout(
       `https://jsearch.p.rapidapi.com/search?${params1}`,
-      { headers, timeout: 8000 },
+      { headers, timeout: 6000 },
     );
 
     if (res1.ok) {
@@ -267,8 +269,13 @@ async function fetchJSearch(
       return null;
     }
   } catch (err) {
-    console.warn("[jobs] JSearch attempt 1 failed:", (err as Error).message);
+    const msg = (err as Error).message;
+    timedOut = (err as Error).name === "AbortError" || msg.includes("aborted");
+    console.warn("[jobs] JSearch attempt 1 failed:", msg);
   }
+
+  // Skip attempt 2 if attempt 1 timed out — API is slow, don't waste another 6s
+  if (timedOut) return null;
 
   // Attempt 2: append country name to the query (works for GB, SG, etc.)
   const countryName = country ? COUNTRY_LABEL[country.toLowerCase()] : undefined;
@@ -288,7 +295,7 @@ async function fetchJSearch(
   try {
     const res2 = await fetchWithTimeout(
       `https://jsearch.p.rapidapi.com/search?${params2}`,
-      { headers, timeout: 8000 },
+      { headers, timeout: 6000 },
     );
 
     if (res2.ok) {
@@ -353,7 +360,7 @@ async function fetchLinkedInJobs(
             "x-rapidapi-key": apiKey,
             "x-rapidapi-host": "linkedin-job-search-api.p.rapidapi.com",
           },
-          timeout: 8000,
+          timeout: 6000,
         },
       );
 
@@ -437,7 +444,7 @@ async function fetchRemotiveFallback(query: string, country: string) {
 
     if (!allRemotiveJobs) {
       const response = await fetchWithTimeout("https://remotive.com/api/remote-jobs", {
-        timeout: 8000,
+        timeout: 6000,
       });
 
       if (!response.ok) {
