@@ -540,8 +540,8 @@ function ProResultsPage() {
 
   if (loading || !result || !base) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <div className="mx-auto max-w-md text-center">
+      <div className="flex min-h-[50vh] items-center justify-center px-4">
+        <div className="mx-auto w-full max-w-sm text-center">
           {loadingError ? (
             <>
               <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
@@ -592,12 +592,6 @@ function ProResultsPage() {
 
               <p className="mt-3 text-sm text-gray-400">
                 Our AI is tailoring every section to this specific role — this usually takes about a minute
-              </p>
-              <p className="mt-3 text-xs text-gray-400">
-                If this takes more than a few seconds, try{" "}
-                <button onClick={() => window.location.reload()} className="text-blue-500 hover:underline">refreshing</button>
-                {" "}or{" "}
-                <button onClick={() => router.push("/analyze")} className="text-blue-500 hover:underline">going back</button>.
               </p>
             </>
           )}
