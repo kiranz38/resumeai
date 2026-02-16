@@ -88,7 +88,7 @@ export async function POST(request: Request) {
       console.log(`[billing/checkout] Dev mode: minted ${plan} entitlement`);
 
       return NextResponse.json({
-        url: `${config.successPath}?dev_token=${encodeURIComponent(token)}&plan=${plan}`,
+        url: `/success?dev_token=${encodeURIComponent(token)}&plan=${plan}&redirect=${encodeURIComponent(config.successPath)}`,
         devMode: true,
         token,
       });
@@ -114,7 +114,7 @@ export async function POST(request: Request) {
       mode: "payment",
       payment_method_types: ["card"],
       line_items: lineItems,
-      success_url: `${origin}${config.successPath}?session_id={CHECKOUT_SESSION_ID}&plan=${plan}`,
+      success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}&plan=${plan}&redirect=${encodeURIComponent(config.successPath)}`,
       cancel_url: `${origin}/pricing?cancelled=true`,
       metadata: {
         product: plan === "pass" ? "career_pass" : plan === "trial" ? "career_trial" : "pro",

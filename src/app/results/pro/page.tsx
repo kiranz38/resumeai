@@ -20,7 +20,7 @@ import ProfessionalCoverLetter from "@/components/templates/ProfessionalCoverLet
 import PaywallPlanPicker from "@/components/PaywallPlanPicker";
 import ShareCard from "@/components/ShareCard";
 import { trackEvent } from "@/lib/analytics";
-import { TRIAL_PRICE, PRO_PRICE, CAREER_PASS_PRICE, PRO_PRICE_DISPLAY } from "@/lib/constants";
+import { PRO_PRICE_DISPLAY } from "@/lib/constants";
 import type { RadarResult } from "@/lib/types";
 import { scoreRadar, tailoredToCandidateProfile } from "@/lib/radar-scorer";
 import { updateSessionRadarAfter } from "@/lib/job-sessions";
@@ -280,17 +280,10 @@ function ProResultsPage() {
         }
       }
 
-      // Fire GA4 purchase event when arriving from checkout
+      // GA4 purchase event is now fired on /success page (server-verified, deduplicated).
+      // Only fire checkout_completed here as a secondary signal.
       if (sessionId || devToken) {
-        const purchasePlan = planParam || "pro";
-        const purchaseValue = purchasePlan === "pass" ? CAREER_PASS_PRICE : purchasePlan === "trial" ? TRIAL_PRICE : PRO_PRICE;
-        trackEvent("purchase", {
-          value: purchaseValue,
-          currency: "USD",
-          transaction_id: sessionId || `dev_${Date.now()}`,
-          items: purchasePlan,
-        });
-        trackEvent("checkout_completed", { plan: purchasePlan });
+        trackEvent("checkout_completed", { plan: planParam || "pro" });
       }
 
       if (sessionId || pendingPro) {

@@ -105,7 +105,7 @@ export async function POST(request: Request) {
       mode: "payment",
       payment_method_types: ["card"],
       line_items: lineItems,
-      success_url: `${origin}${config.successPath}?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}&plan=${product}&redirect=${encodeURIComponent(config.successPath)}`,
       cancel_url: `${origin}/results?cancelled=true`,
       metadata: { product },
     });
