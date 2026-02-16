@@ -136,14 +136,15 @@ export default function LandingPage() {
             </Link>
             <p className="text-sm text-gray-500">No account needed — upload &amp; analyze instantly</p>
             <div className="flex items-center gap-3">
+              {/* Mobile: colored text link | Desktop: glassy pill */}
               <Link
                 href="/demo"
-                className="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white/60 px-5 py-2 text-sm font-medium text-gray-600 backdrop-blur-sm transition-all hover:border-gray-400 hover:bg-white hover:text-gray-900"
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 sm:gap-2 sm:rounded-full sm:border sm:border-white/40 sm:bg-white/40 sm:px-5 sm:py-2 sm:text-gray-600 sm:shadow-sm sm:shadow-black/5 sm:ring-1 sm:ring-black/5 sm:backdrop-blur-md sm:hover:bg-white/70 sm:hover:text-gray-900"
               >
                 <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
                 Try sample resume
               </Link>
-              <span className="text-sm text-gray-400">PDF, DOCX, or paste text</span>
+              <span className="hidden text-sm text-gray-400 sm:inline">PDF, DOCX, or paste text</span>
             </div>
           </div>
 
