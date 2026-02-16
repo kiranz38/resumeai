@@ -85,7 +85,7 @@ export default function LandingPage() {
   return (
     <div className="overflow-x-hidden">
       {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-blue-50 via-white to-white px-4 pb-24 pt-20">
+      <section className="relative overflow-hidden bg-gradient-to-b from-blue-50 via-white to-white px-4 pb-16 pt-12 sm:pb-24 sm:pt-20">
         {/* Decorative blobs */}
         <div className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-blue-100/40 blur-3xl" />
         <div className="pointer-events-none absolute -right-32 top-20 h-80 w-80 rounded-full bg-indigo-100/30 blur-3xl" />
@@ -94,45 +94,65 @@ export default function LandingPage() {
           <span className="mb-4 inline-block rounded-full bg-blue-100 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-blue-700">
             Free instant analysis
           </span>
-          <h1 className="font-[var(--font-inter)] text-4xl font-extrabold tracking-[-0.04em] text-gray-900 sm:text-5xl lg:text-6xl">
+          <h1 className="font-[var(--font-inter)] text-[28px] font-extrabold leading-tight tracking-[-0.04em] text-gray-900 sm:text-5xl lg:text-6xl">
             Stop guessing why you&apos;re not
             <br />
             <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">getting callbacks.</span>
           </h1>
-          <p className="mx-auto mt-5 max-w-2xl text-lg text-gray-600">
+          <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-gray-600 sm:mt-5 sm:text-lg">
             Upload your resume, paste a job description, and see exactly what&apos;s missing.
             Get your Match Score in 30 seconds.
           </p>
 
-          {/* Primary CTA — large, unmissable */}
-          <div className="mt-10 flex flex-col items-center gap-4">
+          {/* Micro flow — Upload → Match → Download */}
+          <div className="mt-5 flex items-center justify-center gap-2 text-sm font-medium text-gray-400 sm:mt-6">
+            <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-700">Upload</span>
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+            <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-700">Match</span>
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+            <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-700">Download</span>
+          </div>
+
+          {/* "No signup" badge — above CTA on mobile, below on desktop */}
+          <div className="mt-6 flex justify-center sm:hidden">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700">
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              No signup required
+            </span>
+          </div>
+
+          {/* Primary CTA — large, unmissable, min 48px touch target */}
+          <div className="mt-4 flex flex-col items-center gap-3 sm:mt-8 sm:gap-4">
             <Link
               href="/analyze"
-              className="group relative inline-flex items-center gap-3 rounded-xl bg-blue-600 px-10 py-4 text-lg font-bold text-white shadow-lg shadow-blue-600/25 transition-all hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-600/30"
+              className="group relative inline-flex min-h-[48px] items-center gap-3 rounded-xl bg-blue-600 px-10 py-4 text-lg font-bold text-white shadow-lg shadow-blue-600/25 transition-all hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-600/30"
             >
               <svg className="h-6 w-6 transition-transform group-hover:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
               </svg>
               Upload Your Resume
             </Link>
+            <p className="text-sm text-gray-500">No account needed — upload &amp; analyze instantly</p>
             <div className="flex items-center gap-4">
               <Link
                 href="/demo"
                 className="text-sm font-medium text-gray-500 underline-offset-2 hover:text-gray-700 hover:underline"
               >
-                See a demo first
+                Try sample resume
               </Link>
               <span className="text-gray-300">|</span>
               <span className="text-sm text-gray-400">PDF, DOCX, or paste text</span>
             </div>
           </div>
 
-          {/* Trust strip */}
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
+          {/* Trust strip — "No signup" badge hidden on mobile (shown above CTA instead) */}
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3 sm:mt-10">
             {TRUST_ITEMS.map((item) => (
               <span
                 key={item}
-                className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700"
+                className={`inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700${item === "No signup required" ? " hidden sm:inline-flex" : ""}`}
               >
                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />

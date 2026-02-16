@@ -45,7 +45,7 @@ function getStepIndex(phase: Phase): number {
 
 export default function AnalyzePageWrapper() {
   return (
-    <Suspense fallback={<div className="flex min-h-[50vh] items-center justify-center"><p className="text-sm text-gray-500">Loading...</p></div>}>
+    <Suspense fallback={<div className="flex min-h-[50vh] items-center justify-center"><div className="text-center"><p className="text-sm text-gray-500">Loading...</p><p className="mt-2 text-xs text-gray-400">If this takes more than a few seconds, <a href="/" className="text-blue-500 hover:underline">go home</a>.</p></div></div>}>
       <AnalyzePage />
     </Suspense>
   );
@@ -669,6 +669,15 @@ function AnalyzePage() {
         {phase === "analyzing" && progress && (
           <div className="mx-auto mt-4 max-w-2xl text-center">
             <p className="text-sm text-gray-500">{progress}</p>
+            <p className="mt-2 text-xs text-gray-400">
+              If this takes more than a few seconds,{" "}
+              <button
+                onClick={() => window.location.reload()}
+                className="text-blue-500 hover:underline"
+              >
+                refresh the page
+              </button>.
+            </p>
           </div>
         )}
 

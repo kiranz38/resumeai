@@ -36,6 +36,7 @@ export default function ProResultsPageWrapper() {
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
             </svg>
             <p className="mt-3 text-sm text-gray-500">Loading Pro results...</p>
+            <p className="mt-2 text-xs text-gray-400">If this takes more than a few seconds, <a href="/analyze" className="text-blue-500 hover:underline">go back</a>.</p>
           </div>
         </div>
       }
@@ -581,6 +582,12 @@ function ProResultsPage() {
 
               <p className="mt-3 text-sm text-gray-400">
                 Our AI is tailoring every section to this specific role — this usually takes about a minute
+              </p>
+              <p className="mt-3 text-xs text-gray-400">
+                If this takes more than a few seconds, try{" "}
+                <button onClick={() => window.location.reload()} className="text-blue-500 hover:underline">refreshing</button>
+                {" "}or{" "}
+                <button onClick={() => router.push("/analyze")} className="text-blue-500 hover:underline">going back</button>.
               </p>
             </>
           )}
