@@ -135,15 +135,14 @@ export default function LandingPage() {
               Upload Your Resume
             </Link>
             <p className="text-sm text-gray-500">No account needed — upload &amp; analyze instantly</p>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <Link
                 href="/demo"
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 underline-offset-2 hover:text-gray-700 hover:underline"
+                className="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white/60 px-5 py-2 text-sm font-medium text-gray-600 backdrop-blur-sm transition-all hover:border-gray-400 hover:bg-white hover:text-gray-900"
               >
                 <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
                 Try sample resume
               </Link>
-              <span className="text-gray-300">|</span>
               <span className="text-sm text-gray-400">PDF, DOCX, or paste text</span>
             </div>
           </div>
