@@ -1,6 +1,6 @@
 import Link from "next/link";
 import FAQ from "@/components/FAQ";
-import { PRO_PRICE_DISPLAY } from "@/lib/constants";
+import { PRO_PRICE_DISPLAY, CAREER_PASS_DISPLAY } from "@/lib/constants";
 
 const FAQ_ITEMS = [
   {
@@ -94,10 +94,10 @@ export default function LandingPage() {
           <span className="mb-4 inline-block rounded-full bg-blue-100 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-blue-700">
             Free instant analysis
           </span>
-          <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl lg:text-6xl">
+          <h1 className="font-[var(--font-inter)] text-4xl font-extrabold tracking-[-0.04em] text-gray-900 sm:text-5xl lg:text-6xl">
             Stop guessing why you&apos;re not
             <br />
-            <span className="text-blue-600">getting callbacks.</span>
+            <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">getting callbacks.</span>
           </h1>
           <p className="mx-auto mt-5 max-w-2xl text-lg text-gray-600">
             Upload your resume, paste a job description, and see exactly what&apos;s missing.
@@ -193,60 +193,92 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Pricing teaser */}
+      {/* Pricing */}
       <section className="bg-gray-50 px-4 py-16">
-        <div className="mx-auto max-w-2xl text-center">
+        <div className="mx-auto max-w-4xl text-center">
           <h2 className="text-2xl font-bold text-gray-900">
             Simple, fair pricing
           </h2>
           <p className="mt-2 text-gray-600">
             No subscription. No surprises. Just results.
           </p>
-          <div className="mt-8 inline-block rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
-            <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">
-              Unlock Pro
-            </p>
-            <p className="mt-2 text-4xl font-bold text-gray-900">
-              {PRO_PRICE_DISPLAY}
-              <span className="text-base font-normal text-gray-500"> one-time</span>
-            </p>
-            <p className="mt-1 text-sm text-gray-500">No subscription. No surprises.</p>
-            <ul className="mt-4 space-y-2 text-left text-sm text-gray-600">
-              <li className="flex items-start gap-2">
-                <span className="mt-0.5 text-green-500">&#10003;</span>
-                12-20 tailored bullet rewrites
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="mt-0.5 text-green-500">&#10003;</span>
-                Full keyword map with placements
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="mt-0.5 text-green-500">&#10003;</span>
-                Experience gap analysis
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="mt-0.5 text-green-500">&#10003;</span>
-                Cover letter draft
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="mt-0.5 text-green-500">&#10003;</span>
-                Downloadable report
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="mt-0.5 text-green-500">&#10003;</span>
-                Bulk CV Generator — select from Job Board or paste JDs
-              </li>
-            </ul>
-            <Link
-              href="/analyze"
-              className="mt-6 block rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
-            >
-              Get started
-            </Link>
-            <p className="mt-3 text-xs text-gray-400">
-              Free quick scan included — no payment required to start
-            </p>
+
+          <div className="mt-10 grid gap-6 md:grid-cols-2">
+            {/* Pro Plan */}
+            <div className="relative rounded-xl border-2 border-blue-500 bg-white p-8 shadow-md text-left">
+              <div className="absolute -top-3 left-4">
+                <span className="rounded-full bg-blue-600 px-3 py-0.5 text-xs font-semibold text-white">
+                  Most Popular
+                </span>
+              </div>
+              <p className="text-sm font-medium uppercase tracking-wide text-gray-500">
+                Pro
+              </p>
+              <p className="mt-2 text-4xl font-bold text-gray-900">
+                {PRO_PRICE_DISPLAY}
+                <span className="text-base font-normal text-gray-500"> one-time</span>
+              </p>
+              <p className="mt-1 text-sm text-gray-500">1 job analysis + 2 re-generations</p>
+              <ul className="mt-5 space-y-2 text-sm text-gray-600">
+                {[
+                  "Full tailored resume rewrite",
+                  "Custom cover letter draft",
+                  "Complete keyword heatmap",
+                  "Recruiter-style feedback",
+                  "All bullet rewrites (12-20)",
+                  "Bulk CV Generator",
+                  "PDF, DOCX, TXT exports",
+                ].map((f) => (
+                  <li key={f} className="flex items-start gap-2">
+                    <span className="mt-0.5 text-blue-500">&#10003;</span>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/analyze"
+                className="mt-6 block rounded-lg bg-blue-600 px-6 py-2.5 text-center text-sm font-semibold text-white hover:bg-blue-700"
+              >
+                Get Pro — {PRO_PRICE_DISPLAY}
+              </Link>
+            </div>
+
+            {/* Career Pass */}
+            <div className="rounded-xl border-2 border-gray-200 bg-white p-8 text-left">
+              <p className="text-sm font-medium uppercase tracking-wide text-gray-500">
+                Career Pass
+              </p>
+              <p className="mt-2 text-4xl font-bold text-gray-900">
+                {CAREER_PASS_DISPLAY}
+                <span className="text-base font-normal text-gray-500"> / 30 days</span>
+              </p>
+              <p className="mt-1 text-sm text-gray-500">50 jobs over 30 days</p>
+              <ul className="mt-5 space-y-2 text-sm text-gray-600">
+                {[
+                  "Everything in Pro",
+                  "50 jobs over 30 days",
+                  "Unlimited job descriptions",
+                  "Career dashboard with history",
+                  "Priority processing",
+                ].map((f) => (
+                  <li key={f} className="flex items-start gap-2">
+                    <span className="mt-0.5 text-indigo-500">&#10003;</span>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/analyze"
+                className="mt-6 block rounded-lg border border-indigo-300 bg-indigo-50 px-6 py-2.5 text-center text-sm font-semibold text-indigo-700 hover:bg-indigo-100"
+              >
+                Get Career Pass — {CAREER_PASS_DISPLAY}
+              </Link>
+            </div>
           </div>
+
+          <p className="mt-6 text-xs text-gray-400">
+            Free quick scan included — no payment required to start. Secure payment via Stripe.
+          </p>
         </div>
       </section>
 

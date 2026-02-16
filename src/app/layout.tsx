@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
-import { Caveat } from "next/font/google";
+import { Caveat, Inter } from "next/font/google";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import "./globals.css";
@@ -11,6 +11,12 @@ const caveat = Caveat({
   subsets: ["latin"],
   weight: ["600", "700"],
   variable: "--font-caveat",
+});
+
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-inter",
 });
 
 export const metadata: Metadata = {
@@ -67,7 +73,7 @@ export default function RootLayout({
         </Script>
       </head>
       <body
-        className={`${caveat.variable} antialiased flex min-h-screen flex-col overflow-x-hidden font-sans`}
+        className={`${caveat.variable} ${inter.variable} antialiased flex min-h-screen flex-col overflow-x-hidden font-sans`}
       >
         <Header />
         <main className="flex-1">{children}</main>
