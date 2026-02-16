@@ -50,7 +50,7 @@ export default function BlockerCard({ blocker, index, locked = false }: BlockerC
       {locked && (
         <div className="absolute inset-0 z-10 flex flex-col justify-end rounded-xl"
           style={{
-            background: "linear-gradient(to bottom, transparent 20%, rgba(255,255,255,0.9) 40%, rgba(255,255,255,1) 55%)",
+            background: "linear-gradient(to bottom, transparent 10%, rgba(255,255,255,0.95) 25%, rgba(255,255,255,1) 35%)",
           }}
         >
           <div className="px-5 pb-5 text-center">
