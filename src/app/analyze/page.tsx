@@ -78,6 +78,19 @@ function AnalyzePage() {
   const jdPanelRef = useRef<HTMLDivElement>(null);
   const analyzeBtnRef = useRef<HTMLButtonElement>(null);
 
+  // Sync phase when query params change (e.g. nav click from /analyze to /analyze?tab=jobs)
+  const currentTab = searchParams.get("tab");
+  useEffect(() => {
+    if (currentTab === "jobs" && phase !== "jobs") {
+      setPhase("jobs");
+      setActiveNav("jobs");
+    } else if (currentTab !== "jobs" && phase === "jobs") {
+      setPhase("hub");
+      setActiveNav("dashboard");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentTab]);
+
   // Check onboarding flag on mount
   useEffect(() => {
     if (typeof window !== "undefined" && !localStorage.getItem(ONBOARDING_KEY)) {
