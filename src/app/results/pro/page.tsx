@@ -19,7 +19,7 @@ import ModernAtsResume from "@/components/templates/ModernAtsResume";
 import ProfessionalCoverLetter from "@/components/templates/ProfessionalCoverLetter";
 import PaywallPlanPicker from "@/components/PaywallPlanPicker";
 import { trackEvent } from "@/lib/analytics";
-import { PRO_PRICE, CAREER_PASS_PRICE } from "@/lib/constants";
+import { TRIAL_PRICE, PRO_PRICE, CAREER_PASS_PRICE, PRO_PRICE_DISPLAY } from "@/lib/constants";
 import type { RadarResult } from "@/lib/types";
 import { scoreRadar, tailoredToCandidateProfile } from "@/lib/radar-scorer";
 import { updateSessionRadarAfter } from "@/lib/job-sessions";
@@ -102,6 +102,7 @@ function ProResultsPage() {
   const [viewMode, setViewMode] = useState<"edit" | "preview">("edit");
   const [fromPack, setFromPack] = useState(false);
   const [needsPayment, setNeedsPayment] = useState<{ message: string; plan?: string } | null>(null);
+  const [currentPlan, setCurrentPlan] = useState<string | null>(null);
 
   const [radarBefore, setRadarBefore] = useState<RadarResult | null>(null);
   const [radarAfter, setRadarAfter] = useState<RadarResult | null>(null);
@@ -279,7 +280,7 @@ function ProResultsPage() {
       // Fire GA4 purchase event when arriving from checkout
       if (sessionId || devToken) {
         const purchasePlan = planParam || "pro";
-        const purchaseValue = purchasePlan === "pass" ? CAREER_PASS_PRICE : PRO_PRICE;
+        const purchaseValue = purchasePlan === "pass" ? CAREER_PASS_PRICE : purchasePlan === "trial" ? TRIAL_PRICE : PRO_PRICE;
         trackEvent("purchase", {
           value: purchaseValue,
           currency: "USD",
@@ -382,6 +383,7 @@ function ProResultsPage() {
           setBase(data as ProOutput);
           setLoadingProgress(100);
           setLoading(false);
+          setCurrentPlan(sessionStorage.getItem("rt_entitlement_plan"));
           trackEvent("pro_viewed");
 
           // Use server-provided radar scores (computed from final tailored resume)
@@ -447,6 +449,7 @@ function ProResultsPage() {
         const savedEdits = loadEdits(cached);
         if (savedEdits) setEdits(savedEdits);
         setLoading(false);
+        setCurrentPlan(sessionStorage.getItem("rt_entitlement_plan"));
         // Check if we came from the pack results page
         if (sessionStorage.getItem("rt_from_pack") === "true") {
           setFromPack(true);
@@ -502,18 +505,22 @@ function ProResultsPage() {
 
   // Show plan picker if payment is required (402 from API)
   if (needsPayment) {
+    const upsellDefault = needsPayment.plan === "trial" ? "pro" : needsPayment.plan === "pro" ? "pass" : undefined;
     return (
       <div className="mx-auto max-w-3xl px-4 py-16">
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-bold text-gray-900">Unlock Your Tailored Resume</h1>
           <p className="mt-2 text-gray-600">
-            Choose <span className="font-semibold">Pro</span> for a single job or{" "}
-            <span className="font-semibold">Career Pass</span> for up to 50 jobs over 30 days.
+            {needsPayment.plan === "trial"
+              ? <>Upgrade to <span className="font-semibold">Pro</span> for PDF/DOCX exports and re-generations, or <span className="font-semibold">Career Pass</span> for 50 jobs.</>
+              : <>Choose <span className="font-semibold">Pro</span> for a single job or <span className="font-semibold">Career Pass</span> for up to 50 jobs over 30 days.</>
+            }
           </p>
         </div>
         <PaywallPlanPicker
           message={needsPayment.message}
-          defaultPlan={needsPayment.plan === "pro" ? "pass" : undefined}
+          defaultPlan={upsellDefault}
+          hideTrial
           context="generation_402"
         />
       </div>
@@ -608,8 +615,8 @@ function ProResultsPage() {
 
       {/* Header */}
       <div className="mb-6" data-print-hide>
-        <div className="mb-1 inline-block rounded-full bg-blue-600 px-3 py-0.5 text-xs font-semibold text-white">
-          Pro
+        <div className={`mb-1 inline-block rounded-full px-3 py-0.5 text-xs font-semibold text-white ${currentPlan === "trial" ? "bg-emerald-600" : "bg-blue-600"}`}>
+          {currentPlan === "trial" ? "Career Trial" : "Pro"}
         </div>
         <h1 className="text-3xl font-bold text-gray-900">Your Full Tailor Pack</h1>
         <p className="mt-1 text-sm text-gray-600">{result.summary.slice(0, 150)}...</p>
@@ -622,6 +629,30 @@ function ProResultsPage() {
           </p>
         )}
       </div>
+
+      {/* Trial plan banner — upgrade to Pro for PDF/DOCX */}
+      {currentPlan === "trial" && (
+        <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4" data-print-hide>
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3">
+              <span className="rounded-full bg-emerald-600 px-2.5 py-0.5 text-xs font-semibold text-white">Trial</span>
+              <p className="text-sm text-emerald-800">
+                Full results unlocked! TXT export included. Upgrade to Pro for PDF, DOCX, and email delivery.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                trackEvent("trial_upgrade_clicked", { context: "trial_banner" });
+                sessionStorage.setItem("rt_pending_pro", "true");
+                window.location.href = "/pricing";
+              }}
+              className="shrink-0 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+            >
+              Upgrade to Pro — {PRO_PRICE_DISPLAY}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Radar delta banner */}
       {radarBefore && radarAfter && (
@@ -1053,8 +1084,8 @@ function ProResultsPage() {
         </div>
       )}
 
-      {/* Email delivery — hidden when email is not configured */}
-      {process.env.NEXT_PUBLIC_EMAIL_ENABLED !== "false" && (
+      {/* Email delivery — hidden for trial (TXT only) and when email is not configured */}
+      {currentPlan !== "trial" && process.env.NEXT_PUBLIC_EMAIL_ENABLED !== "false" && (
         <div className="mt-8 rounded-xl border border-gray-200 bg-white p-6" data-print-hide>
           <h2 className="mb-2 text-lg font-semibold text-gray-900">Email Your Report</h2>
           <p className="mb-4 text-sm text-gray-500">Get your Resume, Cover Letter, and Insights PDFs delivered to your inbox.</p>
@@ -1103,20 +1134,19 @@ function ProResultsPage() {
 
       {/* Optimize another job (plan-aware) */}
       {(() => {
-        const currentPlan = sessionStorage.getItem("rt_entitlement_plan");
-        const isPass = currentPlan === "pass";
+        const activePlan = currentPlan || sessionStorage.getItem("rt_entitlement_plan");
+        const isPass = activePlan === "pass";
+        const isTrialPlan = activePlan === "trial";
         return (
           <div
             className={`mt-8 rounded-xl border p-6 text-center ${
-              isPass ? "border-indigo-200 bg-indigo-50" : "border-blue-200 bg-blue-50"
+              isPass ? "border-indigo-200 bg-indigo-50" : isTrialPlan ? "border-emerald-200 bg-emerald-50" : "border-blue-200 bg-blue-50"
             }`}
             data-print-hide
           >
-            <h3 className={`text-lg font-semibold ${isPass ? "text-indigo-900" : "text-blue-900"}`}>
-              Applying elsewhere?
-            </h3>
             {isPass ? (
               <>
+                <h3 className="text-lg font-semibold text-indigo-900">Applying elsewhere?</h3>
                 <p className="mt-1 text-sm text-indigo-700">
                   Your Career Pass is active. Optimize another role in seconds.
                 </p>
@@ -1139,8 +1169,32 @@ function ProResultsPage() {
                   </Link>
                 </div>
               </>
+            ) : isTrialPlan ? (
+              <>
+                <h3 className="text-lg font-semibold text-emerald-900">Want PDF exports and re-generations?</h3>
+                <p className="mt-1 text-sm text-emerald-700">
+                  Upgrade to Pro for PDF, DOCX, email delivery, and 2 additional re-generations.
+                </p>
+                <div className="mt-3 flex justify-center gap-3">
+                  <Link
+                    href="/pricing"
+                    className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+                    onClick={() => trackEvent("trial_upgrade_clicked", { context: "bottom_cta" })}
+                  >
+                    Upgrade to Pro — {PRO_PRICE_DISPLAY}
+                  </Link>
+                  <Link
+                    href="/pricing"
+                    className="rounded-lg border border-indigo-300 bg-indigo-50 px-6 py-2.5 text-sm font-semibold text-indigo-700 hover:bg-indigo-100"
+                    onClick={() => trackEvent("trial_upgrade_clicked", { context: "bottom_cta_pass" })}
+                  >
+                    Get Career Pass
+                  </Link>
+                </div>
+              </>
             ) : (
               <>
+                <h3 className="text-lg font-semibold text-blue-900">Applying elsewhere?</h3>
                 <p className="mt-1 text-sm text-blue-700">
                   Get Career Pass for 50 job analyses over 30 days.
                 </p>
@@ -1197,16 +1251,17 @@ function ProResultsPage() {
       </div>
 
       {/* ── Sticky Action Bar ── */}
-      <StickyActionBar result={result} liveRadarScore={liveRadarScore} radarBefore={radarBefore} radarAfter={radarAfter} />
+      <StickyActionBar result={result} liveRadarScore={liveRadarScore} radarBefore={radarBefore} radarAfter={radarAfter} plan={currentPlan} />
     </div>
   );
 }
 
 // ── Sticky Action Bar ──
 
-function StickyActionBar({ result, liveRadarScore, radarBefore, radarAfter }: { result: ProOutput; liveRadarScore?: number | null; radarBefore?: RadarResult | null; radarAfter?: RadarResult | null }) {
+function StickyActionBar({ result, liveRadarScore, radarBefore, radarAfter, plan }: { result: ProOutput; liveRadarScore?: number | null; radarBefore?: RadarResult | null; radarAfter?: RadarResult | null; plan?: string | null }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const isTrial = plan === "trial";
 
   const downloadBlob = (blob: Blob, filename: string) => {
     const url = URL.createObjectURL(blob);
@@ -1321,16 +1376,16 @@ function StickyActionBar({ result, liveRadarScore, radarBefore, radarAfter }: { 
           </button>
 
           <div className="relative flex">
-            {/* Main download button — triggers ZIP */}
+            {/* Main download button — ZIP for Pro/Pass, TXT for Trial */}
             <button
-              onClick={handleExportZIP}
+              onClick={isTrial ? handleExportTXT : handleExportZIP}
               disabled={downloading}
               className="inline-flex items-center gap-1.5 rounded-l-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-60 sm:gap-2 sm:px-5 sm:text-sm"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              {downloading ? "Preparing..." : "Download"}
+              {downloading ? "Preparing..." : isTrial ? "Download TXT" : "Download"}
             </button>
 
             {/* Dropdown chevron */}
@@ -1347,26 +1402,35 @@ function StickyActionBar({ result, liveRadarScore, radarBefore, radarAfter }: { 
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(false)} />
                 <div className="absolute bottom-full right-0 z-20 mb-2 w-52 rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
-                  <button onClick={handleExportZIP} className="flex w-full items-center gap-2 px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50">
-                    Download Pack (ZIP)
-                  </button>
-                  <div className="my-1 border-t border-gray-100" />
-                  <button onClick={handleExportResumePDF} className="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                    Resume PDF
-                  </button>
-                  <button onClick={handleExportCoverLetterPDF} className="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                    Cover Letter PDF
-                  </button>
-                  <button onClick={handleExportInsightsPDF} className="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                    Insights PDF
-                  </button>
-                  <div className="my-1 border-t border-gray-100" />
-                  <button onClick={handleExportDOCX} className="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                    DOCX (Resume + Cover)
-                  </button>
+                  {!isTrial && (
+                    <>
+                      <button onClick={handleExportZIP} className="flex w-full items-center gap-2 px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50">
+                        Download Pack (ZIP)
+                      </button>
+                      <div className="my-1 border-t border-gray-100" />
+                      <button onClick={handleExportResumePDF} className="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                        Resume PDF
+                      </button>
+                      <button onClick={handleExportCoverLetterPDF} className="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                        Cover Letter PDF
+                      </button>
+                      <button onClick={handleExportInsightsPDF} className="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                        Insights PDF
+                      </button>
+                      <div className="my-1 border-t border-gray-100" />
+                      <button onClick={handleExportDOCX} className="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                        DOCX (Resume + Cover)
+                      </button>
+                    </>
+                  )}
                   <button onClick={handleExportTXT} className="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
                     Plain Text
                   </button>
+                  {isTrial && (
+                    <div className="border-t border-gray-100 px-4 py-2">
+                      <p className="text-xs text-gray-400">PDF + DOCX require Pro</p>
+                    </div>
+                  )}
                 </div>
               </>
             )}

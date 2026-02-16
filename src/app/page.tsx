@@ -1,6 +1,6 @@
 import Link from "next/link";
 import FAQ from "@/components/FAQ";
-import { PRO_PRICE_DISPLAY, CAREER_PASS_DISPLAY } from "@/lib/constants";
+import { TRIAL_PRICE_DISPLAY, PRO_PRICE_DISPLAY, CAREER_PASS_DISPLAY } from "@/lib/constants";
 
 const FAQ_ITEMS = [
   {
@@ -195,7 +195,7 @@ export default function LandingPage() {
 
       {/* Pricing */}
       <section className="bg-gray-50 px-4 py-16">
-        <div className="mx-auto max-w-4xl text-center">
+        <div className="mx-auto max-w-6xl text-center">
           <h2 className="text-2xl font-bold text-gray-900">
             Simple, fair pricing
           </h2>
@@ -203,7 +203,78 @@ export default function LandingPage() {
             No subscription. No surprises. Just results.
           </p>
 
-          <div className="mt-10 grid gap-6 md:grid-cols-2">
+          <div className="mt-10 grid gap-6 md:grid-cols-4">
+            {/* Free Quick Scan */}
+            <div className="rounded-xl border-2 border-gray-200 bg-white p-8 text-left">
+              <p className="text-sm font-medium uppercase tracking-wide text-gray-500">
+                Quick Scan
+              </p>
+              <p className="mt-2 text-4xl font-bold text-gray-900">
+                Free
+              </p>
+              <p className="mt-1 text-sm text-gray-500">No payment required</p>
+              <ul className="mt-5 space-y-2 text-sm text-gray-600">
+                {[
+                  "Match Score",
+                  "5-dimension breakdown",
+                  "Top blocker with fix",
+                  "Missing keywords",
+                  "Strengths & gaps",
+                  "1 bullet rewrite preview",
+                ].map((f) => (
+                  <li key={f} className="flex items-start gap-2">
+                    <span className="mt-0.5 text-green-500">&#10003;</span>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/analyze"
+                className="mt-6 block rounded-lg border border-gray-300 px-6 py-2.5 text-center text-sm font-semibold text-gray-700 hover:bg-gray-50"
+              >
+                Start free scan
+              </Link>
+            </div>
+
+            {/* Career Trial */}
+            <div className="relative rounded-xl border-2 border-emerald-500 bg-white p-8 shadow-md text-left">
+              <div className="absolute -top-3 left-4">
+                <span className="rounded-full bg-emerald-600 px-3 py-0.5 text-xs font-semibold text-white">
+                  Try It
+                </span>
+              </div>
+              <p className="text-sm font-medium uppercase tracking-wide text-gray-500">
+                Career Trial
+              </p>
+              <p className="mt-2 text-4xl font-bold text-gray-900">
+                {TRIAL_PRICE_DISPLAY}
+                <span className="text-base font-normal text-gray-500"> one-time</span>
+              </p>
+              <p className="mt-1 text-sm text-gray-500">1 job, full results</p>
+              <ul className="mt-5 space-y-2 text-sm text-gray-600">
+                {[
+                  "Full tailored resume",
+                  "Full cover letter",
+                  "Recruiter insights",
+                  "Keyword checklist",
+                  "Editable content",
+                  "TXT export",
+                ].map((f) => (
+                  <li key={f} className="flex items-start gap-2">
+                    <span className="mt-0.5 text-emerald-500">&#10003;</span>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/analyze"
+                className="mt-6 block rounded-lg bg-emerald-600 px-6 py-2.5 text-center text-sm font-semibold text-white hover:bg-emerald-700"
+              >
+                Try Career Trial — {TRIAL_PRICE_DISPLAY}
+              </Link>
+              <p className="mt-2 text-center text-xs text-gray-400">Upgrade to Pro anytime.</p>
+            </div>
+
             {/* Pro Plan */}
             <div className="relative rounded-xl border-2 border-blue-500 bg-white p-8 shadow-md text-left">
               <div className="absolute -top-3 left-4">
@@ -218,16 +289,15 @@ export default function LandingPage() {
                 {PRO_PRICE_DISPLAY}
                 <span className="text-base font-normal text-gray-500"> one-time</span>
               </p>
-              <p className="mt-1 text-sm text-gray-500">1 job analysis + 2 re-generations</p>
+              <p className="mt-1 text-sm text-gray-500">1 job + 2 re-generations</p>
               <ul className="mt-5 space-y-2 text-sm text-gray-600">
                 {[
-                  "Full tailored resume rewrite",
-                  "Custom cover letter draft",
-                  "Complete keyword heatmap",
-                  "Recruiter-style feedback",
-                  "All bullet rewrites (12-20)",
+                  "Everything in Trial",
+                  "PDF + DOCX exports",
+                  "Email delivery",
                   "Bulk CV Generator",
-                  "PDF, DOCX, TXT exports",
+                  "Radar before/after",
+                  "Re-generate versions",
                 ].map((f) => (
                   <li key={f} className="flex items-start gap-2">
                     <span className="mt-0.5 text-blue-500">&#10003;</span>
@@ -258,7 +328,7 @@ export default function LandingPage() {
                   "Everything in Pro",
                   "50 jobs over 30 days",
                   "Unlimited job descriptions",
-                  "Career dashboard with history",
+                  "Career dashboard",
                   "Priority processing",
                 ].map((f) => (
                   <li key={f} className="flex items-start gap-2">

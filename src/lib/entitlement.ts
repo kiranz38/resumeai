@@ -17,7 +17,7 @@ import { createHmac, createHash } from "crypto";
 
 // ── Plan configs ──
 
-export type Plan = "pro" | "pass";
+export type Plan = "trial" | "pro" | "pass";
 
 export interface PlanConfig {
   label: string;
@@ -29,6 +29,13 @@ export interface PlanConfig {
 }
 
 export const PLAN_CONFIGS: Record<Plan, PlanConfig> = {
+  trial: {
+    label: "Career Trial",
+    quotaTotal: 1,         // 1 generation, no regenerations
+    ttlMs: 48 * 60 * 60 * 1000, // 48 hours
+    burstLimit: 1,
+    burstWindowMs: 10 * 60 * 1000,
+  },
   pro: {
     label: "Pro (Single Job)",
     quotaTotal: 3,         // 1 generation + 2 regenerations
@@ -178,6 +185,42 @@ function cleanupSessions() {
   const now = Date.now();
   for (const [id, ts] of processedSessions) {
     if (now - ts > SESSION_STORE_TTL) processedSessions.delete(id);
+  }
+}
+
+// ── Trial abuse prevention (device + IP binding) ──
+
+const trialDeviceMap = new Map<string, number>(); // deviceHash → timestamp
+const TRIAL_DEVICE_TTL = 90 * 24 * 60 * 60 * 1000; // 90 days
+
+/**
+ * Generate a stable device fingerprint hash from deviceId + IP.
+ * Used to enforce one-trial-per-device/IP policy.
+ */
+export function hashDeviceFingerprint(deviceId: string, ip: string): string {
+  return createHash("sha256").update(`${deviceId}|${ip}`).digest("hex").slice(0, 24);
+}
+
+/**
+ * Check if a trial has already been used for this device+IP combo.
+ * Returns true if allowed (no previous trial), false if blocked.
+ */
+export function canPurchaseTrial(deviceHash: string): boolean {
+  cleanupTrialDevices();
+  return !trialDeviceMap.has(deviceHash);
+}
+
+/**
+ * Record a trial purchase for this device+IP combo.
+ */
+export function recordTrialPurchase(deviceHash: string): void {
+  trialDeviceMap.set(deviceHash, Date.now());
+}
+
+function cleanupTrialDevices() {
+  const now = Date.now();
+  for (const [hash, ts] of trialDeviceMap) {
+    if (now - ts > TRIAL_DEVICE_TTL) trialDeviceMap.delete(hash);
   }
 }
 

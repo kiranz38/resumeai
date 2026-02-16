@@ -48,7 +48,9 @@ export async function POST(request: Request) {
       const metaPlan = session.metadata?.plan;
       const metaProduct = session.metadata?.product;
       let plan: Plan = "pro";
-      if (metaPlan === "pass" || metaProduct === "career_pass") {
+      if (metaPlan === "trial" || metaProduct === "career_trial") {
+        plan = "trial";
+      } else if (metaPlan === "pass" || metaProduct === "career_pass") {
         plan = "pass";
       }
 

@@ -24,6 +24,9 @@ type EventParams = Record<string, string | number | boolean>;
  * - pro_viewed                         Pro results loaded
  * - pro_generation_completed           Pro output received
  *
+ * — Career Trial —
+ * - trial_upgrade_clicked              Upgrade from trial to Pro/Pass (context)
+ *
  * — Career Pass —
  * - plan_selected                      Plan chosen in PaywallPlanPicker (plan, context)
  * - career_pass_welcome_viewed         Welcome page loaded after purchase

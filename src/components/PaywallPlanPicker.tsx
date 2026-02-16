@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { PRO_PRICE_DISPLAY, CAREER_PASS_DISPLAY } from "@/lib/constants";
+import { TRIAL_PRICE_DISPLAY, PRO_PRICE_DISPLAY, CAREER_PASS_DISPLAY } from "@/lib/constants";
 import { trackEvent } from "@/lib/analytics";
 import type { Plan } from "@/lib/entitlement";
 
@@ -21,16 +21,26 @@ interface PaywallPlanPickerProps {
   message?: string;
   /** Compact mode for inline embedding */
   compact?: boolean;
+  /** Hide trial option (e.g. after trial used, or quota-exhausted upsell) */
+  hideTrial?: boolean;
 }
 
+const TRIAL_FEATURES = [
+  "Full tailored resume",
+  "Full cover letter",
+  "Recruiter insights",
+  "Keyword checklist",
+  "Editable content",
+  "TXT export",
+];
+
 const PRO_FEATURES = [
-  "Full tailored resume rewrite",
-  "Custom cover letter draft",
-  "Complete keyword heatmap",
-  "Recruiter-style feedback",
-  "All bullet rewrites (12-20)",
+  "Everything in Trial",
+  "PDF + DOCX exports",
+  "Email delivery",
   "Bulk CV Generator",
-  "PDF, DOCX, TXT exports",
+  "Radar before/after",
+  "Re-generate versions",
 ];
 
 const PASS_FEATURES = [
@@ -46,9 +56,13 @@ export default function PaywallPlanPicker({
   context = "paywall",
   message,
   compact = false,
+  hideTrial = false,
 }: PaywallPlanPickerProps) {
   const [loading, setLoading] = useState<Plan | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Show trial unless explicitly hidden or this is a quota-exhausted upsell
+  const showTrial = !hideTrial && !defaultPlan;
 
   const handleCheckout = async (plan: Plan) => {
     setError(null);
@@ -97,7 +111,7 @@ export default function PaywallPlanPicker({
   };
 
   return (
-    <div className={compact ? "" : "mx-auto max-w-3xl"}>
+    <div className={compact ? "" : "mx-auto max-w-4xl"}>
       {message && (
         <div className="mb-4 flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
           <svg className="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -107,7 +121,44 @@ export default function PaywallPlanPicker({
         </div>
       )}
 
-      <div className={`grid gap-4 ${compact ? "grid-cols-1 sm:grid-cols-2" : "md:grid-cols-2"}`}>
+      <div className={`grid gap-4 ${showTrial ? (compact ? "grid-cols-1 sm:grid-cols-3" : "md:grid-cols-3") : (compact ? "grid-cols-1 sm:grid-cols-2" : "md:grid-cols-2")}`}>
+        {/* Career Trial */}
+        {showTrial && (
+          <div className="relative rounded-xl border-2 border-emerald-500 bg-white p-6 transition-all shadow-md">
+            <div className="absolute -top-3 left-4">
+              <span className="rounded-full bg-emerald-600 px-3 py-0.5 text-xs font-semibold text-white">
+                Try It
+              </span>
+            </div>
+            <h3 className="text-lg font-bold text-gray-900">Career Trial</h3>
+            <p className="mt-1 text-2xl font-bold text-gray-900">
+              {TRIAL_PRICE_DISPLAY}
+              <span className="text-sm font-normal text-gray-500"> one-time</span>
+            </p>
+            <p className="mt-1 text-xs text-gray-500">1 job, full results</p>
+
+            {!compact && (
+              <ul className="mt-4 space-y-2">
+                {TRIAL_FEATURES.map((f) => (
+                  <li key={f} className="flex items-start gap-2 text-sm text-gray-600">
+                    <span className="mt-0.5 text-emerald-500">&#10003;</span>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <button
+              onClick={() => handleCheckout("trial")}
+              disabled={loading !== null}
+              className="mt-4 w-full rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
+            >
+              {loading === "trial" ? "Processing..." : `Try Career Trial — ${TRIAL_PRICE_DISPLAY}`}
+            </button>
+            <p className="mt-2 text-center text-xs text-gray-400">Upgrade to Pro anytime.</p>
+          </div>
+        )}
+
         {/* Pro Plan */}
         <div
           className={`relative rounded-xl border-2 p-6 transition-all ${
@@ -128,7 +179,7 @@ export default function PaywallPlanPicker({
             {PRO_PRICE_DISPLAY}
             <span className="text-sm font-normal text-gray-500"> one-time</span>
           </p>
-          <p className="mt-1 text-xs text-gray-500">1 job analysis + 2 re-generations</p>
+          <p className="mt-1 text-xs text-gray-500">1 job + 2 re-generations</p>
 
           {!compact && (
             <ul className="mt-4 space-y-2">

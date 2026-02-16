@@ -236,6 +236,10 @@ export default function ResultsPage() {
             <div className="mt-3 text-center">
               <p className="text-sm text-gray-500">
                 Unlock all blockers with detailed fixes —{" "}
+                <Link href="#pro-upgrade" className="font-semibold text-emerald-600 hover:underline">
+                  Try for $1.50
+                </Link>{" "}
+                or{" "}
                 <Link href="#pro-upgrade" className="font-semibold text-blue-600 hover:underline">
                   Get Pro
                 </Link>
@@ -348,6 +352,9 @@ export default function ResultsPage() {
           <h2 className="mb-4 text-center text-xl font-bold text-gray-900">
             Unlock the full analysis
           </h2>
+          <p className="mb-6 text-center text-sm text-gray-500">
+            Try everything for $1.50, or go Pro for PDF exports and re-generations.
+          </p>
           <PaywallPlanPicker context="free_results" />
         </div>
       )}

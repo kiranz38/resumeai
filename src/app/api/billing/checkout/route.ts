@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { rateLimitRoute } from "@/lib/rate-limiter";
-import { mintEntitlement, type Plan } from "@/lib/entitlement";
+import {
+  mintEntitlement,
+  hashDeviceFingerprint,
+  canPurchaseTrial,
+  recordTrialPurchase,
+  type Plan,
+} from "@/lib/entitlement";
 import { trackServerEvent } from "@/lib/analytics-server";
 
 const PLAN_STRIPE_CONFIG: Record<Plan, {
@@ -11,21 +17,36 @@ const PLAN_STRIPE_CONFIG: Record<Plan, {
   successPath: string;
   envPriceKey: string;
 }> = {
+  trial: {
+    name: "ResumeMate AI — Career Trial",
+    description: "Full tailored resume, cover letter, and recruiter insights for one role. TXT export included.",
+    amountCents: 150,
+    successPath: "/results/pro",
+    envPriceKey: "STRIPE_PRICE_ID_TRIAL",
+  },
   pro: {
     name: "ResumeMate AI — Pro (Single Job)",
     description: "Tailored resume rewrite, cover letter, keyword checklist, recruiter feedback, and downloadable exports for one role.",
-    amountCents: 799,
+    amountCents: 500,
     successPath: "/results/pro",
     envPriceKey: "STRIPE_PRICE_ID_PRO",
   },
   pass: {
     name: "ResumeMate AI — Career Pass (30 days)",
     description: "Optimize multiple roles for 30 days. Tailored resume, cover letter, and exports for every application.",
-    amountCents: 1900,
+    amountCents: 1000,
     successPath: "/career/welcome",
     envPriceKey: "STRIPE_PRICE_ID_PASS",
   },
 };
+
+function getClientIP(request: Request): string {
+  return (
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip") ||
+    "unknown"
+  );
+}
 
 export async function POST(request: Request) {
   try {
@@ -33,13 +54,35 @@ export async function POST(request: Request) {
     if (rateLimited) return rateLimited;
 
     const body = await request.json().catch(() => ({}));
-    const plan: Plan = body.plan === "pass" ? "pass" : "pro";
+    const planRaw = body.plan;
+    const plan: Plan = planRaw === "pass" ? "pass" : planRaw === "trial" ? "trial" : "pro";
     const config = PLAN_STRIPE_CONFIG[plan];
+
+    // ── Trial abuse prevention: one per device + IP ──
+    if (plan === "trial") {
+      const deviceId = body.deviceId || "no-device";
+      const ip = getClientIP(request);
+      const deviceHash = hashDeviceFingerprint(deviceId, ip);
+
+      if (!canPurchaseTrial(deviceHash)) {
+        return NextResponse.json(
+          { error: "Career Trial can only be purchased once. Upgrade to Pro for full access.", code: "TRIAL_ALREADY_USED" },
+          { status: 409 },
+        );
+      }
+    }
 
     // ── Dev mode: skip Stripe, mint token directly ──
     if (process.env.NODE_ENV === "development" || !process.env.STRIPE_SECRET_KEY) {
       const devSessionId = `dev_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
       const token = mintEntitlement(devSessionId, plan);
+
+      // Record trial purchase for device binding
+      if (plan === "trial") {
+        const deviceId = body.deviceId || "no-device";
+        const ip = getClientIP(request);
+        recordTrialPurchase(hashDeviceFingerprint(deviceId, ip));
+      }
 
       trackServerEvent("checkout_completed", { plan, mode: "dev" });
       console.log(`[billing/checkout] Dev mode: minted ${plan} entitlement`);
@@ -73,7 +116,10 @@ export async function POST(request: Request) {
       line_items: lineItems,
       success_url: `${origin}${config.successPath}?session_id={CHECKOUT_SESSION_ID}&plan=${plan}`,
       cancel_url: `${origin}/pricing?cancelled=true`,
-      metadata: { product: plan === "pass" ? "career_pass" : "pro", plan },
+      metadata: {
+        product: plan === "pass" ? "career_pass" : plan === "trial" ? "career_trial" : "pro",
+        plan,
+      },
     });
 
     trackServerEvent("checkout_started", { plan });

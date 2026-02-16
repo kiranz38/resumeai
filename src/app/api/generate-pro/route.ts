@@ -53,14 +53,13 @@ export async function POST(request: Request) {
       }
 
       if (claims.quotaRemaining <= 0) {
+        const msg = claims.plan === "trial"
+          ? "Career Trial used. Upgrade to Pro for unlimited tailoring and PDF exports."
+          : claims.plan === "pro"
+            ? "You've used all Pro generations. Upgrade to Career Pass for 50 jobs."
+            : "Career Pass quota exhausted. Purchase another pass to continue.";
         return NextResponse.json(
-          {
-            error: claims.plan === "pro"
-              ? "You've used all Pro generations. Upgrade to Career Pass for 50 jobs."
-              : "Career Pass quota exhausted. Purchase another pass to continue.",
-            code: "QUOTA_EXHAUSTED",
-            plan: claims.plan,
-          },
+          { error: msg, code: "QUOTA_EXHAUSTED", plan: claims.plan },
           { status: 402 },
         );
       }

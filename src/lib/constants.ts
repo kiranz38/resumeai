@@ -3,10 +3,12 @@ export const SITE_URL = "https://resumemate.ai";
 export const SITE_DESCRIPTION =
   "See what's blocking callbacks — then fix it in minutes. Get your Hiring Manager Radar Score, missing keywords, and a tailored rewrite pack.";
 
-export const PRO_PRICE = 7.99;
-export const PRO_PRICE_DISPLAY = "$7.99";
-export const CAREER_PASS_PRICE = 19;
-export const CAREER_PASS_DISPLAY = "$19";
+export const TRIAL_PRICE = 1.50;
+export const TRIAL_PRICE_DISPLAY = "$1.50";
+export const PRO_PRICE = 5;
+export const PRO_PRICE_DISPLAY = "$5";
+export const CAREER_PASS_PRICE = 10;
+export const CAREER_PASS_DISPLAY = "$10";
 
 export const PRICE_VARIANT = parseInt(
   process.env.NEXT_PUBLIC_PRICE_VARIANT || "8",

@@ -21,7 +21,7 @@ export async function POST(request: Request) {
 
     // Dev mode: if sessionId starts with "dev_", mint directly
     if (process.env.NODE_ENV === "development" && sessionId.startsWith("dev_")) {
-      const plan: Plan = body.plan === "pass" ? "pass" : "pro";
+      const plan: Plan = body.plan === "trial" ? "trial" : body.plan === "pass" ? "pass" : "pro";
       const token = mintEntitlement(sessionId, plan);
       const claims = verifyEntitlement(token)!;
       return NextResponse.json({ token, claims });
@@ -42,7 +42,9 @@ export async function POST(request: Request) {
     const metaPlan = session.metadata?.plan;
     const metaProduct = session.metadata?.product;
     let plan: Plan = "pro";
-    if (metaPlan === "pass" || metaProduct === "career_pass") {
+    if (metaPlan === "trial" || metaProduct === "career_trial") {
+      plan = "trial";
+    } else if (metaPlan === "pass" || metaProduct === "career_pass") {
       plan = "pass";
     }
 

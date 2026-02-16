@@ -23,7 +23,7 @@ export function isValidTokenFormat(token: string): boolean {
 
 /** Validate a plan string against allowed values */
 export function isValidPlan(plan: string): boolean {
-  return plan === "pro" || plan === "pass";
+  return plan === "trial" || plan === "pro" || plan === "pass";
 }
 
 /** Strip control characters from a URL search param value */

@@ -2,29 +2,34 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import FAQ from "@/components/FAQ";
 import CheckoutButton from "@/components/CheckoutButton";
-import { PRO_PRICE_DISPLAY, CAREER_PASS_DISPLAY } from "@/lib/constants";
+import { TRIAL_PRICE_DISPLAY, PRO_PRICE_DISPLAY, CAREER_PASS_DISPLAY } from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: "Pricing",
   description:
-    "Simple one-time pricing. Free Radar Score included. Pro with full rewrites for $7.99 or Career Pass for $19/30 days unlimited.",
+    "Simple one-time pricing. Free Radar Score included. Career Trial for $1.50, Pro for $5, or Career Pass for $10/30 days.",
 };
 
 const PRICING_FAQ = [
   {
     question: "Is the Quick Scan really free?",
     answer:
-      "Yes! The Quick Scan gives you your Radar Score, signal breakdown, top blocker, missing keywords, and actionable suggestions — completely free, no account or payment needed.",
+      "Yes! The Quick Scan gives you your Hiring Manager Radar, signal breakdown, top blocker, missing keywords, and actionable suggestions — completely free, no account or payment needed.",
+  },
+  {
+    question: "What do I get with the Career Trial?",
+    answer:
+      "For just $1.50, you get a full tailored resume, cover letter, recruiter insights, keyword checklist, and TXT export for one role. It's a one-time payment — no subscription. Upgrade to Pro anytime to unlock PDF/DOCX exports.",
   },
   {
     question: "Is this a subscription?",
     answer:
-      "No. Pro is a one-time payment for one resume + job description analysis. Career Pass gives you 30 days of unlimited analyses — still no recurring charges.",
+      "No. Trial and Pro are one-time payments. Career Pass gives you 30 days of analyses — still no recurring charges.",
   },
   {
     question: "Can I analyze multiple job descriptions?",
     answer:
-      "Each Pro payment covers one full analysis. You can run as many free Quick Scans as you like. The Career Pass ($19) gives you unlimited Pro analyses for 30 days — perfect for active job seekers.",
+      "Each Trial or Pro payment covers one full analysis. The Career Pass gives you 50 Pro analyses for 30 days — perfect for active job seekers.",
   },
   {
     question: "What payment methods do you accept?",
@@ -41,7 +46,7 @@ const PRICING_FAQ = [
 export default function PricingPage() {
   return (
     <div className="px-4 py-16">
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto max-w-6xl">
         <h1 className="text-center text-3xl font-bold text-gray-900">
           Simple, transparent pricing
         </h1>
@@ -49,22 +54,20 @@ export default function PricingPage() {
           No subscription. No account. Pay once, get your results.
         </p>
 
-        <div className="mt-12 grid gap-6 md:grid-cols-3">
+        <div className="mt-12 grid gap-6 md:grid-cols-4">
           {/* Free tier */}
-          <div className="rounded-xl border border-gray-200 bg-white p-8">
+          <div className="rounded-xl border border-gray-200 bg-white p-6">
             <h2 className="text-lg font-semibold text-gray-900">Quick Scan</h2>
             <p className="mt-1 text-3xl font-bold text-gray-900">Free</p>
             <p className="mt-2 text-sm text-gray-500">No payment required</p>
-            <ul className="mt-6 space-y-3 text-sm text-gray-600">
+            <ul className="mt-5 space-y-2.5 text-sm text-gray-600">
               {[
-                "Radar Score with 5-dimension breakdown",
+                "Hiring Manager Radar",
+                "5-dimension breakdown",
                 "Top blocker with fix",
-                "Missing keywords (grouped)",
-                "Strengths analysis",
-                "Gaps & fixes",
-                "3 bullet rewrite previews",
-                "Actionable suggestions",
-                "Job Board — search real listings by country",
+                "Missing keywords",
+                "Strengths & gaps",
+                "1 bullet rewrite preview",
               ].map((item) => (
                 <li key={item} className="flex items-start gap-2">
                   <span className="mt-0.5 text-green-500">&#10003;</span>
@@ -74,16 +77,54 @@ export default function PricingPage() {
             </ul>
             <Link
               href="/analyze"
-              className="mt-8 block rounded-lg border border-gray-300 px-6 py-2.5 text-center text-sm font-semibold text-gray-700 hover:bg-gray-50"
+              className="mt-6 block rounded-lg border border-gray-300 px-6 py-2.5 text-center text-sm font-semibold text-gray-700 hover:bg-gray-50"
             >
               Start free scan
             </Link>
           </div>
 
+          {/* Career Trial */}
+          <div className="relative rounded-xl border-2 border-emerald-500 bg-white p-6 shadow-md">
+            <div className="absolute -top-3 left-4">
+              <span className="rounded-full bg-emerald-600 px-3 py-0.5 text-xs font-semibold text-white">
+                Try It
+              </span>
+            </div>
+            <h2 className="text-lg font-semibold text-gray-900">Career Trial</h2>
+            <p className="mt-1 text-3xl font-bold text-gray-900">
+              {TRIAL_PRICE_DISPLAY}
+              <span className="text-base font-normal text-gray-500"> one-time</span>
+            </p>
+            <p className="mt-2 text-sm text-gray-500">1 job, full results</p>
+            <ul className="mt-5 space-y-2.5 text-sm text-gray-600">
+              {[
+                "Full tailored resume",
+                "Full cover letter",
+                "Recruiter insights",
+                "Keyword checklist",
+                "Editable content",
+                "TXT export",
+              ].map((item) => (
+                <li key={item} className="flex items-start gap-2">
+                  <span className="mt-0.5 text-emerald-500">&#10003;</span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+            <CheckoutButton
+              plan="trial"
+              label={`Try Career Trial — ${TRIAL_PRICE_DISPLAY}`}
+              className="mt-6 block w-full rounded-lg bg-emerald-600 px-6 py-2.5 text-center text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+            />
+            <p className="mt-2 text-center text-xs text-gray-400">
+              One-time trial. Upgrade anytime.
+            </p>
+          </div>
+
           {/* Pro tier */}
-          <div className="relative rounded-xl border-2 border-blue-600 bg-white p-8 shadow-lg">
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-              <span className="rounded-full bg-blue-600 px-4 py-1 text-xs font-semibold text-white">
+          <div className="relative rounded-xl border-2 border-blue-600 bg-white p-6 shadow-lg">
+            <div className="absolute -top-3 left-4">
+              <span className="rounded-full bg-blue-600 px-3 py-0.5 text-xs font-semibold text-white">
                 Most Popular
               </span>
             </div>
@@ -92,21 +133,15 @@ export default function PricingPage() {
               {PRO_PRICE_DISPLAY}
               <span className="text-base font-normal text-gray-500"> one-time</span>
             </p>
-            <p className="mt-2 text-sm text-gray-500">
-              Everything free, plus:
-            </p>
-            <ul className="mt-6 space-y-3 text-sm text-gray-600">
+            <p className="mt-2 text-sm text-gray-500">1 job + 2 re-generations</p>
+            <ul className="mt-5 space-y-2.5 text-sm text-gray-600">
               {[
-                "Full tailored resume rewrite",
-                "Custom cover letter draft",
-                "All blockers with detailed fixes",
-                "Complete keyword heatmap",
-                "Recruiter-style feedback",
-                "All 12-20 bullet rewrites",
-                "Experience gap analysis",
-                "Bulk CV Generator — select from Job Board or paste JDs",
-                "PDF, DOCX, and TXT exports",
-                "Email delivery of report",
+                "Everything in Trial",
+                "PDF + DOCX exports",
+                "Email delivery",
+                "Bulk CV Generator",
+                "Radar before/after",
+                "Re-generate versions",
               ].map((item) => (
                 <li key={item} className="flex items-start gap-2">
                   <span className="mt-0.5 text-blue-500">&#10003;</span>
@@ -116,30 +151,29 @@ export default function PricingPage() {
             </ul>
             <CheckoutButton
               plan="pro"
-              label="Get started"
-              className="mt-8 block w-full rounded-lg bg-blue-600 px-6 py-2.5 text-center text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+              label={`Unlock Full Career Pack — ${PRO_PRICE_DISPLAY}`}
+              className="mt-6 block w-full rounded-lg bg-blue-600 px-6 py-2.5 text-center text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
             />
-            <p className="mt-3 text-center text-xs text-gray-400">
+            <p className="mt-2 text-center text-xs text-gray-400">
               No subscription. No surprises.
             </p>
           </div>
 
           {/* Career Pass */}
-          <div className="rounded-xl border border-gray-200 bg-white p-8">
+          <div className="rounded-xl border border-gray-200 bg-white p-6">
             <h2 className="text-lg font-semibold text-gray-900">Career Pass</h2>
             <p className="mt-1 text-3xl font-bold text-gray-900">
               {CAREER_PASS_DISPLAY}
               <span className="text-base font-normal text-gray-500"> / 30 days</span>
             </p>
-            <p className="mt-2 text-sm text-gray-500">
-              Everything Pro, plus:
-            </p>
-            <ul className="mt-6 space-y-3 text-sm text-gray-600">
+            <p className="mt-2 text-sm text-gray-500">50 jobs over 30 days</p>
+            <ul className="mt-5 space-y-2.5 text-sm text-gray-600">
               {[
-                "Unlimited Pro analyses",
-                "Unlimited job descriptions",
+                "Everything in Pro",
+                "50 job analyses",
+                "Unlimited JDs",
+                "Career dashboard",
                 "Priority processing",
-                "Perfect for active job seekers",
               ].map((item) => (
                 <li key={item} className="flex items-start gap-2">
                   <span className="mt-0.5 text-indigo-500">&#10003;</span>
@@ -147,12 +181,9 @@ export default function PricingPage() {
                 </li>
               ))}
             </ul>
-            <p className="mt-2 text-xs text-gray-400 italic">
-              Applying to multiple roles? This is for you.
-            </p>
             <CheckoutButton
               plan="pass"
-              label="Get Career Pass"
+              label={`Get Career Pass — ${CAREER_PASS_DISPLAY}`}
               className="mt-6 block w-full rounded-lg border border-indigo-300 bg-indigo-50 px-6 py-2.5 text-center text-sm font-semibold text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
             />
           </div>

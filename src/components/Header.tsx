@@ -2,10 +2,19 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { NAV_LINKS } from "@/lib/constants";
+
+function isActive(linkHref: string, pathname: string): boolean {
+  if (linkHref === "/") return pathname === "/";
+  // Match /analyze?tab=jobs to /analyze path
+  const base = linkHref.split("?")[0];
+  return pathname === base || pathname.startsWith(base + "/");
+}
 
 export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const pathname = usePathname();
 
   return (
     <header className="bg-gray-900">
@@ -20,16 +29,23 @@ export default function Header() {
         </Link>
 
         {/* Desktop nav */}
-        <nav className="hidden items-center gap-6 md:flex">
-          {NAV_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="text-sm text-gray-400 transition-colors hover:text-white"
-            >
-              {link.label}
-            </Link>
-          ))}
+        <nav className="hidden items-center gap-1 md:flex">
+          {NAV_LINKS.map((link) => {
+            const active = isActive(link.href, pathname);
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
+                  active
+                    ? "bg-white/10 text-white font-medium"
+                    : "text-gray-400 hover:bg-white/5 hover:text-white"
+                }`}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
         </nav>
 
         {/* Mobile toggle */}
@@ -51,16 +67,23 @@ export default function Header() {
       {/* Mobile nav */}
       {mobileOpen && (
         <nav className="border-t border-gray-800 px-4 py-3 md:hidden">
-          {NAV_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="block py-2 text-sm text-gray-400 hover:text-white"
-              onClick={() => setMobileOpen(false)}
-            >
-              {link.label}
-            </Link>
-          ))}
+          {NAV_LINKS.map((link) => {
+            const active = isActive(link.href, pathname);
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`block rounded-md px-3 py-2 text-sm transition-colors ${
+                  active
+                    ? "bg-white/10 text-white font-medium"
+                    : "text-gray-400 hover:bg-white/5 hover:text-white"
+                }`}
+                onClick={() => setMobileOpen(false)}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
         </nav>
       )}
     </header>
