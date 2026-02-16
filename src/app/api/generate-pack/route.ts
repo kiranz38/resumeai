@@ -53,7 +53,7 @@ export async function POST(request: Request) {
   if (enforceEntitlement) {
     if (!entitlementToken) {
       return Response.json(
-        { error: "Entitlement required. Choose a plan to continue.", code: "NO_ENTITLEMENT" },
+        { error: "Pick a Pro or Career Pass plan to use the Bulk CV Generator.", code: "NO_ENTITLEMENT" },
         { status: 402 },
       );
     }

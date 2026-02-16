@@ -505,8 +505,11 @@ function ProResultsPage() {
     return (
       <div className="mx-auto max-w-3xl px-4 py-16">
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-gray-900">Choose a Plan</h1>
-          <p className="mt-2 text-gray-600">Select a plan to generate your tailored resume.</p>
+          <h1 className="text-2xl font-bold text-gray-900">Unlock Your Tailored Resume</h1>
+          <p className="mt-2 text-gray-600">
+            Choose <span className="font-semibold">Pro</span> for a single job or{" "}
+            <span className="font-semibold">Career Pass</span> for up to 50 jobs over 30 days.
+          </p>
         </div>
         <PaywallPlanPicker
           message={needsPayment.message}
