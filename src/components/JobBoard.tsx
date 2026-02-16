@@ -449,6 +449,7 @@ export default function JobBoard({ onSelectJob, onBulkGenerate, resumeText }: Jo
 
     debounceRef.current = setTimeout(() => {
       setIsDefaultView(false);
+      setIsLoading(true); // Set loading immediately to prevent empty flash
       fetchJobs(q, country, 1);
     }, DEBOUNCE_MS);
 
@@ -464,6 +465,7 @@ export default function JobBoard({ onSelectJob, onBulkGenerate, resumeText }: Jo
       const q = query.trim();
       if (q.length >= MIN_QUERY_LENGTH) {
         setIsDefaultView(false);
+        setIsLoading(true);
         fetchJobs(q, country, 1);
       }
     },
@@ -496,7 +498,9 @@ export default function JobBoard({ onSelectJob, onBulkGenerate, resumeText }: Jo
 
   const showJobs = sortedJobs.length > 0;
   const showEmptyDefault = isDefaultView && defaultJobs.length === 0 && !isLoading;
-  const showNoResults = !isDefaultView && hasSearched && !isLoading && jobs.length === 0 && allClientJobs.length === 0;
+  // Only show "no results" after a completed search — never during typing or loading
+  const isTyping = query.trim().length >= MIN_QUERY_LENGTH && !hasSearched;
+  const showNoResults = !isDefaultView && hasSearched && !isLoading && !isTyping && jobs.length === 0 && allClientJobs.length === 0;
 
   return (
     <div className="relative pb-20">
