@@ -250,7 +250,6 @@ export default function ResultsPage() {
                 blocker={blocker}
                 index={i}
                 locked={!isDemo && i > 0}
-                blurFix={!isDemo}
               />
             ))}
           </div>

@@ -4,11 +4,9 @@ interface BlockerCardProps {
   blocker: RadarBlocker;
   index: number;
   locked?: boolean;
-  /** Blur the fix & before/after but keep title + why visible (for free tier card 1) */
-  blurFix?: boolean;
 }
 
-export default function BlockerCard({ blocker, index, locked = false, blurFix = false }: BlockerCardProps) {
+export default function BlockerCard({ blocker, index, locked = false }: BlockerCardProps) {
   return (
     <div className={`relative rounded-xl border border-gray-200 bg-white p-5 ${locked ? "min-h-[180px] select-none overflow-hidden" : ""}`}>
       {/* Header */}
@@ -19,20 +17,20 @@ export default function BlockerCard({ blocker, index, locked = false, blurFix = 
         <h4 className="text-sm font-semibold text-gray-900">{blocker.title}</h4>
       </div>
 
-      {/* Why — always visible */}
+      {/* Why */}
       <p className="mb-2 text-sm text-gray-500">{blocker.why}</p>
 
-      {/* How — blurred on free tier first card */}
+      {/* How */}
       <div className="mb-2 rounded-lg bg-blue-50 px-3 py-2">
-        <p className={`text-sm text-blue-800 ${blurFix ? "blur-[5px] select-none" : ""}`}>
+        <p className="text-sm text-blue-800">
           <span className="font-semibold">Fix: </span>
           {blocker.how}
         </p>
       </div>
 
-      {/* Before/After — blurred on free tier first card */}
+      {/* Before/After */}
       {blocker.beforeAfter && (
-        <div className={`mt-3 space-y-1.5 ${blurFix ? "blur-[5px] select-none" : ""}`}>
+        <div className="mt-3 space-y-1.5">
           <div className="rounded-lg bg-red-50 px-3 py-2">
             <span className="text-xs font-bold uppercase text-red-500">Before</span>
             <p className="mt-0.5 text-sm text-gray-600 line-through decoration-red-300">
@@ -48,18 +46,11 @@ export default function BlockerCard({ blocker, index, locked = false, blurFix = 
         </div>
       )}
 
-      {/* Unlock hint on blurred first card */}
-      {blurFix && !locked && (
-        <div className="mt-3 text-center">
-          <p className="text-xs font-semibold text-blue-600">Unlock to see the fix</p>
-        </div>
-      )}
-
-      {/* Gradient fade overlay for fully locked cards (2nd & 3rd) */}
+      {/* Full overlay for locked cards — hides fix completely */}
       {locked && (
         <div className="absolute inset-0 z-10 flex flex-col justify-end rounded-xl"
           style={{
-            background: "linear-gradient(to bottom, transparent 35%, rgba(255,255,255,0.85) 55%, rgba(255,255,255,1) 70%)",
+            background: "linear-gradient(to bottom, transparent 20%, rgba(255,255,255,0.9) 40%, rgba(255,255,255,1) 55%)",
           }}
         >
           <div className="px-5 pb-5 text-center">
