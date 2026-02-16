@@ -138,8 +138,9 @@ export default function LandingPage() {
             <div className="flex items-center gap-4">
               <Link
                 href="/demo"
-                className="text-sm font-medium text-gray-500 underline-offset-2 hover:text-gray-700 hover:underline"
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 underline-offset-2 hover:text-gray-700 hover:underline"
               >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
                 Try sample resume
               </Link>
               <span className="text-gray-300">|</span>
