@@ -31,14 +31,19 @@ export default function ProResultsPageWrapper() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-[50vh] items-center justify-center">
-          <div className="text-center">
+        <div className="flex min-h-[50vh] items-center justify-center px-4">
+          <div className="mx-auto w-full max-w-sm text-center">
             <svg className="mx-auto h-8 w-8 animate-spin text-blue-600" viewBox="0 0 24 24" fill="none">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
             </svg>
-            <p className="mt-3 text-sm text-gray-500">Loading Pro results...</p>
-            <p className="mt-2 text-xs text-gray-400">If this takes more than a few seconds, <a href="/analyze" className="text-blue-500 hover:underline">go back</a>.</p>
+            <p className="mt-3 text-base font-medium text-gray-700">Preparing your tailored resume...</p>
+            <div className="mt-4">
+              <div className="h-2 w-full rounded-full bg-gray-200">
+                <div className="h-2 w-[2%] rounded-full bg-blue-600 transition-all duration-700 ease-out" />
+              </div>
+              <div className="mt-2 text-xs text-gray-400">Usually takes 60–90 seconds</div>
+            </div>
           </div>
         </div>
       }
@@ -93,9 +98,12 @@ function ProResultsPage() {
   const [base, setBase] = useState<ProOutput | null>(null);
   const [edits, setEdits] = useState<Partial<ProOutput> | null>(null);
   const [loading, setLoading] = useState(true);
-  const [loadingMessage, setLoadingMessage] = useState("Loading Pro results...");
-  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [loadingMessage, setLoadingMessage] = useState("Preparing your tailored resume...");
+  const [loadingProgress, setLoadingProgress] = useState(2);
   const [loadingError, setLoadingError] = useState<string | null>(null);
+  const [loadingStage, setLoadingStage] = useState(0);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const elapsedRef = useRef(0);
   const [activeTab, setActiveTab] = useState<"resume" | "cover" | "keywords" | "feedback">("resume");
   const [emailSent, setEmailSent] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
@@ -307,45 +315,46 @@ function ProResultsPage() {
 
         sessionStorage.removeItem("rt_pending_pro");
 
-        // Progressive loading messages — friendly and engaging during long wait
-        setLoadingProgress(5);
-        setLoadingMessage("Reading through your experience...");
-        await delay(400);
-        setLoadingProgress(15);
-        setLoadingMessage("Matching your skills against the job requirements...");
-        await delay(400);
-        setLoadingProgress(25);
-        setLoadingMessage("Grab a coffee — we're building your hiring-manager-ready resume");
+        // Progressive loading with asymptotic curve + elapsed timer + stages
+        const STAGES = [
+          { at: 0,  msg: "Reading through your experience...", stage: 0 },
+          { at: 5,  msg: "Parsing your skills and qualifications...", stage: 1 },
+          { at: 15, msg: "Matching against the job requirements...", stage: 2 },
+          { at: 30, msg: "Crafting tailored bullet points...", stage: 3 },
+          { at: 45, msg: "Writing your cover letter draft...", stage: 4 },
+          { at: 60, msg: "Running recruiter simulation engine...", stage: 5 },
+          { at: 72, msg: "Checking keyword coverage and ATS compatibility...", stage: 6 },
+          { at: 85, msg: "Quality checks and final polish...", stage: 7 },
+        ];
 
-        // Start a progress ticker that advances steadily to 98%
-        const progressInterval = setInterval(() => {
-          setLoadingProgress((prev) => {
-            if (prev >= 98) return prev;
-            // Steady 1-2% increments all the way through
-            const increment = prev < 40 ? 2 : prev < 70 ? 1.5 : 1;
-            return Math.min(prev + increment, 98);
-          });
+        setLoadingProgress(2);
+        setLoadingMessage(STAGES[0].msg);
+        setLoadingStage(0);
+        elapsedRef.current = 0;
+        setElapsedSeconds(0);
+
+        // Elapsed seconds timer
+        const elapsedInterval = setInterval(() => {
+          elapsedRef.current += 1;
+          setElapsedSeconds(elapsedRef.current);
         }, 1000);
 
-        // Update message at various thresholds — keep it conversational
-        const messageTimeout1 = setTimeout(() => {
-          setLoadingMessage("Crafting your tailored bullet points and cover letter...");
-        }, 8000);
-        const messageTimeout2 = setTimeout(() => {
-          setLoadingMessage("Running your resume through our recruiter simulation engine...");
-        }, 20000);
-        const messageTimeout3 = setTimeout(() => {
-          setLoadingMessage("Checking keyword coverage and ATS compatibility...");
-        }, 35000);
-        const messageTimeout4 = setTimeout(() => {
-          setLoadingMessage("Polishing the final details — almost there!");
-        }, 50000);
-        const messageTimeout5 = setTimeout(() => {
-          setLoadingMessage("Wrapping up your tailored resume pack...");
-        }, 65000);
-        const messageTimeout6 = setTimeout(() => {
-          setLoadingMessage("Just a few more seconds — finalizing everything for you");
-        }, 80000);
+        // Asymptotic progress: approaches 95% over ~120s, never stalls at a fixed cap
+        // Formula: 95 * (1 - e^(-t/55)) — reaches ~63% at 55s, ~86% at 110s, ~95% at 165s
+        const progressInterval = setInterval(() => {
+          const t = elapsedRef.current;
+          const pct = Math.min(95, 95 * (1 - Math.exp(-t / 55)));
+          setLoadingProgress(pct);
+
+          // Advance stage based on progress
+          for (let i = STAGES.length - 1; i >= 0; i--) {
+            if (pct >= STAGES[i].at) {
+              setLoadingStage(STAGES[i].stage);
+              setLoadingMessage(STAGES[i].msg);
+              break;
+            }
+          }
+        }, 500);
 
         try {
           // Build headers with entitlement token if available
@@ -362,12 +371,7 @@ function ProResultsPage() {
           });
 
           clearInterval(progressInterval);
-          clearTimeout(messageTimeout1);
-          clearTimeout(messageTimeout2);
-          clearTimeout(messageTimeout3);
-          clearTimeout(messageTimeout4);
-          clearTimeout(messageTimeout5);
-          clearTimeout(messageTimeout6);
+          clearInterval(elapsedInterval);
 
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
@@ -380,10 +384,27 @@ function ProResultsPage() {
             throw new Error(errorData.error || `Generation failed (${response.status})`);
           }
 
-          setLoadingProgress(95);
-          setLoadingMessage("Your tailored resume is ready — loading it now!");
-
           const data = await response.json();
+
+          // Smooth completion: walk through remaining stages before showing results
+          // Compute current stage from elapsed time (avoids stale React state)
+          const t = elapsedRef.current;
+          const currentPct = Math.min(95, 95 * (1 - Math.exp(-t / 55)));
+          let currentStageIdx = 0;
+          for (let i = STAGES.length - 1; i >= 0; i--) {
+            if (currentPct >= STAGES[i].at) { currentStageIdx = i; break; }
+          }
+          for (let s = currentStageIdx + 1; s < STAGES.length; s++) {
+            setLoadingStage(STAGES[s].stage);
+            setLoadingMessage(STAGES[s].msg);
+            setLoadingProgress(STAGES[s].at + (95 - STAGES[s].at) * 0.5);
+            await delay(300);
+          }
+          // Final "done" state
+          setLoadingStage(STAGES.length);
+          setLoadingMessage("Your tailored resume is ready!");
+          setLoadingProgress(100);
+          await delay(400);
 
           // Store updated entitlement token (quota decremented)
           if (data._entitlement?.token) {
@@ -392,7 +413,6 @@ function ProResultsPage() {
 
           saveBaseProOutput(data as ProOutput);
           setBase(data as ProOutput);
-          setLoadingProgress(100);
           setLoading(false);
           setCurrentPlan(sessionStorage.getItem("rt_entitlement_plan"));
           trackEvent("pro_viewed");
@@ -440,12 +460,7 @@ function ProResultsPage() {
           }
         } catch (err) {
           clearInterval(progressInterval);
-          clearTimeout(messageTimeout1);
-          clearTimeout(messageTimeout2);
-          clearTimeout(messageTimeout3);
-          clearTimeout(messageTimeout4);
-          clearTimeout(messageTimeout5);
-          clearTimeout(messageTimeout6);
+          clearInterval(elapsedInterval);
 
           const errorMessage = err instanceof Error ? err.message : "Generation failed";
           setLoadingError(errorMessage);
@@ -581,25 +596,65 @@ function ProResultsPage() {
               </svg>
               <p className="mt-3 text-base font-medium text-gray-700">{loadingMessage}</p>
 
-              {/* Progress bar */}
+              {/* Progress bar + elapsed/ETA */}
               {loadingProgress > 0 && (
                 <div className="mt-4">
                   <div className="flex items-center justify-between text-sm text-gray-500 mb-1">
-                    <span>Progress</span>
+                    <span>{Math.floor(elapsedSeconds / 60)}:{String(elapsedSeconds % 60).padStart(2, "0")} elapsed</span>
                     <span>{Math.round(loadingProgress)}%</span>
                   </div>
                   <div className="h-2 w-full rounded-full bg-gray-200">
                     <div
-                      className="h-2 rounded-full bg-blue-600 transition-all duration-700 ease-out"
+                      className="h-2 rounded-full bg-blue-600 transition-all duration-500 ease-out"
                       style={{ width: `${loadingProgress}%` }}
                     />
+                  </div>
+                  {/* ETA hint */}
+                  <div className="mt-2 text-xs text-gray-400">
+                    {elapsedSeconds < 10
+                      ? "Usually takes 60–90 seconds"
+                      : elapsedSeconds < 70
+                        ? `~${Math.max(10, 75 - elapsedSeconds)}s remaining`
+                        : elapsedSeconds < 120
+                          ? "Wrapping up — just a moment longer"
+                          : "Still working — large resumes can take up to 2–3 minutes"}
                   </div>
                 </div>
               )}
 
-              <p className="mt-3 text-sm text-gray-400">
-                Our AI is tailoring every section to this specific role — this usually takes about a minute
-              </p>
+              {/* Stage checklist */}
+              {loadingProgress > 0 && (
+                <div className="mt-5 text-left space-y-1.5">
+                  {[
+                    "Parse resume",
+                    "Extract skills",
+                    "Match requirements",
+                    "Rewrite bullets",
+                    "Draft cover letter",
+                    "Recruiter simulation",
+                    "ATS compatibility",
+                    "Quality checks",
+                  ].map((label, i) => (
+                    <div key={i} className="flex items-center gap-2 text-sm">
+                      {i < loadingStage ? (
+                        <svg className="h-4 w-4 shrink-0 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      ) : i === loadingStage ? (
+                        <svg className="h-4 w-4 shrink-0 animate-spin text-blue-500" viewBox="0 0 24 24" fill="none">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                      ) : (
+                        <div className="h-4 w-4 shrink-0 rounded-full border border-gray-300" />
+                      )}
+                      <span className={i < loadingStage ? "text-gray-500" : i === loadingStage ? "font-medium text-gray-800" : "text-gray-400"}>
+                        {label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </>
           )}
         </div>

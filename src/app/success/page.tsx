@@ -63,8 +63,7 @@ function SuccessPage() {
     // ── Dev mode: skip Stripe verification, go straight through ──
     if (devToken) {
       localStorage.setItem(storageKey, "true");
-      setStatus("success");
-      setTimeout(() => navigateToDestination(), 600);
+      navigateToDestination();
       return;
     }
 
