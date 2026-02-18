@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { FreeAnalysisResult, RadarResult } from "@/lib/types";
+import type { Plan } from "@/lib/entitlement";
 import ScoreCard from "@/components/ScoreCard";
 import BlockerCard from "@/components/BlockerCard";
 import KeywordList from "@/components/KeywordList";
@@ -13,9 +14,18 @@ import RewritePreviews from "@/components/RewritePreviews";
 import PaywallPlanPicker from "@/components/PaywallPlanPicker";
 import ShareCard from "@/components/ShareCard";
 import { trackEvent } from "@/lib/analytics";
+import { validateJD } from "@/lib/jd-validator";
 import { DEMO_RADAR_RESULT, DEMO_PRO_OUTPUT } from "@/lib/demo-data";
 import { saveBaseProOutput } from "@/lib/pro-store";
 import { loadJobSessions, type JobSession } from "@/lib/job-sessions";
+import { TRIAL_PRICE_DISPLAY, PRO_PRICE_DISPLAY, CAREER_PASS_DISPLAY } from "@/lib/constants";
+
+const TRUSTED_REDIRECT_HOSTS = new Set(["checkout.stripe.com", "pay.stripe.com"]);
+function isSafeRedirect(url: string): boolean {
+  if (url.startsWith("/")) return true;
+  try { return TRUSTED_REDIRECT_HOSTS.has(new URL(url).hostname); }
+  catch { return false; }
+}
 
 export default function ResultsPage() {
   const router = useRouter();
@@ -26,6 +36,57 @@ export default function ResultsPage() {
   const [showAtsDetails, setShowAtsDetails] = useState(false);
   const [recentRoles, setRecentRoles] = useState<JobSession[]>([]);
   const [showRecentRoles, setShowRecentRoles] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState<Plan | null>(null);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+
+  const handleQuickCheckout = async (plan: Plan) => {
+    setCheckoutError(null);
+    setCheckoutLoading(plan);
+    trackEvent("plan_selected", { plan, context: "top_cards" });
+
+    try {
+      const resumeText = sessionStorage.getItem("rt_resume_text");
+      const jdText = sessionStorage.getItem("rt_jd_text");
+      if (!resumeText || !jdText) {
+        setCheckoutError("Resume data not found. Please re-analyze your resume first.");
+        setCheckoutLoading(null);
+        return;
+      }
+
+      const jdCheck = validateJD(jdText);
+      if (!jdCheck.valid) {
+        setCheckoutError(jdCheck.reason || "Job description is too short or invalid.");
+        setCheckoutLoading(null);
+        return;
+      }
+
+      sessionStorage.setItem("rt_pending_pro", "true");
+
+      const res = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Checkout failed");
+      }
+
+      const data = await res.json();
+
+      if (data.devMode && data.token) {
+        sessionStorage.setItem("rt_entitlement_token", data.token);
+        sessionStorage.setItem("rt_entitlement_plan", plan);
+        if (isSafeRedirect(data.url)) window.location.href = data.url;
+      } else if (data.url && isSafeRedirect(data.url)) {
+        window.location.href = data.url;
+      }
+    } catch (err) {
+      setCheckoutError(err instanceof Error ? err.message : "Unable to start checkout.");
+      setCheckoutLoading(null);
+    }
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -212,6 +273,62 @@ export default function ResultsPage() {
             : "Resume analysis complete"}
         </p>
       </div>
+
+      {/* Generate tailored CV — plan options */}
+      {!isDemo && process.env.NEXT_PUBLIC_PRO_ENABLED !== "false" && (
+        <div className="mb-8 rounded-xl border border-gray-200 bg-white p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="text-base font-semibold text-gray-900">Generate a tailored CV</h2>
+            <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-semibold text-blue-700">AI-powered</span>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <button
+              onClick={() => handleQuickCheckout("trial")}
+              disabled={checkoutLoading !== null}
+              className="group rounded-lg border border-gray-200 px-4 py-3 text-left transition-colors hover:border-emerald-300 hover:bg-emerald-50/50 disabled:opacity-50"
+            >
+              <div className="flex items-baseline justify-between">
+                <span className="text-sm font-semibold text-gray-900">Career Trial</span>
+                <span className="text-sm font-bold text-emerald-700">{TRIAL_PRICE_DISPLAY}</span>
+              </div>
+              <p className="mt-1 text-xs text-gray-500">Full CV + cover letter for 1 job</p>
+              {checkoutLoading === "trial" && <p className="mt-1 text-xs font-medium text-emerald-600">Redirecting...</p>}
+            </button>
+            <button
+              onClick={() => handleQuickCheckout("pro")}
+              disabled={checkoutLoading !== null}
+              className="group rounded-lg border-2 border-blue-200 bg-blue-50/30 px-4 py-3 text-left transition-colors hover:border-blue-400 hover:bg-blue-50 disabled:opacity-50"
+            >
+              <div className="flex items-baseline justify-between">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm font-semibold text-gray-900">Pro</span>
+                  <span className="rounded bg-blue-600 px-1.5 py-px text-[10px] font-bold text-white">Popular</span>
+                </div>
+                <span className="text-sm font-bold text-blue-700">{PRO_PRICE_DISPLAY}</span>
+              </div>
+              <p className="mt-1 text-xs text-gray-500">PDF/DOCX exports + 2 re-generations</p>
+              {checkoutLoading === "pro" && <p className="mt-1 text-xs font-medium text-blue-600">Redirecting...</p>}
+            </button>
+            <button
+              onClick={() => handleQuickCheckout("pass")}
+              disabled={checkoutLoading !== null}
+              className="group rounded-lg border border-gray-200 px-4 py-3 text-left transition-colors hover:border-indigo-300 hover:bg-indigo-50/50 disabled:opacity-50"
+            >
+              <div className="flex items-baseline justify-between">
+                <span className="text-sm font-semibold text-gray-900">Career Pass</span>
+                <span className="text-sm font-bold text-indigo-700">{CAREER_PASS_DISPLAY}<span className="text-xs font-normal text-gray-400">/30d</span></span>
+              </div>
+              <p className="mt-1 text-xs text-gray-500">50 jobs + dashboard + all exports</p>
+              {checkoutLoading === "pass" && <p className="mt-1 text-xs font-medium text-indigo-600">Redirecting...</p>}
+            </button>
+          </div>
+          {checkoutError && (
+            <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+              {checkoutError}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Radar Score + Breakdown */}
       {radar && (
