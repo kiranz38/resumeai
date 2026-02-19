@@ -56,10 +56,11 @@ export interface RouteBudget {
 
 /** Pre-defined budgets per route */
 export const ROUTE_BUDGETS: Record<string, RouteBudget> = {
-  analyze:        { capacity: 20, refillRate: 0.33,  windowMs: 3_600_000,  windowMax: 20 },  // 20/hour
+  analyze:        { capacity: 30, refillRate: 0.5,   windowMs: 3_600_000,  windowMax: 30 },  // 30/hour
   "generate-pro": { capacity: 10, refillRate: 0.00012, windowMs: 86_400_000, windowMax: 10 }, // 10/day per IP
   "generate-pack":{ capacity: 2,  refillRate: 0.03,  windowMs: 300_000,    windowMax: 2 },   // 2/5min
   checkout:       { capacity: 5,  refillRate: 0.08,  windowMs: 60_000,     windowMax: 5 },   // 5/min
+  "pre-generate": { capacity: 3,  refillRate: 0.05,  windowMs: 3_600_000,  windowMax: 5 },   // 5/hour (speculative)
   "email-pro":    { capacity: 3,  refillRate: 0.001, windowMs: 3_600_000,  windowMax: 3 },   // 3/hour
   "send-report":  { capacity: 3,  refillRate: 0.001, windowMs: 3_600_000,  windowMax: 3 },   // 3/hour
   export:         { capacity: 30, refillRate: 0.01,  windowMs: 86_400_000, windowMax: 30 },  // 30/day

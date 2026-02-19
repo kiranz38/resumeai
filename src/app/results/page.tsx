@@ -63,6 +63,15 @@ export default function ResultsPage() {
 
       sessionStorage.setItem("rt_pending_pro", "true");
 
+      // Speculative pre-generation: start LLM work NOW while user
+      // completes Stripe checkout (~1-3 min). Result lands in server
+      // cache so /api/generate-pro hits it instantly after payment.
+      fetch("/api/pre-generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resumeText, jobDescriptionText: jdText }),
+      }).catch(() => {}); // fire-and-forget, never block checkout
+
       const res = await fetch("/api/billing/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
