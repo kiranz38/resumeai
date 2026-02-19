@@ -61,17 +61,17 @@ const LINKEDIN_COUNTRY_CODE: Record<string, string> = {
   sg: "SG",
 };
 
-// Country code → fragments for Remotive location matching
+// Country code → fragments for Remotive location matching (broad terms for better recall)
 const COUNTRY_LOCATION_TERMS: Record<string, string[]> = {
-  us: ["united states", "usa", "u.s.", "north america"],
-  gb: ["united kingdom", "uk", "england", "britain", "europe"],
-  ca: ["canada", "north america"],
-  au: ["australia", "oceania"],
-  de: ["germany", "europe"],
-  in: ["india", "asia"],
-  sg: ["singapore", "asia"],
-  fr: ["france", "europe"],
-  nl: ["netherlands", "europe"],
+  us: ["united states", "usa", "u.s.", "north america", "americas", "new york", "san francisco", "california", "texas", "chicago", "boston", "seattle", "los angeles"],
+  gb: ["united kingdom", "uk", "england", "britain", "london", "manchester", "edinburgh", "europe", "emea"],
+  ca: ["canada", "toronto", "vancouver", "montreal", "north america", "americas"],
+  au: ["australia", "sydney", "melbourne", "brisbane", "oceania", "apac"],
+  de: ["germany", "berlin", "munich", "frankfurt", "europe", "emea", "dach"],
+  in: ["india", "bangalore", "mumbai", "delhi", "hyderabad", "pune", "chennai", "asia", "apac"],
+  sg: ["singapore", "asia", "apac", "sea", "south east asia", "southeast asia"],
+  fr: ["france", "paris", "europe", "emea"],
+  nl: ["netherlands", "amsterdam", "europe", "emea"],
 };
 
 /** Allowed country codes */
@@ -214,9 +214,9 @@ async function revalidateInBackground(
 }
 
 /**
- * Fetch from JSearch API — returns StandardJob[] (not wrapped).
- * Tries country param first, then country name in query for non-US.
- * Fetches 3 pages (up to 30 results) for better pagination.
+ * Fetch from JSearch API — returns StandardJob[].
+ * Always embeds country name in query (e.g. "developer in Canada")
+ * since the `country` param is unreliable for non-US results.
  */
 async function fetchJSearchJobs(
   apiKey: string,
@@ -229,69 +229,28 @@ async function fetchJSearchJobs(
   };
 
   const cc = country ? country.toUpperCase() : "";
+  const countryName = country ? COUNTRY_LABEL[country.toLowerCase()] : undefined;
 
-  // Attempt 1: use the country parameter
-  const params1 = new URLSearchParams({
-    query,
+  // Build query with country name baked in (most reliable approach)
+  const searchQuery = countryName ? `${query} in ${countryName}` : query;
+
+  const params = new URLSearchParams({
+    query: searchQuery,
     page: "1",
     num_pages: "3",
     date_posted: "all",
   });
-  if (country) {
-    params1.set("country", cc);
-  }
-
-  let timedOut = false;
 
   try {
-    const res1 = await fetchWithTimeout(
-      `https://jsearch.p.rapidapi.com/search?${params1}`,
+    const res = await fetchWithTimeout(
+      `https://jsearch.p.rapidapi.com/search?${params}`,
       { headers, timeout: 8000 },
     );
 
-    if (res1.ok) {
-      const json = await res1.json();
+    if (res.ok) {
+      const json = await res.json();
       let jobs = (json.data || []) as StandardJob[];
-      // Server-side country filter — JSearch country param isn't always reliable
-      if (cc && jobs.length > 0) {
-        const filtered = jobs.filter((j) =>
-          !j.job_country || j.job_country.toUpperCase() === cc
-        );
-        if (filtered.length > 0) jobs = filtered;
-      }
-      if (jobs.length > 0) return jobs;
-    } else if (res1.status === 401 || res1.status === 403 || res1.status === 429) {
-      console.warn(`[jobs] JSearch ${res1.status} — skipping`);
-      return [];
-    }
-  } catch (err) {
-    const msg = (err as Error).message;
-    timedOut = (err as Error).name === "AbortError" || msg.includes("aborted");
-    console.warn("[jobs] JSearch attempt 1 failed:", msg);
-  }
-
-  if (timedOut) return [];
-
-  // Attempt 2: append country name to the query (works for GB, SG, etc.)
-  const countryName = country ? COUNTRY_LABEL[country.toLowerCase()] : undefined;
-  if (!countryName || country.toLowerCase() === "us") return [];
-
-  const params2 = new URLSearchParams({
-    query: `${query} in ${countryName}`,
-    page: "1",
-    num_pages: "2",
-    date_posted: "all",
-  });
-
-  try {
-    const res2 = await fetchWithTimeout(
-      `https://jsearch.p.rapidapi.com/search?${params2}`,
-      { headers, timeout: 8000 },
-    );
-
-    if (res2.ok) {
-      const json = await res2.json();
-      let jobs = (json.data || []) as StandardJob[];
+      // Post-filter: keep only jobs matching the requested country
       if (cc && jobs.length > 0) {
         const filtered = jobs.filter((j) =>
           !j.job_country || j.job_country.toUpperCase() === cc
@@ -299,9 +258,11 @@ async function fetchJSearchJobs(
         if (filtered.length > 0) jobs = filtered;
       }
       return jobs;
+    } else if (res.status === 401 || res.status === 403 || res.status === 429) {
+      console.warn(`[jobs] JSearch ${res.status} — skipping`);
     }
   } catch (err) {
-    console.error("[jobs] JSearch attempt 2 failed:", (err as Error).message);
+    console.warn("[jobs] JSearch failed:", (err as Error).message);
   }
 
   return [];
