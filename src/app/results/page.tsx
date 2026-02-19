@@ -331,6 +331,17 @@ export default function ResultsPage() {
         </div>
       )}
 
+      {/* Resume Preview — free tier teaser */}
+      {!isDemo && result.candidateProfile && process.env.NEXT_PUBLIC_PRO_ENABLED !== "false" && (
+        <ResumePreviewCard
+          candidate={result.candidateProfile}
+          job={result.jobProfile}
+          improvedBullets={result.rewritePreviews}
+          onUpgrade={(plan) => handleQuickCheckout(plan)}
+          loading={checkoutLoading !== null}
+        />
+      )}
+
       {/* Radar Score + Breakdown */}
       {radar && (
         <div className="mb-8">
@@ -386,17 +397,6 @@ export default function ResultsPage() {
             </div>
           )}
         </div>
-      )}
-
-      {/* Resume Preview — free tier teaser */}
-      {!isDemo && result.candidateProfile && process.env.NEXT_PUBLIC_PRO_ENABLED !== "false" && (
-        <ResumePreviewCard
-          candidate={result.candidateProfile}
-          job={result.jobProfile}
-          improvedBullets={result.rewritePreviews}
-          onUpgrade={(plan) => handleQuickCheckout(plan)}
-          loading={checkoutLoading !== null}
-        />
       )}
 
       {/* Keywords, Strengths, Gaps */}
