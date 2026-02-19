@@ -140,29 +140,85 @@ function computeHardSkills(
     candidate.skills.map((s) => s.toLowerCase()),
   );
 
+  // Extract individual terms from JD requirement sentences
+  // (JD requirements are full sentences like "5+ years of JavaScript and React experience")
+  const requiredTerms = extractTermsFromRequirements(job.requiredSkills);
+  const preferredTerms = extractTermsFromRequirements(job.preferredSkills);
+  // Also use the already-extracted keywords from the JD parser
+  const keywordTerms = job.keywords.map((k) => k.toLowerCase());
+
   let totalWeight = 0;
   let matchedWeight = 0;
 
-  // Required skills have 2x weight
-  for (const skill of job.requiredSkills) {
-    const lower = skill.toLowerCase();
+  // Required terms have 2x weight
+  const seenRequired = new Set<string>();
+  for (const term of [...requiredTerms, ...keywordTerms]) {
+    if (seenRequired.has(term)) continue;
+    seenRequired.add(term);
     totalWeight += 2;
-    if (candidateSkillsLower.has(lower) || candidateText.includes(lower)) {
+    if (candidateSkillsLower.has(term) || candidateText.includes(term)) {
       matchedWeight += 2;
     }
   }
 
-  // Preferred skills have 1x weight
-  for (const skill of job.preferredSkills) {
-    const lower = skill.toLowerCase();
+  // Preferred terms have 1x weight
+  const seenPreferred = new Set<string>();
+  for (const term of preferredTerms) {
+    if (seenPreferred.has(term) || seenRequired.has(term)) continue;
+    seenPreferred.add(term);
     totalWeight += 1;
-    if (candidateSkillsLower.has(lower) || candidateText.includes(lower)) {
+    if (candidateSkillsLower.has(term) || candidateText.includes(term)) {
       matchedWeight += 1;
     }
   }
 
   if (totalWeight === 0) return 50;
   return (matchedWeight / totalWeight) * 100;
+}
+
+/** Extract individual skill/tech terms from JD requirement sentences */
+function extractTermsFromRequirements(requirements: string[]): string[] {
+  const terms: string[] = [];
+  const techPatterns = [
+    /\b(JavaScript|TypeScript|Python|Java|C\+\+|C#|Go|Golang|Rust|Ruby|PHP|Swift|Kotlin|Scala|R|MATLAB)\b/gi,
+    /\b(React|Angular|Vue|Svelte|Next\.?js|Nuxt|Gatsby|Remix)\b/gi,
+    /\b(Node\.?js|Express|Django|Flask|FastAPI|Spring|Rails|Laravel|\.NET|ASP\.NET)\b/gi,
+    /\b(AWS|GCP|Azure|Google Cloud|Amazon Web Services)\b/gi,
+    /\b(Docker|Kubernetes|K8s|Terraform|Pulumi|Ansible|CloudFormation)\b/gi,
+    /\b(PostgreSQL|MySQL|MongoDB|Redis|Elasticsearch|DynamoDB|Cassandra|SQLite)\b/gi,
+    /\b(GraphQL|REST|gRPC|WebSocket|API|microservices)\b/gi,
+    /\b(CI\/CD|GitHub Actions|Jenkins|CircleCI|GitLab CI)\b/gi,
+    /\b(Git|Agile|Scrum|Kanban|Jira|Confluence)\b/gi,
+    /\b(HTML|CSS|SASS|SCSS|Tailwind|Bootstrap)\b/gi,
+    /\b(Kafka|RabbitMQ|SQS|Pub\/Sub)\b/gi,
+    /\b(TensorFlow|PyTorch|Scikit-learn|NLP|Machine Learning|Deep Learning|AI|ML|LLM)\b/gi,
+    /\b(Linux|Unix|Bash|Shell|PowerShell)\b/gi,
+    /\b(SQL|NoSQL|ETL|Data Pipeline|Data Engineering)\b/gi,
+    /\b(OAuth|JWT|SAML|SSO|Authentication|Authorization|Security)\b/gi,
+    /\b(Figma|Sketch|Adobe|Photoshop|InDesign)\b/gi,
+    /\b(Excel|Power BI|Tableau|Looker|Google Analytics|SEO|SEM)\b/gi,
+    /\b(Salesforce|HubSpot|SAP|Oracle|Workday)\b/gi,
+    /\b(PRINCE2|PMP|ITIL|Six Sigma|Lean)\b/gi,
+    // Soft/domain skills
+    /\b(leadership|mentoring|coaching|team lead|system design|architecture|scalability|distributed systems)\b/gi,
+    /\b(communication|collaboration|cross-functional|stakeholder management|project management|product management)\b/gi,
+    /\b(testing|TDD|BDD|unit test|integration test|e2e|QA)\b/gi,
+    /\b(performance|optimization|monitoring|observability)\b/gi,
+    /\b(compliance|GDPR|SOC\s*2|HIPAA|PCI)\b/gi,
+    /\b(budget|forecasting|financial modelling|risk management|audit)\b/gi,
+    /\b(patient care|clinical|triage|wound care|medication administration)\b/gi,
+  ];
+
+  for (const req of requirements) {
+    for (const pattern of techPatterns) {
+      const matches = req.matchAll(pattern);
+      for (const match of matches) {
+        terms.push(match[0].toLowerCase());
+      }
+    }
+  }
+
+  return [...new Set(terms)];
 }
 
 function computeSoftSkills(bullets: string[]): number {

@@ -509,7 +509,11 @@ function parsePositionLine(line: string): ExperienceEntry | null {
 
   // 4. "Acme Corp — Senior Engineer" (em/en dash or pipe, or space-surrounded hyphen)
   // Regular hyphens in compound words (single-page, cross-functional) are NOT separators
-  if (line.length < 100) {
+  // GUARD: Skip lines that look like contact info (email, phone, URLs)
+  const looksLikeContact = /[@]/.test(line) && /\.(com|org|net|co|edu|io)/i.test(line)
+    || /^\+?\(?\d[\d\s\-()]{7,}/.test(line)
+    || /\b(linkedin|github|http|www\.)/i.test(line);
+  if (!looksLikeContact && line.length < 100) {
     const p4 = line.match(/^(.+?)\s*[—–|]\s*(.+)$/) || line.match(/^(.+?)\s+\-\s+(.+)$/);
     if (p4) return buildEntry(p4[1], p4[2], undefined);
   }

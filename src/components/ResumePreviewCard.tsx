@@ -11,9 +11,8 @@ interface ResumePreviewCardProps {
 }
 
 /**
- * Free-tier resume preview — looks like a real, professional CV document.
- * Shows name, contact, headline, summary, and first experience role fully visible.
- * Everything below fades into a blur with a CTA overlay.
+ * Free-tier resume preview — appetite, not the meal.
+ * Shows: Name, Headline, Summary, ONE bullet. Then fade + CTA.
  */
 export default function ResumePreviewCard({
   candidate,
@@ -24,8 +23,6 @@ export default function ResumePreviewCard({
 }: ResumePreviewCardProps) {
   const name = candidate.name || "Your Name";
   const topRole = candidate.experience[0];
-  const secondRole = candidate.experience[1];
-  const topSkills = candidate.skills.slice(0, 6);
   const yearsExp = estimateYears(candidate);
 
   // Tailored headline from job title
@@ -41,8 +38,8 @@ export default function ResumePreviewCard({
   // Professional summary
   const summary = buildPreviewSummary(candidate, job, yearsExp);
 
-  // Improved bullets for top role: use rewrite previews that match, or fall back to originals
-  const topRoleBullets = getImprovedBulletsForRole(topRole, improvedBullets);
+  // ONE improved bullet for top role
+  const oneBullet = getFirstImprovedBullet(topRole, improvedBullets);
 
   return (
     <div className="mb-8">
@@ -54,8 +51,8 @@ export default function ResumePreviewCard({
 
       {/* CV Document */}
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-        {/* ── Visible section: header + summary + first role ── */}
-        <div className="px-8 pt-8 pb-1 sm:px-10">
+        {/* ── Visible: Name + Headline + Summary + ONE bullet ── */}
+        <div className="px-6 pt-6 sm:px-8 sm:pt-8">
           {/* Name */}
           <h3 className="text-2xl font-bold text-gray-900 tracking-tight">{name}</h3>
 
@@ -81,15 +78,14 @@ export default function ResumePreviewCard({
           {/* Divider */}
           <div className="mt-4 border-t border-gray-200" />
 
-          {/* Experience */}
+          {/* Experience — ONE bullet only */}
           <div className="mt-4">
             <h4 className="text-[11px] font-bold text-gray-900 uppercase tracking-widest">Experience</h4>
 
-            {/* First role — fully visible */}
             {topRole && (
               <div className="mt-3">
                 <div className="flex items-baseline justify-between gap-4">
-                  <div>
+                  <div className="min-w-0">
                     <span className="text-sm font-semibold text-gray-900">{topRole.title || "Role"}</span>
                     {topRole.company && (
                       <span className="text-sm text-gray-600"> — {topRole.company}</span>
@@ -101,102 +97,55 @@ export default function ResumePreviewCard({
                     </span>
                   )}
                 </div>
+                {/* First bullet + remaining bullets fade out continuously */}
                 <ul className="mt-2 space-y-1.5">
-                  {topRoleBullets.map((bullet, i) => (
-                    <li key={i} className="flex items-start gap-2 text-[13px] leading-relaxed text-gray-700">
-                      <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-gray-400" />
-                      {bullet}
-                    </li>
-                  ))}
+                  {(topRole?.bullets || []).slice(0, 4).map((b, i) => {
+                    const bullet = i === 0 ? oneBullet || b : b;
+                    return (
+                      <li
+                        key={i}
+                        className="flex items-start gap-2 text-[13px] leading-relaxed text-gray-700"
+                        style={{
+                          opacity: i === 0 ? 1 : Math.max(0.08, 0.5 - i * 0.2),
+                          filter: i === 0 ? "none" : `blur(${Math.min(i * 1.5, 4)}px)`,
+                        }}
+                        aria-hidden={i > 0 ? "true" : undefined}
+                      >
+                        <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-gray-400" />
+                        {bullet}
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             )}
           </div>
         </div>
 
-        {/* ── Blurred section: rest of resume ── */}
-        <div className="relative">
-          {/* Faded content that looks like a real CV continuing */}
-          <div className="px-8 pb-8 sm:px-10 select-none" aria-hidden="true" style={{ filter: "blur(4px)", opacity: 0.35 }}>
-            {/* Second role */}
-            {secondRole && (
-              <div className="mt-4">
-                <div className="flex items-baseline justify-between gap-4">
-                  <div>
-                    <span className="text-sm font-semibold text-gray-900">{secondRole.title || "Role"}</span>
-                    {secondRole.company && (
-                      <span className="text-sm text-gray-600"> — {secondRole.company}</span>
-                    )}
-                  </div>
-                  {(secondRole.start || secondRole.end) && (
-                    <span className="shrink-0 text-xs text-gray-400">
-                      {secondRole.start}{secondRole.start && secondRole.end ? " – " : ""}{secondRole.end}
-                    </span>
-                  )}
-                </div>
-                <ul className="mt-2 space-y-1.5">
-                  {secondRole.bullets.slice(0, 3).map((b, i) => (
-                    <li key={i} className="flex items-start gap-2 text-[13px] leading-relaxed text-gray-700">
-                      <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-gray-400" />
-                      {b}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+        {/* Gradient fade-to-white over the trailing bullets */}
+        <div className="relative h-6 -mt-6" style={{ background: "linear-gradient(to bottom, transparent, white)" }} />
 
-            {/* Skills skeleton */}
-            <div className="mt-5 border-t border-gray-200 pt-4">
-              <h4 className="text-[11px] font-bold text-gray-900 uppercase tracking-widest">Skills</h4>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {topSkills.map((s, i) => (
-                  <span key={i} className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-600">{s}</span>
-                ))}
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <span key={`ph-${i}`} className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-400">{"·".repeat(6 + i * 2)}</span>
-                ))}
-              </div>
-            </div>
-
-            {/* Education skeleton */}
-            <div className="mt-4 border-t border-gray-200 pt-4">
-              <h4 className="text-[11px] font-bold text-gray-900 uppercase tracking-widest">Education</h4>
-              <div className="mt-2 space-y-1">
-                {candidate.education.slice(0, 2).map((ed, i) => (
-                  <p key={i} className="text-[13px] text-gray-700">
-                    <span className="font-medium">{ed.degree || "Degree"}</span>
-                    {ed.school ? ` — ${ed.school}` : ""}
-                    {ed.end ? `, ${ed.end}` : ""}
-                  </p>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* CTA overlay */}
-          <div className="absolute inset-0 flex items-end justify-center bg-gradient-to-t from-white via-white/95 to-transparent pb-8">
-            <div className="text-center px-4">
-              <p className="text-sm font-medium text-gray-700 mb-1">
-                Unlock your full tailored resume, cover letter, and ATS optimization
-              </p>
-              <p className="text-xs text-gray-400 mb-4">Includes PDF/DOCX export, keyword checklist, and recruiter insights</p>
-              <div className="flex items-center justify-center gap-3">
-                <button
-                  onClick={() => onUpgrade("trial")}
-                  disabled={loading === true}
-                  className="rounded-lg bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700 disabled:opacity-50"
-                >
-                  {loading ? "Redirecting..." : "Try for $1.50"}
-                </button>
-                <button
-                  onClick={() => onUpgrade("pro")}
-                  disabled={loading === true}
-                  className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 disabled:opacity-50"
-                >
-                  {loading ? "Redirecting..." : "Get Pro — $5"}
-                </button>
-              </div>
-            </div>
+        {/* CTA — directly after fade, no scrolling needed */}
+        <div className="px-6 pb-6 pt-1 sm:px-8 sm:pb-8 text-center">
+          <p className="text-sm font-medium text-gray-700 mb-1">
+            Unlock your full tailored resume, cover letter, and ATS optimization
+          </p>
+          <p className="text-xs text-gray-400 mb-4">Includes PDF/DOCX export, keyword checklist, and recruiter insights</p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5">
+            <button
+              onClick={() => onUpgrade("trial")}
+              disabled={loading === true}
+              className="w-full sm:w-auto rounded-lg bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700 disabled:opacity-50"
+            >
+              {loading ? "Redirecting..." : "Try for $1.50"}
+            </button>
+            <button
+              onClick={() => onUpgrade("pro")}
+              disabled={loading === true}
+              className="w-full sm:w-auto rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 disabled:opacity-50"
+            >
+              {loading ? "Redirecting..." : "Get Pro — $5"}
+            </button>
           </div>
         </div>
       </div>
@@ -204,24 +153,20 @@ export default function ResumePreviewCard({
   );
 }
 
-/** Get improved bullets for a role, falling back to originals */
-function getImprovedBulletsForRole(
+/** Get the first improved bullet for a role, falling back to original */
+function getFirstImprovedBullet(
   role: CandidateProfile["experience"][0] | undefined,
   previews: Array<{ original: string; improved: string }>,
-): string[] {
-  if (!role) return [];
+): string | null {
+  if (!role || role.bullets.length === 0) return null;
 
-  // Build a map of original → improved from rewrite previews
   const improvedMap = new Map<string, string>();
   for (const p of previews) {
     improvedMap.set(p.original.trim().toLowerCase(), p.improved);
   }
 
-  // For each bullet in the role, use the improved version if available
-  return role.bullets.map((bullet) => {
-    const key = bullet.trim().toLowerCase();
-    return improvedMap.get(key) || bullet;
-  });
+  const first = role.bullets[0];
+  return improvedMap.get(first.trim().toLowerCase()) || first;
 }
 
 /** Estimate years of experience from date ranges */

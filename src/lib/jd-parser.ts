@@ -28,8 +28,8 @@ function extractJobTitle(lines: string[], _text: string): string | null {
   // First line is often the title
   for (const line of lines.slice(0, 3)) {
     if (/\b(engineer|developer|manager|designer|analyst|scientist|architect|lead|director|consultant|specialist|coordinator)\b/i.test(line)) {
-      // Remove company suffix
-      return line.replace(/\s*[—–\-|@at]\s*.+$/, "").replace(/\s*\(.+\)$/, "").trim();
+      // Remove company suffix (use alternation, NOT char class — [at] matches letters 'a' and 't')
+      return line.replace(/\s*(?:[—–|]|\s-\s|@\s+)\s*.+$/, "").replace(/\s*\(.+\)$/, "").trim();
     }
   }
   // First non-empty line as fallback
@@ -39,7 +39,7 @@ function extractJobTitle(lines: string[], _text: string): string | null {
 function extractCompany(lines: string[], text: string): string | null {
   // Pattern: "at CompanyName" or "— CompanyName" or "Company Name" in title line
   const titleLine = lines[0] || "";
-  const companyMatch = titleLine.match(/[—–\-|@]\s*(.+?)(?:\s*\(|$)/);
+  const companyMatch = titleLine.match(/(?:[—–|]|\s-\s|@\s+)\s*(.+?)(?:\s*\(|$)/);
   if (companyMatch) return companyMatch[1].trim();
 
   // "About CompanyName" or "About the company" section
