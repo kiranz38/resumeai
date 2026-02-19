@@ -178,7 +178,6 @@ export default function JobBoard({ onSelectJob, onBulkGenerate, resumeText }: Jo
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(0);
   const [hasSearched, setHasSearched] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const abortRef = useRef<AbortController | null>(null);
@@ -197,15 +196,19 @@ export default function JobBoard({ onSelectJob, onBulkGenerate, resumeText }: Jo
     onProceed: () => void;
   } | null>(null);
 
-  // ── Visible jobs for current page (client-paginated sources) ──
+  // ── All jobs for current context (before pagination) ──
+  const allJobs = useMemo<JobListing[]>(() => {
+    if (isDefaultView) return defaultJobs;
+    return allClientJobs.length > 0 ? allClientJobs : jobs;
+  }, [isDefaultView, defaultJobs, allClientJobs, jobs]);
+
+  // ── Client-side pagination — always 10 per page ──
+  const totalPages = Math.ceil(allJobs.length / JOBS_PER_PAGE);
+
   const visibleJobs = useMemo<JobListing[]>(() => {
-    if (source === "jsearch" || isDefaultView) {
-      return isDefaultView ? defaultJobs : jobs;
-    }
-    // Client-side pagination for LinkedIn/Remotive
     const start = (page - 1) * JOBS_PER_PAGE;
-    return allClientJobs.slice(start, start + JOBS_PER_PAGE);
-  }, [source, isDefaultView, defaultJobs, jobs, allClientJobs, page]);
+    return allJobs.slice(start, start + JOBS_PER_PAGE);
+  }, [allJobs, page]);
 
   // ── Sorted jobs with match scores + dedup ──
   const sortedJobs = useMemo<JobWithScore[]>(() => {
@@ -319,14 +322,8 @@ export default function JobBoard({ onSelectJob, onBulkGenerate, resumeText }: Jo
       if (cached) {
         const src = cached.source || "jsearch";
         setSource(src);
-        if (src !== "jsearch") {
-          setAllClientJobs(cached.data);
-          setJobs(cached.data.slice(0, JOBS_PER_PAGE));
-          setTotalPages(cached.totalPages);
-        } else {
-          setJobs(cached.data);
-          setTotalPages(cached.totalPages);
-        }
+        setAllClientJobs(cached.data);
+        setJobs(cached.data);
         setPage(searchPage);
         setHasSearched(true);
         setIsLoading(false);
@@ -362,16 +359,8 @@ export default function JobBoard({ onSelectJob, onBulkGenerate, resumeText }: Jo
         const allJobs = data.jobs || [];
 
         setSource(src);
-
-        if (src !== "jsearch") {
-          // Client-side pagination: store all results, show first page
-          setAllClientJobs(allJobs);
-          setJobs(allJobs.slice(0, JOBS_PER_PAGE));
-          setTotalPages(data.totalPages || Math.ceil(allJobs.length / JOBS_PER_PAGE));
-        } else {
-          setJobs(allJobs);
-          setTotalPages(data.totalPages || 0);
-        }
+        setAllClientJobs(allJobs);
+        setJobs(allJobs);
         setPage(searchPage);
 
         // Cache result
@@ -416,7 +405,6 @@ export default function JobBoard({ onSelectJob, onBulkGenerate, resumeText }: Jo
         if (response.ok && !cancelled) {
           const data = await response.json();
           setDefaultJobs(data.jobs || []);
-          setTotalPages(data.totalPages || 0);
           setSource(data.source || "jsearch");
         }
       } catch {
@@ -432,6 +420,7 @@ export default function JobBoard({ onSelectJob, onBulkGenerate, resumeText }: Jo
     setJobs([]);
     setAllClientJobs([]);
     setQuery("");
+    setPage(1);
     loadDefaults();
 
     return () => { cancelled = true; controller.abort(); };
@@ -478,15 +467,11 @@ export default function JobBoard({ onSelectJob, onBulkGenerate, resumeText }: Jo
 
   const handlePageChange = useCallback(
     (newPage: number) => {
-      if (source !== "jsearch") {
-        // Client-side pagination — just update page, visibleJobs recalculates
-        setPage(newPage);
-      } else {
-        // Server-side pagination for JSearch
-        fetchJobs(query.trim(), country, newPage);
-      }
+      setPage(newPage);
+      // Scroll to top of job list
+      window.scrollTo({ top: 0, behavior: "smooth" });
     },
-    [fetchJobs, query, country, source],
+    [],
   );
 
   // Memoize the country options to avoid re-rendering
@@ -637,10 +622,10 @@ export default function JobBoard({ onSelectJob, onBulkGenerate, resumeText }: Jo
           </div>
           <div className="flex items-center gap-3">
             <span className="text-xs text-gray-400">
-              {sortedJobs.length} job{sortedJobs.length !== 1 ? "s" : ""}
-              {resumeText ? " — sorted by match" : " — A-Z"}
+              {allJobs.length} job{allJobs.length !== 1 ? "s" : ""}
+              {resumeText ? " — sorted by match" : ""}
             </span>
-            {!isDefaultView && totalPages > 1 && (
+            {totalPages > 1 && (
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => handlePageChange(page - 1)}
@@ -866,8 +851,8 @@ export default function JobBoard({ onSelectJob, onBulkGenerate, resumeText }: Jo
         })}
       </div>
 
-      {/* Pagination (search results only) */}
-      {!isDefaultView && totalPages > 1 && (
+      {/* Pagination */}
+      {totalPages > 1 && (
         <div className="mt-6 flex items-center justify-center gap-3">
           <button
             onClick={() => handlePageChange(page - 1)}

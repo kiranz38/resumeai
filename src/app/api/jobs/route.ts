@@ -130,7 +130,6 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const rawQ = searchParams.get("q")?.trim();
     const rawCountry = searchParams.get("country") ?? "us";
-    const rawPage = searchParams.get("page") || "1";
 
     // Sanitize: strip control chars from query
     const q = rawQ?.replace(/[\x00-\x1f\x7f]/g, "").slice(0, 200);
@@ -144,48 +143,27 @@ export async function GET(request: Request) {
     // Validate country code against allowlist — empty string means "worldwide"
     const country = rawCountry === "" ? "" : (VALID_COUNTRIES.has(rawCountry.toLowerCase()) ? rawCountry.toLowerCase() : "us");
 
-    // Validate page is a positive integer
-    const pageNum = parseInt(rawPage, 10);
-    const page = (Number.isFinite(pageNum) && pageNum > 0 && pageNum <= 100) ? String(pageNum) : "1";
-
     const apiKey = process.env.RAPIDAPI_KEY;
     if (!apiKey) {
-      // No API key → fall back to Remotive instead of returning an error
       console.log("[jobs] No RAPIDAPI_KEY — using Remotive fallback");
       return await fetchRemotiveFallback(q, country);
     }
 
     // Check cache (stale-while-revalidate)
-    const cacheKey = `${q}|${country}|${page}`;
+    const cacheKey = `${q}|${country}`;
     const cached = getCached(cacheKey);
     if (cached) {
       if (cached.stale && !revalidating.has(cacheKey)) {
-        // Serve stale data immediately, revalidate in background
         revalidating.add(cacheKey);
-        revalidateInBackground(apiKey, q, country, page, cacheKey);
+        revalidateInBackground(apiKey, q, country, cacheKey);
       }
       return NextResponse.json(cached.data);
     }
 
-    // ── Strategy: JSearch + LinkedIn in parallel → Remotive fallback ──
-    const [jsearchResult, linkedInResult] = await Promise.all([
-      fetchJSearch(apiKey, q, country, page),
-      fetchLinkedInJobs(apiKey, q, country, page),
-    ]);
-
-    if (jsearchResult) {
-      setCache(cacheKey, jsearchResult);
-      return NextResponse.json(jsearchResult);
-    }
-
-    if (linkedInResult) {
-      setCache(cacheKey, linkedInResult);
-      return NextResponse.json(linkedInResult);
-    }
-
-    // Both empty → fall back to Remotive (free, no key needed)
-    console.log(`[jobs] JSearch + LinkedIn empty for "${q}" in ${country} — trying Remotive`);
-    return await fetchRemotiveFallback(q, country);
+    // ── Fetch ALL sources in parallel, merge + dedup ──
+    const result = await fetchAndMergeAll(apiKey, q, country);
+    setCache(cacheKey, result);
+    return NextResponse.json(result);
   } catch (error) {
     console.error("[jobs] Error:", error instanceof Error ? error.message : "Unknown");
     return NextResponse.json(
@@ -195,21 +173,37 @@ export async function GET(request: Request) {
   }
 }
 
+/** Fetch from all sources, merge, deduplicate, return combined results */
+async function fetchAndMergeAll(
+  apiKey: string,
+  query: string,
+  country: string,
+): Promise<{ jobs: StandardJob[]; source: string }> {
+  const [jsearchJobs, linkedInJobs, remotiveJobs] = await Promise.all([
+    fetchJSearchJobs(apiKey, query, country),
+    fetchLinkedInJobs(apiKey, query, country),
+    fetchRemotiveJobs(query, country),
+  ]);
+
+  const combined = [...jsearchJobs, ...linkedInJobs, ...remotiveJobs];
+  const deduped = deduplicateJobs(combined);
+
+  const source = jsearchJobs.length > 0 ? "jsearch" :
+    linkedInJobs.length > 0 ? "linkedin" : "remotive";
+
+  return { jobs: deduped, source };
+}
+
 /** Background revalidation — fire-and-forget refresh of stale cache entries */
 async function revalidateInBackground(
   apiKey: string,
   q: string,
   country: string,
-  page: string,
   cacheKey: string,
 ) {
   try {
-    const [js, li] = await Promise.all([
-      fetchJSearch(apiKey, q, country, page),
-      fetchLinkedInJobs(apiKey, q, country, page),
-    ]);
-    const result = js || li || null;
-    if (result) {
+    const result = await fetchAndMergeAll(apiKey, q, country);
+    if (result.jobs.length > 0) {
       setCache(cacheKey, result);
     }
   } catch {
@@ -220,33 +214,31 @@ async function revalidateInBackground(
 }
 
 /**
- * Fetch from JSearch API. Tries two strategies:
- * 1. Pass `country` param (works well for US, CA, IN)
- * 2. If 0 results, retry with country name appended to query
- *    (e.g. "developer" → "developer in United Kingdom")
- *
- * Returns null if both attempts fail or return 0 results.
+ * Fetch from JSearch API — returns StandardJob[] (not wrapped).
+ * Tries country param first, then country name in query for non-US.
+ * Fetches 3 pages (up to 30 results) for better pagination.
  */
-async function fetchJSearch(
+async function fetchJSearchJobs(
   apiKey: string,
   query: string,
   country: string,
-  page: string,
-): Promise<{ jobs: unknown[]; totalPages: number; source: string } | null> {
+): Promise<StandardJob[]> {
   const headers = {
     "x-rapidapi-key": apiKey,
     "x-rapidapi-host": "jsearch.p.rapidapi.com",
   };
 
+  const cc = country ? country.toUpperCase() : "";
+
   // Attempt 1: use the country parameter
   const params1 = new URLSearchParams({
     query,
-    page,
-    num_pages: "1",
+    page: "1",
+    num_pages: "3",
     date_posted: "all",
   });
   if (country) {
-    params1.set("country", country);
+    params1.set("country", cc);
   }
 
   let timedOut = false;
@@ -254,19 +246,23 @@ async function fetchJSearch(
   try {
     const res1 = await fetchWithTimeout(
       `https://jsearch.p.rapidapi.com/search?${params1}`,
-      { headers, timeout: 6000 },
+      { headers, timeout: 8000 },
     );
 
     if (res1.ok) {
       const json = await res1.json();
-      const jobs = json.data || [];
-      if (jobs.length > 0) {
-        const totalPages = Math.ceil((json.total || jobs.length) / 10);
-        return { jobs, totalPages, source: "jsearch" };
+      let jobs = (json.data || []) as StandardJob[];
+      // Server-side country filter — JSearch country param isn't always reliable
+      if (cc && jobs.length > 0) {
+        const filtered = jobs.filter((j) =>
+          !j.job_country || j.job_country.toUpperCase() === cc
+        );
+        if (filtered.length > 0) jobs = filtered;
       }
+      if (jobs.length > 0) return jobs;
     } else if (res1.status === 401 || res1.status === 403 || res1.status === 429) {
-      console.warn(`[jobs] JSearch ${res1.status} — skipping to fallback`);
-      return null;
+      console.warn(`[jobs] JSearch ${res1.status} — skipping`);
+      return [];
     }
   } catch (err) {
     const msg = (err as Error).message;
@@ -274,49 +270,46 @@ async function fetchJSearch(
     console.warn("[jobs] JSearch attempt 1 failed:", msg);
   }
 
-  // Skip attempt 2 if attempt 1 timed out — API is slow, don't waste another 6s
-  if (timedOut) return null;
+  if (timedOut) return [];
 
   // Attempt 2: append country name to the query (works for GB, SG, etc.)
   const countryName = country ? COUNTRY_LABEL[country.toLowerCase()] : undefined;
-  if (!countryName || country.toLowerCase() === "us") {
-    // US already tried with country param; no-country means "remote/anywhere"
-    return null;
-  }
+  if (!countryName || country.toLowerCase() === "us") return [];
 
-  const enrichedQuery = `${query} in ${countryName}`;
   const params2 = new URLSearchParams({
-    query: enrichedQuery,
-    page,
-    num_pages: "1",
+    query: `${query} in ${countryName}`,
+    page: "1",
+    num_pages: "2",
     date_posted: "all",
   });
 
   try {
     const res2 = await fetchWithTimeout(
       `https://jsearch.p.rapidapi.com/search?${params2}`,
-      { headers, timeout: 6000 },
+      { headers, timeout: 8000 },
     );
 
     if (res2.ok) {
       const json = await res2.json();
-      const jobs = json.data || [];
-      if (jobs.length > 0) {
-        const totalPages = Math.ceil((json.total || jobs.length) / 10);
-        return { jobs, totalPages, source: "jsearch" };
+      let jobs = (json.data || []) as StandardJob[];
+      if (cc && jobs.length > 0) {
+        const filtered = jobs.filter((j) =>
+          !j.job_country || j.job_country.toUpperCase() === cc
+        );
+        if (filtered.length > 0) jobs = filtered;
       }
+      return jobs;
     }
   } catch (err) {
     console.error("[jobs] JSearch attempt 2 failed:", (err as Error).message);
   }
 
-  return null;
+  return [];
 }
 
 /**
- * LinkedIn Job Search API (RapidAPI) — bulk feed endpoint.
+ * LinkedIn Job Search API — bulk feed endpoint.
  * Fetches recent jobs and filters by keyword + country on our side.
- * The bulk response is cached separately since it's the same for all queries.
  */
 
 interface LinkedInJob {
@@ -341,14 +334,11 @@ async function fetchLinkedInJobs(
   apiKey: string,
   query: string,
   country: string,
-  _page: string,
-): Promise<{ jobs: StandardJob[]; totalPages: number; source: string } | null> {
+): Promise<StandardJob[]> {
   const countryCode = country ? LINKEDIN_COUNTRY_CODE[country.toLowerCase()] : "";
-  // Only reject if a specific country was requested but isn't in our map
-  if (country && !countryCode) return null;
+  if (country && !countryCode) return [];
 
   try {
-    // Check if we have a cached bulk feed
     const bulkCacheKey = "linkedin_bulk";
     let allJobs = getCached(bulkCacheKey)?.data as LinkedInJob[] | null;
 
@@ -366,29 +356,27 @@ async function fetchLinkedInJobs(
 
       if (!res.ok) {
         if (res.status === 401 || res.status === 403 || res.status === 429) {
-          console.warn(`[jobs] LinkedIn API ${res.status} — skipping to fallback`);
+          console.warn(`[jobs] LinkedIn API ${res.status} — skipping`);
         }
-        return null;
+        return [];
       }
 
       const data = await res.json();
-
-      // API returns error object when quota exceeded
       if (!Array.isArray(data)) {
         console.warn("[jobs] LinkedIn API returned non-array:", data?.message || "unknown");
-        return null;
+        return [];
       }
 
       allJobs = data as LinkedInJob[];
       setCache(bulkCacheKey, allJobs);
     }
 
-    // Filter by country (skip when worldwide)
+    // Filter by country
     const countryMatched = countryCode
       ? allJobs.filter((j) => j.countries_derived?.includes(countryCode))
       : allJobs;
 
-    // Filter by query keyword in title or organization
+    // Filter by query keyword
     const q = query.toLowerCase();
     const filtered = (q === "hiring" ? countryMatched : countryMatched.filter(
       (j) =>
@@ -397,10 +385,9 @@ async function fetchLinkedInJobs(
         j.description?.toLowerCase().includes(q),
     ));
 
-    if (filtered.length === 0) return null;
+    if (filtered.length === 0) return [];
 
-    // Map to our standard format — return ALL results (client paginates)
-    const jobs: StandardJob[] = deduplicateJobs(filtered.map((j) => {
+    return deduplicateJobs(filtered.map((j) => {
       const city = j.cities_derived?.[0] || "";
       const region = j.regions_derived?.[0] || "";
       const salary = j.salary_raw?.value;
@@ -423,22 +410,21 @@ async function fetchLinkedInJobs(
         job_salary_period: salary?.unitText || null,
       };
     }));
-
-    return { jobs, totalPages: Math.ceil(jobs.length / 10), source: "linkedin" };
   } catch (err) {
     console.error("[jobs] LinkedIn API failed:", (err as Error).message);
-    return null;
+    return [];
   }
 }
 
 /**
- * Remotive API fallback — returns remote jobs filtered by query and country.
- * Used when JSearch and LinkedIn fail, are rate-limited, or have no API key.
- * Bulk feed is cached separately to avoid re-fetching on every call.
+ * Remotive API — returns remote jobs filtered by query and country.
+ * Country-specific jobs listed first, then worldwide/anywhere jobs after.
  */
-async function fetchRemotiveFallback(query: string, country: string) {
+async function fetchRemotiveJobs(
+  query: string,
+  country: string,
+): Promise<StandardJob[]> {
   try {
-    // Check for cached Remotive bulk feed
     const bulkCacheKey = "remotive_bulk";
     let allRemotiveJobs = getCached(bulkCacheKey)?.data as Array<Record<string, unknown>> | null;
 
@@ -447,12 +433,7 @@ async function fetchRemotiveFallback(query: string, country: string) {
         timeout: 6000,
       });
 
-      if (!response.ok) {
-        return NextResponse.json(
-          { error: "Job search temporarily unavailable." },
-          { status: 502 },
-        );
-      }
+      if (!response.ok) return [];
 
       const json = await response.json();
       allRemotiveJobs = (json.jobs || []) as Array<Record<string, unknown>>;
@@ -463,60 +444,58 @@ async function fetchRemotiveFallback(query: string, country: string) {
     const countryTerms = country ? (COUNTRY_LOCATION_TERMS[country.toLowerCase()] || []) : [];
 
     // Filter jobs matching the query
-    const queryMatched = allRemotiveJobs
-      .filter(
-        (j) =>
-          q === "hiring" || // Default query — show all
-          (j.title as string | undefined)?.toLowerCase().includes(q) ||
-          (j.company_name as string | undefined)?.toLowerCase().includes(q) ||
-          (j.description as string | undefined)?.toLowerCase().includes(q),
-      );
-
-    // Prefer jobs that mention the selected country/region
-    const countryFiltered = countryTerms.length > 0
-      ? queryMatched.filter(
-          (j) => {
-            const loc = ((j.candidate_required_location as string) || "").toLowerCase();
-            if (!loc || loc === "worldwide" || loc === "anywhere") return true;
-            return countryTerms.some((term) => loc.includes(term));
-          },
-        )
-      : queryMatched;
-
-    // If country filtering left too few results, fall back to all query matches
-    const sourceList = countryFiltered.length >= 3 ? countryFiltered : queryMatched;
-
-    // Map to standard format — return ALL results (client paginates)
-    const mapped: StandardJob[] = deduplicateJobs(sourceList
-      .map(
-        (j) => ({
-          job_id: String(j.id || Math.random()),
-          job_title: (j.title as string) || "",
-          employer_name: (j.company_name as string) || "",
-          employer_logo: (j.company_logo as string) || null,
-          job_city: "",
-          job_state: "",
-          job_country: (j.candidate_required_location as string) || "Remote",
-          job_description: (j.description as string) || "",
-          job_posted_at_datetime_utc: (j.publication_date as string) || "",
-          job_employment_type: (j.job_type as string) || "FULL_TIME",
-          job_apply_link: null,
-          job_min_salary: null,
-          job_max_salary: null,
-          job_salary_currency: null,
-          job_salary_period: null,
-        }),
-      ));
-
-    return NextResponse.json({
-      jobs: mapped,
-      totalPages: Math.ceil(mapped.length / 10),
-      source: "remotive",
-    });
-  } catch {
-    return NextResponse.json(
-      { error: "Job search temporarily unavailable." },
-      { status: 502 },
+    const queryMatched = allRemotiveJobs.filter(
+      (j) =>
+        q === "hiring" ||
+        (j.title as string | undefined)?.toLowerCase().includes(q) ||
+        (j.company_name as string | undefined)?.toLowerCase().includes(q) ||
+        (j.description as string | undefined)?.toLowerCase().includes(q),
     );
+
+    // Country filter: country-specific first, worldwide at the bottom
+    let ordered: Array<Record<string, unknown>>;
+    if (countryTerms.length > 0) {
+      const countrySpecific: Array<Record<string, unknown>> = [];
+      const worldwide: Array<Record<string, unknown>> = [];
+      for (const j of queryMatched) {
+        const loc = ((j.candidate_required_location as string) || "").toLowerCase();
+        if (!loc || loc === "worldwide" || loc === "anywhere") {
+          worldwide.push(j);
+        } else if (countryTerms.some((term) => loc.includes(term))) {
+          countrySpecific.push(j);
+        }
+        // Jobs for OTHER specific countries are excluded
+      }
+      ordered = [...countrySpecific, ...worldwide];
+    } else {
+      // "Remote / Anywhere" selected — show all
+      ordered = queryMatched;
+    }
+
+    return deduplicateJobs(ordered.map((j) => ({
+      job_id: String(j.id || Math.random()),
+      job_title: (j.title as string) || "",
+      employer_name: (j.company_name as string) || "",
+      employer_logo: (j.company_logo as string) || null,
+      job_city: "",
+      job_state: "",
+      job_country: (j.candidate_required_location as string) || "Remote",
+      job_description: (j.description as string) || "",
+      job_posted_at_datetime_utc: (j.publication_date as string) || "",
+      job_employment_type: (j.job_type as string) || "FULL_TIME",
+      job_apply_link: null,
+      job_min_salary: null,
+      job_max_salary: null,
+      job_salary_currency: null,
+      job_salary_period: null,
+    })));
+  } catch {
+    return [];
   }
+}
+
+/** Remotive-only fallback (no API key) */
+async function fetchRemotiveFallback(query: string, country: string) {
+  const jobs = await fetchRemotiveJobs(query, country);
+  return NextResponse.json({ jobs, source: "remotive" });
 }
