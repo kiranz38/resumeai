@@ -11,6 +11,7 @@ import KeywordList from "@/components/KeywordList";
 import StrengthsList from "@/components/StrengthsList";
 import GapsList from "@/components/GapsList";
 import RewritePreviews from "@/components/RewritePreviews";
+import ResumePreviewCard from "@/components/ResumePreviewCard";
 import PaywallPlanPicker from "@/components/PaywallPlanPicker";
 import ShareCard from "@/components/ShareCard";
 import { trackEvent } from "@/lib/analytics";
@@ -385,6 +386,17 @@ export default function ResultsPage() {
             </div>
           )}
         </div>
+      )}
+
+      {/* Resume Preview — free tier teaser */}
+      {!isDemo && result.candidateProfile && process.env.NEXT_PUBLIC_PRO_ENABLED !== "false" && (
+        <ResumePreviewCard
+          candidate={result.candidateProfile}
+          job={result.jobProfile}
+          improvedBullets={result.rewritePreviews}
+          onUpgrade={(plan) => handleQuickCheckout(plan)}
+          loading={checkoutLoading !== null}
+        />
       )}
 
       {/* Keywords, Strengths, Gaps */}
