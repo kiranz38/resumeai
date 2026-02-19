@@ -52,7 +52,7 @@ export default function ResumePreviewCard({
       {/* CV Document */}
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
         {/* ── Visible: Name + Headline + Summary + ONE bullet ── */}
-        <div className="px-6 pt-6 sm:px-8 sm:pt-8">
+        <div className="px-4 pt-4 sm:px-8 sm:pt-8">
           {/* Name */}
           <h3 className="text-2xl font-bold text-gray-900 tracking-tight">{name}</h3>
 
@@ -126,23 +126,23 @@ export default function ResumePreviewCard({
         <div className="relative h-6 -mt-6" style={{ background: "linear-gradient(to bottom, transparent, white)" }} />
 
         {/* CTA — directly after fade, no scrolling needed */}
-        <div className="px-6 pb-6 pt-1 sm:px-8 sm:pb-8 text-center">
-          <p className="text-sm font-medium text-gray-700 mb-1">
+        <div className="px-4 pb-4 pt-0 sm:px-8 sm:pb-8 sm:pt-1 text-center">
+          <p className="text-sm font-medium text-gray-700 mb-0.5 sm:mb-1">
             Unlock your full tailored resume, cover letter, and ATS optimization
           </p>
-          <p className="text-xs text-gray-400 mb-4">Includes PDF/DOCX export, keyword checklist, and recruiter insights</p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5">
+          <p className="text-xs text-gray-400 mb-2.5 sm:mb-4">Includes PDF/DOCX export, keyword checklist, and recruiter insights</p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
             <button
               onClick={() => onUpgrade("trial")}
               disabled={loading === true}
-              className="w-full sm:w-auto rounded-lg bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700 disabled:opacity-50"
+              className="w-full sm:w-auto rounded-lg bg-emerald-600 px-6 py-2 sm:py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700 disabled:opacity-50"
             >
               {loading ? "Redirecting..." : "Try for $1.50"}
             </button>
             <button
               onClick={() => onUpgrade("pro")}
               disabled={loading === true}
-              className="w-full sm:w-auto rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 disabled:opacity-50"
+              className="w-full sm:w-auto rounded-lg bg-blue-600 px-6 py-2 sm:py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 disabled:opacity-50"
             >
               {loading ? "Redirecting..." : "Get Pro — $5"}
             </button>
