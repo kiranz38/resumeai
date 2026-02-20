@@ -72,7 +72,7 @@ export default function AnimatedDemo() {
   const stepLabels = [
     { label: "Upload", color: "bg-blue-500" },
     { label: "Analyze", color: "bg-indigo-500" },
-    { label: "Score", color: "bg-amber-500" },
+    { label: "Score", color: "bg-blue-500" },
     { label: "Tailored CV", color: "bg-green-500" },
   ];
 
@@ -214,7 +214,7 @@ export default function AnimatedDemo() {
                       <span className="text-xl sm:text-2xl font-bold text-yellow-600">{scoreAnim}</span>
                     </div>
                   </div>
-                  <p className="text-[10px] font-semibold text-amber-600">Needs Sharpening</p>
+                  <p className="text-[10px] font-semibold text-blue-600">Needs Sharpening</p>
                   <p className="text-[9px] text-gray-400">Match Score</p>
                 </div>
 
@@ -257,7 +257,7 @@ export default function AnimatedDemo() {
                 {/* Visible blocker */}
                 <div className="rounded-lg border border-gray-200 bg-white p-2">
                   <div className="mb-1 flex items-center gap-1">
-                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-amber-100 text-[7px] font-bold text-amber-700">1</span>
+                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-blue-100 text-[7px] font-bold text-blue-700">1</span>
                     <span className="text-[8px] font-semibold text-gray-900 truncate">No metrics</span>
                   </div>
                   <p className="text-[7px] text-gray-400 line-clamp-2">Add quantifiable results to 60%+ of bullets</p>
@@ -266,7 +266,7 @@ export default function AnimatedDemo() {
                 {[2, 3].map((n) => (
                   <div key={n} className="relative rounded-lg border border-gray-200 bg-white p-2 overflow-hidden">
                     <div className="mb-1 flex items-center gap-1">
-                      <span className="flex h-4 w-4 items-center justify-center rounded-full bg-amber-100 text-[7px] font-bold text-amber-700">{n}</span>
+                      <span className="flex h-4 w-4 items-center justify-center rounded-full bg-blue-100 text-[7px] font-bold text-blue-700">{n}</span>
                       <span className="text-[8px] font-semibold text-gray-900 truncate">Weak verbs</span>
                     </div>
                     <div className="absolute inset-0 z-10 flex items-end justify-center rounded-lg pb-2"

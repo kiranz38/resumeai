@@ -42,7 +42,7 @@ const BENEFITS = [
     description:
       "See your Match Score and get a categorized map of missing keywords with specific placement suggestions.",
     icon: (
-      <svg className="h-8 w-8 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg className="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
     ),
@@ -52,7 +52,7 @@ const BENEFITS = [
     description:
       "Get 12-20 tailored bullet rewrites with stronger action verbs, scope, and impact — plus a skills section rewrite.",
     icon: (
-      <svg className="h-8 w-8 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg className="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
       </svg>
     ),
@@ -62,7 +62,7 @@ const BENEFITS = [
     description:
       "Get a prioritized list of exactly what to fix, add, and improve — no guesswork, just clear next steps.",
     icon: (
-      <svg className="h-8 w-8 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg className="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
       </svg>
     ),
@@ -72,7 +72,7 @@ const BENEFITS = [
     description:
       "Applying to multiple roles? Select jobs from our Job Board or paste up to 5 job descriptions — get a tailored CV for each, generated in parallel.",
     icon: (
-      <svg className="h-8 w-8 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg className="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
       </svg>
     ),
@@ -89,25 +89,25 @@ const TRUST_ITEMS = [
 
 const TESTIMONIALS = [
   {
-    quote: "I was applying to 20+ jobs with the same resume and getting nothing. After using ResumeMate, I tailored my CV to a Product Manager role and got an interview within a week.",
+    quote: "I was applying to 20+ jobs with the same resume and getting nothing. After tailoring my CV to a Product Manager role, I got an interview within a week.",
     name: "Lucas R.",
     role: "Product Manager",
-    score: "47 → 84",
     color: "bg-slate-600",
+    score: "52 → 81",
   },
   {
-    quote: "The keyword matching is spot on. It showed me exactly which skills were missing from my resume and rewrote my bullets to match the job description. Landed 3 interviews in 2 weeks.",
+    quote: "The keyword matching showed me exactly which skills were missing from my resume and rewrote my bullets to match the job description. Landed 3 interviews in 2 weeks.",
     name: "James T.",
     role: "Software Engineer",
-    score: "52 → 79",
-    color: "bg-indigo-500",
+    color: "bg-blue-600",
+    score: "47 → 84",
   },
   {
-    quote: "I was skeptical about another resume tool, but the free scan convinced me. The Match Score breakdown was so detailed I upgraded to Pro immediately. Best $5 I've spent on my job search.",
+    quote: "I was skeptical about another resume tool, but the free scan convinced me. The Match Score breakdown was so detailed I upgraded to Pro immediately.",
     name: "Sarah L.",
     role: "Marketing Analyst",
+    color: "bg-indigo-500",
     score: "39 → 76",
-    color: "bg-emerald-500",
   },
 ];
 
@@ -118,22 +118,22 @@ export default function LandingPage() {
       <StickyMobileCTA />
 
       {/* Hero — F-pattern: text left + visual right on desktop, stacked on mobile */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-slate-50 via-white to-white px-4 pb-16 pt-12 sm:pb-24 sm:pt-20">
+      <section className="relative overflow-hidden bg-gradient-to-b from-blue-50/50 via-white to-white px-4 pb-16 pt-12 sm:pb-24 sm:pt-20">
         {/* Decorative blobs */}
-        <div className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-amber-100/30 blur-3xl" />
-        <div className="pointer-events-none absolute -right-32 top-20 h-80 w-80 rounded-full bg-amber-100/20 blur-3xl" />
+        <div className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-blue-100/40 blur-3xl" />
+        <div className="pointer-events-none absolute -right-32 top-20 h-80 w-80 rounded-full bg-indigo-100/30 blur-3xl" />
 
         <div className="relative mx-auto max-w-6xl">
           <div className="flex flex-col items-center text-center lg:flex-row lg:items-start lg:gap-16 lg:text-left">
             {/* Left: Copy + CTA */}
             <div className="lg:flex-1 lg:pt-8">
-              <span className="mb-4 inline-block rounded-full bg-amber-100 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-amber-700">
+              <span className="mb-4 inline-block rounded-full bg-blue-100 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-blue-700">
                 Free instant analysis
               </span>
               <h1 className="font-[var(--font-inter)] text-[28px] font-extrabold leading-tight tracking-[-0.04em] text-gray-900 sm:text-5xl lg:text-[3.5rem]">
                 Tailor your CV to any
                 <br />
-                <span className="bg-gradient-to-r from-amber-600 to-amber-700 bg-clip-text text-transparent">job description.</span>
+                <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">job description.</span>
               </h1>
               <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-gray-600 sm:mt-5 sm:text-lg lg:mx-0">
                 Most resumes get rejected before a human ever reads them.
@@ -143,11 +143,11 @@ export default function LandingPage() {
 
               {/* Micro flow — Upload → Match → Download */}
               <div className="mt-5 flex items-center justify-center gap-2 text-sm font-medium text-gray-400 sm:mt-6 lg:justify-start">
-                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700">Upload</span>
+                <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700">Upload</span>
                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700">Match</span>
+                <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700">Match</span>
                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700">Download</span>
+                <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700">Download</span>
               </div>
 
               {/* "No signup" badge — above CTA on mobile, below on desktop */}
@@ -164,12 +164,12 @@ export default function LandingPage() {
               <div className="mt-4 flex flex-col items-center gap-3 sm:mt-8 sm:gap-4 lg:items-start">
                 <Link
                   href="/analyze?action=upload"
-                  className="group relative inline-flex min-h-[48px] items-center gap-3 rounded-xl bg-amber-600 px-10 py-4 text-lg font-bold text-white shadow-lg shadow-amber-600/25 transition-all hover:-translate-y-0.5 hover:bg-amber-700 hover:shadow-xl hover:shadow-amber-600/30"
+                  className="group relative inline-flex min-h-[48px] items-center gap-3 rounded-xl bg-blue-600 px-10 py-4 text-lg font-bold text-white shadow-lg shadow-blue-600/25 transition-all hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-600/30"
                 >
                   <svg className="h-6 w-6 transition-transform group-hover:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                   </svg>
-                  Optimize My Resume Free
+                  Check My Resume — Free
                 </Link>
                 <p className="text-sm text-gray-500">No credit card. No signup. Results in 60 seconds.</p>
                 <div className="flex items-center gap-3">
@@ -181,14 +181,14 @@ export default function LandingPage() {
 
             {/* Right: Score visual — desktop only */}
             <div className="mt-10 hidden w-full max-w-sm lg:mt-0 lg:block lg:flex-shrink-0">
-              <div className="rounded-2xl border border-gray-200/60 bg-white/80 p-6 shadow-xl shadow-slate-900/5 backdrop-blur-sm">
+              <div className="rounded-2xl border border-gray-200/60 bg-white/80 p-6 shadow-xl shadow-blue-900/5 backdrop-blur-sm">
                 <p className="text-center text-xs font-semibold uppercase tracking-wide text-gray-400">Match Score Preview</p>
                 <div className="mt-4 flex items-center justify-center gap-6">
                   <div className="text-center">
                     <p className="text-4xl font-bold text-red-500">47</p>
                     <p className="mt-1 text-[11px] text-gray-400">Before</p>
                   </div>
-                  <svg className="h-6 w-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="h-6 w-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                   </svg>
                   <div className="text-center">
@@ -209,7 +209,7 @@ export default function LandingPage() {
                       </div>
                       <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-gray-100">
                         <div
-                          className="h-full rounded-full bg-gradient-to-r from-amber-500 to-green-500 transition-all duration-1000"
+                          className="h-full rounded-full bg-gradient-to-r from-blue-500 to-green-500 transition-all duration-1000"
                           style={{ width: `${d.after}%` }}
                         />
                       </div>
@@ -255,9 +255,9 @@ export default function LandingPage() {
           </div>
           <Link
             href="/analyze?action=upload"
-            className="mt-8 inline-flex items-center gap-2 rounded-lg bg-amber-600 px-6 py-3 text-sm font-bold text-white shadow-sm hover:bg-amber-700 transition-colors"
+            className="mt-8 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-sm font-bold text-white shadow-sm hover:bg-blue-700 transition-colors"
           >
-            Try It Now — Free
+            Check My Resume — Free
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
             </svg>
@@ -271,7 +271,7 @@ export default function LandingPage() {
               { step: "3", title: "Get your Match Score", desc: "See what's blocking callbacks and how to fix it." },
             ].map((s) => (
               <div key={s.step} className="text-center">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-800 text-lg font-bold text-white">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-600 text-lg font-bold text-white">
                   {s.step}
                 </div>
                 <h3 className="mt-4 text-base font-semibold text-gray-900">{s.title}</h3>
@@ -308,10 +308,10 @@ export default function LandingPage() {
             {/* Arrow */}
             <FadeInOnScroll delay={200} direction="none">
               <div className="flex flex-col items-center gap-1">
-                <svg className="h-8 w-8 rotate-90 text-slate-400 sm:rotate-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="h-8 w-8 rotate-90 text-blue-400 sm:rotate-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
-                <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">ResumeMate AI</span>
+                <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">ResumeMate AI</span>
               </div>
             </FadeInOnScroll>
             {/* After */}
@@ -331,7 +331,7 @@ export default function LandingPage() {
           <p className="mt-8 text-sm text-gray-500">
             +37 point improvement — same resume, same experience, better presentation.
           </p>
-          <p className="mt-2 text-xs font-medium text-amber-700">
+          <p className="mt-2 text-xs font-medium text-blue-600">
             Optimized resumes are 3x more likely to land interview callbacks.
           </p>
         </div>
@@ -367,9 +367,6 @@ export default function LandingPage() {
           <h2 className="text-center text-2xl font-bold text-gray-900">
             Trusted by job seekers worldwide
           </h2>
-          <p className="mt-2 text-center text-gray-600">
-            Real results from real users.
-          </p>
           <div className="mt-10 grid gap-6 md:grid-cols-3">
             {TESTIMONIALS.map((t, i) => (
               <FadeInOnScroll key={t.name} delay={i * 150}>
@@ -382,19 +379,19 @@ export default function LandingPage() {
                   ))}
                 </div>
                 <p className="text-sm leading-relaxed text-gray-600">&ldquo;{t.quote}&rdquo;</p>
-                <div className="mt-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className={`flex h-9 w-9 items-center justify-center rounded-full ${t.color} text-sm font-bold text-white`}>
-                      {t.name.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900">{t.name}</p>
-                      <p className="text-xs text-gray-500">{t.role}</p>
-                    </div>
+                <div className="mt-4 flex items-center gap-3">
+                  <div className={`flex h-9 w-9 items-center justify-center rounded-full ${t.color} text-sm font-bold text-white`}>
+                    {t.name.charAt(0)}
                   </div>
-                  <span className="rounded-full bg-green-50 px-2.5 py-1 text-xs font-bold text-green-700">
-                    {t.score}
-                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">{t.name}</p>
+                    <p className="text-xs text-gray-500">{t.role}</p>
+                  </div>
+                  {t.score && (
+                    <span className="ml-auto rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">
+                      {t.score}
+                    </span>
+                  )}
                 </div>
               </div>
               </FadeInOnScroll>
@@ -414,7 +411,6 @@ export default function LandingPage() {
           </p>
 
           <div className="mt-10 grid gap-6 md:grid-cols-3">
-            {/* Free Quick Scan */}
             {/* Free Quick Scan */}
             <FadeInOnScroll delay={0}>
               <div className="rounded-xl border-2 border-gray-200 bg-white p-8 text-left">
@@ -444,16 +440,16 @@ export default function LandingPage() {
                   href="/analyze?action=upload"
                   className="mt-6 block rounded-lg border border-gray-300 px-6 py-2.5 text-center text-sm font-semibold text-gray-700 hover:bg-gray-50"
                 >
-                  Scan My Resume — Free
+                  Check My Resume — Free
                 </Link>
               </div>
             </FadeInOnScroll>
 
             {/* Pro Plan — highlighted "Most Popular" */}
             <FadeInOnScroll delay={150}>
-              <div className="relative rounded-xl border-2 border-amber-500 bg-white p-8 shadow-md text-left">
+              <div className="relative rounded-xl border-2 border-blue-600 bg-white p-8 shadow-md text-left">
                 <div className="absolute -top-3 left-4">
-                  <span className="rounded-full bg-amber-600 px-3 py-0.5 text-xs font-semibold text-white">
+                  <span className="rounded-full bg-blue-600 px-3 py-0.5 text-xs font-semibold text-white">
                     Most Popular
                   </span>
                 </div>
@@ -477,16 +473,16 @@ export default function LandingPage() {
                     "Re-generate versions (x2)",
                   ].map((f) => (
                     <li key={f} className="flex items-start gap-2">
-                      <span className="mt-0.5 text-amber-600">&#10003;</span>
+                      <span className="mt-0.5 text-blue-600">&#10003;</span>
                       {f}
                     </li>
                   ))}
                 </ul>
                 <Link
                   href="/analyze?action=upload"
-                  className="mt-6 block rounded-lg bg-amber-600 px-6 py-2.5 text-center text-sm font-semibold text-white hover:bg-amber-700"
+                  className="mt-6 block rounded-lg bg-blue-600 px-6 py-3 text-center text-sm font-semibold text-white hover:bg-blue-700"
                 >
-                  Get My Tailored CV — {PRO_PRICE_DISPLAY}
+                  Get My Tailored Resume — {PRO_PRICE_DISPLAY}
                 </Link>
               </div>
             </FadeInOnScroll>
@@ -520,7 +516,7 @@ export default function LandingPage() {
                   href="/analyze?action=upload"
                   className="mt-6 block rounded-lg border border-indigo-300 bg-indigo-50 px-6 py-2.5 text-center text-sm font-semibold text-indigo-700 hover:bg-indigo-100"
                 >
-                  Get My Career Pass — {CAREER_PASS_DISPLAY}
+                  Get Career Pass — {CAREER_PASS_DISPLAY}
                 </Link>
               </div>
             </FadeInOnScroll>
@@ -565,12 +561,12 @@ export default function LandingPage() {
           </p>
           <Link
             href="/analyze?action=upload"
-            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-amber-600 px-8 py-3.5 text-base font-bold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-amber-700 hover:shadow-md"
+            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-8 py-3.5 text-base font-bold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-blue-500 hover:shadow-md"
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
             </svg>
-            Fix My Resume Now
+            Check My Resume — Free
           </Link>
           <p className="mt-3 text-sm text-gray-400">No credit card. No signup. Free instant analysis.</p>
         </div>

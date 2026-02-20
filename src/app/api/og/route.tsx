@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
             width: 300,
             height: 300,
             borderRadius: "50%",
-            background: "rgba(217, 119, 6, 0.06)",
+            background: "rgba(37, 99, 235, 0.06)",
             display: "flex",
           }}
         />
@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
             width: 250,
             height: 250,
             borderRadius: "50%",
-            background: "rgba(217, 119, 6, 0.04)",
+            background: "rgba(37, 99, 235, 0.04)",
             display: "flex",
           }}
         />
@@ -74,7 +74,7 @@ export async function GET(req: NextRequest) {
               width: 40,
               height: 40,
               borderRadius: 10,
-              background: "linear-gradient(135deg, #d97706, #b45309)",
+              background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -151,14 +151,14 @@ export async function GET(req: NextRequest) {
             {/* Arrow */}
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-                <path d="M5 12h14M13 6l6 6-6 6" stroke="#d97706" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M5 12h14M13 6l6 6-6 6" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
               <span
                 style={{
                   fontSize: 13,
                   fontWeight: 700,
-                  color: "#d97706",
-                  background: "#fffbeb",
+                  color: "#2563eb",
+                  background: "#eff6ff",
                   padding: "4px 12px",
                   borderRadius: 20,
                 }}

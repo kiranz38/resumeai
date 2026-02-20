@@ -11,7 +11,7 @@ export default function BlockerCard({ blocker, index, locked = false }: BlockerC
     <div className={`relative rounded-xl border border-gray-200 bg-white p-5 ${locked ? "min-h-[180px] select-none overflow-hidden" : ""}`}>
       {/* Header */}
       <div className="mb-2 flex items-start gap-2">
-        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xs font-bold text-amber-700">
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
           {index + 1}
         </span>
         <h4 className="text-sm font-semibold text-gray-900">{blocker.title}</h4>

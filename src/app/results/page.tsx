@@ -170,9 +170,9 @@ export default function ResultsPage() {
           <div className="mt-6 flex gap-3 justify-center">
             <button
               onClick={() => router.push("/analyze")}
-              className="rounded-lg bg-amber-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-amber-700"
+              className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
             >
-              Check my resume
+              Check My Resume — Free
             </button>
             <button
               onClick={() => router.push("/demo")}
@@ -207,7 +207,7 @@ export default function ResultsPage() {
               sessionStorage.setItem("rt_is_demo", "true");
               router.push("/results/pro");
             }}
-            className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700 transition-colors"
+            className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
           >
             Continue to CV
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -316,7 +316,7 @@ export default function ResultsPage() {
         <div className="mb-8 rounded-xl border border-gray-200 bg-white p-5">
           <div className="flex items-center justify-between mb-3">
             <p className="text-sm font-semibold text-gray-900">Your optimization progress</p>
-            <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-700">60% complete</span>
+            <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-bold text-blue-700">60% complete</span>
           </div>
           <div className="flex items-center gap-1">
             {[
@@ -358,22 +358,22 @@ export default function ResultsPage() {
 
       {/* Personalized urgency messaging */}
       {radar && !isDemo && (
-        <div className="mb-8 rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 to-amber-50 p-5">
+        <div className="mb-8 rounded-xl border border-blue-200 bg-gradient-to-r from-blue-50 to-blue-50 p-5">
           <div className="flex items-start gap-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100">
-              <svg className="h-4 w-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100">
+              <svg className="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
               </svg>
             </div>
             <div>
-              <p className="text-sm font-semibold text-amber-900">
+              <p className="text-sm font-semibold text-blue-900">
                 {radar.score < 40
                   ? "Your resume is being auto-rejected right now"
                   : radar.score < 55
                     ? "Your resume is unlikely to pass most ATS filters"
                     : "Your resume is losing to stronger applicants"}
               </p>
-              <p className="mt-1 text-sm text-amber-800">
+              <p className="mt-1 text-sm text-blue-800">
                 {result.atsResult.missingKeywords.length > 0 && (
                   <>Your CV is missing <span className="font-semibold">{result.atsResult.missingKeywords.length} critical keywords</span> for this role. </>
                 )}
@@ -384,9 +384,9 @@ export default function ResultsPage() {
               </p>
               <button
                 onClick={() => document.getElementById("pro-upgrade")?.scrollIntoView({ behavior: "smooth" })}
-                className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-4 py-2 text-xs font-semibold text-white hover:bg-amber-700 transition-colors"
+                className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition-colors"
               >
-                Optimize My Resume Now
+                Get My Tailored Resume
                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
@@ -634,7 +634,7 @@ export default function ResultsPage() {
             </p>
             <button
               onClick={() => document.getElementById("pro-upgrade")?.scrollIntoView({ behavior: "smooth" })}
-              className="mt-3 rounded-lg bg-amber-600 px-5 py-2 text-sm font-semibold text-white hover:bg-amber-700 transition-colors"
+              className="mt-3 rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
             >
               Get My Resume Pack — {PRO_PRICE_DISPLAY}
             </button>

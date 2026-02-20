@@ -65,8 +65,8 @@ export default function ExitIntentPopup({ score, missingKeywords }: ExitIntentPo
 
         {/* Content */}
         <div className="text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-100">
-            <svg className="h-7 w-7 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-blue-100">
+            <svg className="h-7 w-7 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
           </div>
@@ -93,15 +93,14 @@ export default function ExitIntentPopup({ score, missingKeywords }: ExitIntentPo
 
           <div className="mt-6 flex flex-col gap-3">
             <Link
-              href="#pro-upgrade"
+              href="/analyze?action=upload"
               onClick={() => {
                 setShow(false);
                 trackEvent("exit_intent_cta_clicked");
-                document.getElementById("pro-upgrade")?.scrollIntoView({ behavior: "smooth" });
               }}
-              className="w-full rounded-lg bg-amber-600 px-6 py-3 text-sm font-bold text-white hover:bg-amber-700 transition-colors"
+              className="w-full rounded-lg bg-blue-600 px-6 py-3 text-sm font-bold text-white hover:bg-blue-700 transition-colors"
             >
-              Fix My Resume Now — Free
+              Check My Resume — Free
             </Link>
             <button
               onClick={() => setShow(false)}
