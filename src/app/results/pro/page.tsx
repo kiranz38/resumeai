@@ -26,6 +26,7 @@ import type { RadarResult } from "@/lib/types";
 import { scoreRadar, tailoredToCandidateProfile } from "@/lib/radar-scorer";
 import { updateSessionRadarAfter } from "@/lib/job-sessions";
 import { isValidTokenFormat, isValidPlan } from "@/lib/sanitizer";
+import ConfettiEffect from "@/components/ConfettiEffect";
 
 export default function ProResultsPageWrapper() {
   return (
@@ -751,9 +752,10 @@ function ProResultsPage() {
         </div>
       )}
 
-      {/* Radar delta banner */}
+      {/* Radar delta banner + confetti celebration */}
       {radarBefore && radarAfter && (
         <div className="mb-6 rounded-xl border border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 p-4">
+          {radarAfter.score > radarBefore.score && <ConfettiEffect />}
           <div className="flex items-center gap-4 flex-wrap">
             <div className="text-sm text-gray-600">
               Before: <span className="font-bold text-gray-900">{radarBefore.score}</span>

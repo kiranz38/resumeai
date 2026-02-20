@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import type { RadarLabel } from "@/lib/types";
 
 interface ScoreCardProps {
@@ -14,9 +17,32 @@ function getScoreColor(score: number): { bg: string; text: string; ring: string;
   return { bg: "bg-yellow-50", text: "text-yellow-700", ring: "stroke-yellow-500", fill: "bg-yellow-500" };
 }
 
+/** Animate from 0 → target over `duration` ms with ease-out cubic. */
+function useCountUp(target: number, duration = 1500): number {
+  const [display, setDisplay] = useState(0);
+
+  useEffect(() => {
+    if (target === 0) { setDisplay(0); return; }
+    const start = performance.now();
+
+    let raf: number;
+    function tick(now: number) {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+      setDisplay(Math.round(eased * target));
+      if (progress < 1) raf = requestAnimationFrame(tick);
+    }
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration]);
+
+  return display;
+}
+
 export default function ScoreCard({ label, score, description, variant = "default", radarLabel }: ScoreCardProps) {
   const clampedScore = Math.max(0, Math.min(100, Math.round(score)));
   const colors = getScoreColor(clampedScore);
+  const animatedScore = useCountUp(clampedScore);
 
   // ── Primary variant: Large gauge with radar label ──
   if (variant === "primary") {
@@ -45,11 +71,11 @@ export default function ScoreCard({ label, score, description, variant = "defaul
               strokeLinecap="round"
               strokeDasharray={circumference}
               strokeDashoffset={offset}
-              style={{ transition: "stroke-dashoffset 1s ease-out" }}
+              style={{ transition: "stroke-dashoffset 1.5s ease-out" }}
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-end pb-1">
-            <span className={`text-4xl font-bold ${colors.text}`}>{clampedScore}</span>
+            <span className={`text-4xl font-bold ${colors.text}`}>{animatedScore}</span>
           </div>
         </div>
         {radarLabel && (
@@ -72,7 +98,7 @@ export default function ScoreCard({ label, score, description, variant = "defaul
             style={{ width: `${clampedScore}%` }}
           />
         </div>
-        <span className={`w-8 text-right text-sm font-bold ${colors.text}`}>{clampedScore}</span>
+        <span className={`w-8 text-right text-sm font-bold ${colors.text}`}>{animatedScore}</span>
       </div>
     );
   }
@@ -105,11 +131,11 @@ export default function ScoreCard({ label, score, description, variant = "defaul
               strokeLinecap="round"
               strokeDasharray={circumference}
               strokeDashoffset={circOffset}
-              style={{ transition: "stroke-dashoffset 0.8s ease-out" }}
+              style={{ transition: "stroke-dashoffset 1.5s ease-out" }}
             />
           </svg>
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className={`text-lg font-bold ${colors.text}`}>{clampedScore}</span>
+            <span className={`text-lg font-bold ${colors.text}`}>{animatedScore}</span>
           </div>
         </div>
         <div>

@@ -14,6 +14,7 @@ import RewritePreviews from "@/components/RewritePreviews";
 import ResumePreviewCard from "@/components/ResumePreviewCard";
 import PaywallPlanPicker from "@/components/PaywallPlanPicker";
 import ShareCard from "@/components/ShareCard";
+import ExitIntentPopup from "@/components/ExitIntentPopup";
 import { trackEvent } from "@/lib/analytics";
 import { validateJD } from "@/lib/jd-validator";
 import { DEMO_RADAR_RESULT, DEMO_PRO_OUTPUT } from "@/lib/demo-data";
@@ -429,10 +430,14 @@ export default function ResultsPage() {
       {/* Generate tailored CV — plan options */}
       {!isDemo && process.env.NEXT_PUBLIC_PRO_ENABLED !== "false" && (
         <div className="mb-8 rounded-xl border border-gray-200 bg-white p-5">
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2 mb-2">
             <h2 className="text-base font-semibold text-gray-900">Generate a tailored CV</h2>
             <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-semibold text-blue-700">AI-powered</span>
           </div>
+          <p className="mb-4 text-sm text-gray-500">
+            A professional resume writer charges <span className="line-through text-gray-400">$300–500</span>.
+            Get the same result, instantly, from <span className="font-semibold text-blue-700">{TRIAL_PRICE_DISPLAY}</span>.
+          </p>
           <div className="grid gap-3 sm:grid-cols-3">
             {/* Career Pass first — price anchor (highest price first) */}
             <button
@@ -637,6 +642,14 @@ export default function ResultsPage() {
           Analyze another resume
         </Link>
       </div>
+
+      {/* Exit intent popup — recovers 3-17% of abandoning visitors */}
+      {!isDemo && radar && (
+        <ExitIntentPopup
+          score={radar.score}
+          missingKeywords={result.atsResult.missingKeywords.length}
+        />
+      )}
     </div>
   );
 }

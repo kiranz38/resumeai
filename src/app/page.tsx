@@ -4,7 +4,7 @@ import ShareCard from "@/components/ShareCard";
 import SampleResumeModal from "@/components/SampleResumeModal";
 import SocialProofCounter from "@/components/SocialProofCounter";
 import StickyMobileCTA from "@/components/StickyMobileCTA";
-import { TRIAL_PRICE_DISPLAY, PRO_PRICE_DISPLAY, CAREER_PASS_DISPLAY } from "@/lib/constants";
+import { PRO_PRICE_DISPLAY, CAREER_PASS_DISPLAY } from "@/lib/constants";
 
 const FAQ_ITEMS = [
   {
@@ -333,7 +333,7 @@ export default function LandingPage() {
             No subscription. No surprises. Just results.
           </p>
 
-          <div className="mt-10 grid gap-6 md:grid-cols-4">
+          <div className="mt-10 grid gap-6 md:grid-cols-3">
             {/* Free Quick Scan */}
             <div className="rounded-xl border-2 border-gray-200 bg-white p-8 text-left">
               <p className="text-sm font-medium uppercase tracking-wide text-gray-500">
@@ -366,46 +366,7 @@ export default function LandingPage() {
               </Link>
             </div>
 
-            {/* Career Trial */}
-            <div className="relative rounded-xl border-2 border-emerald-500 bg-white p-8 shadow-md text-left">
-              <div className="absolute -top-3 left-4">
-                <span className="rounded-full bg-emerald-600 px-3 py-0.5 text-xs font-semibold text-white">
-                  Try It
-                </span>
-              </div>
-              <p className="text-sm font-medium uppercase tracking-wide text-gray-500">
-                Career Trial
-              </p>
-              <p className="mt-2 text-4xl font-bold text-gray-900">
-                {TRIAL_PRICE_DISPLAY}
-                <span className="text-base font-normal text-gray-500"> one-time</span>
-              </p>
-              <p className="mt-1 text-sm text-gray-500">1 job, full results</p>
-              <ul className="mt-5 space-y-2 text-sm text-gray-600">
-                {[
-                  "Full tailored resume",
-                  "Full cover letter",
-                  "Recruiter insights",
-                  "Keyword checklist",
-                  "Editable content",
-                  "PDF, DOCX, TXT exports",
-                ].map((f) => (
-                  <li key={f} className="flex items-start gap-2">
-                    <span className="mt-0.5 text-emerald-500">&#10003;</span>
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <Link
-                href="/analyze?action=upload"
-                className="mt-6 block rounded-lg bg-emerald-600 px-6 py-2.5 text-center text-sm font-semibold text-white hover:bg-emerald-700"
-              >
-                Try Career Trial — {TRIAL_PRICE_DISPLAY}
-              </Link>
-              <p className="mt-2 text-center text-xs text-gray-400">Upgrade to Pro anytime.</p>
-            </div>
-
-            {/* Pro Plan */}
+            {/* Pro Plan — highlighted "Most Popular" */}
             <div className="relative rounded-xl border-2 border-blue-500 bg-white p-8 shadow-md text-left">
               <div className="absolute -top-3 left-4">
                 <span className="rounded-full bg-blue-600 px-3 py-0.5 text-xs font-semibold text-white">
@@ -420,14 +381,16 @@ export default function LandingPage() {
                 <span className="text-base font-normal text-gray-500"> one-time</span>
               </p>
               <p className="mt-1 text-sm text-gray-500">1 job + 2 re-generations</p>
+              <p className="mt-1 text-xs text-gray-400 line-through">Resume writers charge $300–500</p>
               <ul className="mt-5 space-y-2 text-sm text-gray-600">
                 {[
-                  "Everything in Trial",
-                  "Email delivery",
+                  "Full tailored resume",
+                  "Full cover letter",
+                  "Recruiter insights",
+                  "PDF, DOCX, TXT exports",
                   "Bulk CV Generator",
                   "Radar before/after",
                   "Re-generate versions (x2)",
-                  "Priority support",
                 ].map((f) => (
                   <li key={f} className="flex items-start gap-2">
                     <span className="mt-0.5 text-blue-500">&#10003;</span>
