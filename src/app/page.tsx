@@ -97,13 +97,13 @@ export default function LandingPage() {
             Free instant analysis
           </span>
           <h1 className="font-[var(--font-inter)] text-[28px] font-extrabold leading-tight tracking-[-0.04em] text-gray-900 sm:text-5xl lg:text-6xl">
-            Stop guessing why you&apos;re not
+            Tailor your CV to any
             <br />
-            <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">getting callbacks.</span>
+            <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">job description.</span>
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-gray-600 sm:mt-5 sm:text-lg">
-            Upload your resume, paste a job description, and see exactly what&apos;s missing.
-            Get your Match Score in 30 seconds.
+            Upload your resume, paste the job description, and get a modified CV
+            optimized for that role — in under a minute.
           </p>
 
           {/* Micro flow — Upload → Match → Download */}
@@ -372,10 +372,10 @@ export default function LandingPage() {
       <section className="bg-blue-600 px-4 py-12">
         <div className="mx-auto max-w-3xl text-center">
           <h2 className="text-2xl font-bold text-white sm:text-3xl">
-            Ready to see what&apos;s holding you back?
+            Modify your CV for the job you want
           </h2>
           <p className="mt-2 text-blue-100">
-            Upload your resume and get your Match Score in under a minute. Free, no signup.
+            Upload your resume, paste the job description, and download a tailored CV. Free, no signup.
           </p>
           <Link
             href="/analyze?action=upload"
