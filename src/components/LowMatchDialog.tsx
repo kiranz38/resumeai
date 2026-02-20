@@ -108,7 +108,7 @@ export default function LowMatchDialog({
           </button>
           <button
             onClick={onConfirm}
-            className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+            className="rounded-lg bg-blue-800 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-900"
           >
             Enhance &amp; Generate
           </button>

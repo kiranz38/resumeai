@@ -53,7 +53,7 @@ export default function HowItWorksPage() {
         <div className="mt-12 space-y-8">
           {STEPS.map((step) => (
             <div key={step.number} className="flex gap-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-600 text-lg font-bold text-white">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-800 text-lg font-bold text-white">
                 {step.number}
               </div>
               <div>
@@ -71,7 +71,7 @@ export default function HowItWorksPage() {
         <div className="mt-12 text-center">
           <Link
             href="/analyze"
-            className="rounded-lg bg-blue-600 px-8 py-3 text-base font-semibold text-white shadow-sm hover:bg-blue-700"
+            className="rounded-lg bg-blue-800 px-8 py-3 text-base font-semibold text-white shadow-sm hover:bg-blue-900"
           >
             Check my resume
           </Link>

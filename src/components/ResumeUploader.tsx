@@ -125,7 +125,7 @@ export default function ResumeUploader({
             <svg
               className={`h-7 w-7 sm:h-10 sm:w-10 transition-all duration-300 ${
                 isDragging
-                  ? "scale-110 text-blue-600"
+                  ? "scale-110 text-blue-800"
                   : "text-gray-400 group-hover:scale-105 group-hover:text-blue-500"
               }`}
               fill="none"
@@ -148,10 +148,10 @@ export default function ResumeUploader({
 
         <p className="text-center text-base font-semibold text-gray-700">
           {isDragging ? (
-            <span className="text-blue-600">Drop your resume here</span>
+            <span className="text-blue-800">Drop your resume here</span>
           ) : (
             <>
-              <span className="text-blue-600 group-hover:underline">
+              <span className="text-blue-800 group-hover:underline">
                 Click to upload
               </span>{" "}
               or drag and drop
@@ -193,7 +193,7 @@ export default function ResumeUploader({
             e.stopPropagation();
             onSwitchToPaste();
           }}
-          className="text-sm text-gray-400 hover:text-blue-600"
+          className="text-sm text-gray-400 hover:text-blue-800"
         >
           Or paste your resume text instead
         </button>

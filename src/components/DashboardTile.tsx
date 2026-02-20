@@ -28,7 +28,7 @@ const DashboardTile = forwardRef<HTMLButtonElement, DashboardTileProps>(
             : "hover:-translate-y-0.5 hover:shadow-md"
         }`}
       >
-        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-blue-50 text-blue-600 group-hover:bg-blue-100">
+        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-blue-50 text-blue-800 group-hover:bg-blue-100">
           {icon}
         </div>
         <h3 className="text-base font-semibold text-gray-900">{title}</h3>

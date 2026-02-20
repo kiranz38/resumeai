@@ -122,9 +122,9 @@ export default function PricingPage() {
           </div>
 
           {/* Pro tier */}
-          <div className="relative rounded-xl border-2 border-blue-600 bg-white p-6 shadow-lg">
+          <div className="relative rounded-xl border-2 border-blue-800 bg-white p-6 shadow-lg">
             <div className="absolute -top-3 left-4">
-              <span className="rounded-full bg-blue-600 px-3 py-0.5 text-xs font-semibold text-white">
+              <span className="rounded-full bg-blue-800 px-3 py-0.5 text-xs font-semibold text-white">
                 Most Popular
               </span>
             </div>
@@ -152,7 +152,7 @@ export default function PricingPage() {
             <CheckoutButton
               plan="pro"
               label={`Unlock Full Career Pack — ${PRO_PRICE_DISPLAY}`}
-              className="mt-6 block w-full rounded-lg bg-blue-600 px-6 py-2.5 text-center text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+              className="mt-6 block w-full rounded-lg bg-blue-800 px-6 py-2.5 text-center text-sm font-semibold text-white hover:bg-blue-900 disabled:opacity-50"
             />
             <p className="mt-2 text-center text-xs text-gray-400">
               No subscription. No surprises.

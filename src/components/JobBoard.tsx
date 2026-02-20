@@ -513,7 +513,7 @@ export default function JobBoard({ onSelectJob, onBulkGenerate, resumeText }: Jo
             </button>
             <button
               onClick={handleBulkGenerate}
-              className="animate-pulse-ring inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-lg hover:bg-blue-700"
+              className="animate-pulse-ring inline-flex items-center gap-2 rounded-lg bg-blue-800 px-4 py-2 text-sm font-semibold text-white shadow-lg hover:bg-blue-900"
             >
               <div className="flex h-5 w-5 items-center justify-center rounded-full bg-white/20 text-xs font-bold">
                 {selectedIds.size}
@@ -660,7 +660,7 @@ export default function JobBoard({ onSelectJob, onBulkGenerate, resumeText }: Jo
       {isLoading && !showJobs && (
         <div>
           <div className="mb-3 flex items-center gap-2">
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-800 border-t-transparent" />
             <span className="text-sm text-gray-500">
               {isDefaultView ? "Loading featured jobs..." : "Searching..."}
             </span>
@@ -748,7 +748,7 @@ export default function JobBoard({ onSelectJob, onBulkGenerate, resumeText }: Jo
                       disabled={!canSelect}
                       className={`flex h-5 w-5 items-center justify-center rounded border transition-colors ${
                         isSelected
-                          ? "border-blue-600 bg-blue-600"
+                          ? "border-blue-800 bg-blue-800"
                           : canSelect
                             ? "border-gray-300 hover:border-blue-400"
                             : "cursor-not-allowed border-gray-200 opacity-50"
@@ -827,7 +827,7 @@ export default function JobBoard({ onSelectJob, onBulkGenerate, resumeText }: Jo
                 <div className="flex flex-shrink-0 items-center sm:self-center self-end">
                   <button
                     onClick={() => handleQuickAnalyze(job)}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-blue-800 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-900"
                   >
                     <svg
                       className="h-4 w-4"
@@ -900,7 +900,7 @@ export default function JobBoard({ onSelectJob, onBulkGenerate, resumeText }: Jo
               </button>
               <button
                 onClick={handleBulkGenerate}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 sm:gap-2 sm:px-5 sm:py-2.5 sm:text-sm"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-blue-800 px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-blue-900 sm:gap-2 sm:px-5 sm:py-2.5 sm:text-sm"
               >
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />

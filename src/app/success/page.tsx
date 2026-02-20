@@ -10,7 +10,7 @@ export default function SuccessPageWrapper() {
       fallback={
         <div className="flex min-h-[50vh] items-center justify-center">
           <div className="text-center">
-            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-blue-800 border-t-transparent" />
             <p className="mt-4 text-sm text-gray-500">Verifying your payment...</p>
           </div>
         </div>
@@ -142,7 +142,7 @@ function SuccessPage() {
           <div className="mt-5 flex justify-center gap-3">
             <button
               onClick={navigateToDestination}
-              className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              className="rounded-lg bg-blue-800 px-5 py-2 text-sm font-medium text-white hover:bg-blue-900"
             >
               Continue anyway
             </button>
@@ -166,7 +166,7 @@ function SuccessPage() {
       <div className="text-center">
         {status === "verifying" ? (
           <>
-            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-blue-800 border-t-transparent" />
             <p className="mt-4 text-sm font-medium text-gray-700">Verifying your payment...</p>
             <p className="mt-1 text-xs text-gray-400">This only takes a moment</p>
           </>

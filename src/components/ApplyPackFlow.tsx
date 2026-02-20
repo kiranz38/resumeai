@@ -197,7 +197,7 @@ export default function ApplyPackFlow({ resumeText }: ApplyPackFlowProps) {
       {jobs.length < MAX_JOBS && (
         <button
           onClick={addJob}
-          className="mt-4 flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700"
+          className="mt-4 flex items-center gap-1 text-sm font-medium text-blue-800 hover:text-blue-700"
         >
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -225,7 +225,7 @@ export default function ApplyPackFlow({ resumeText }: ApplyPackFlowProps) {
         <button
           onClick={handleGenerate}
           disabled={isLoading || validJobs.length === 0}
-          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-lg bg-blue-800 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-900 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isLoading ? (
             <>

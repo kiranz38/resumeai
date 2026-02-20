@@ -575,7 +575,7 @@ function AnalyzePage() {
                   </h2>
                   <button
                     onClick={() => setResumeMode("upload")}
-                    className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                    className="text-sm font-medium text-blue-800 hover:text-blue-700"
                   >
                     Switch to upload
                   </button>
@@ -599,7 +599,7 @@ function AnalyzePage() {
               <div className="mt-4 text-center">
                 <button
                   onClick={handleResumeContinue}
-                  className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+                  className="rounded-lg bg-blue-800 px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-900"
                 >
                   Continue
                 </button>
@@ -680,7 +680,7 @@ function AnalyzePage() {
                   ref={analyzeBtnRef}
                   onClick={handleAnalyze}
                   disabled={isAnalyzing || !jdReady || !resumeReady}
-                  className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-lg bg-blue-800 px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-900 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isAnalyzing ? (
                     <>
@@ -786,7 +786,7 @@ function AnalyzePage() {
                   </h3>
                   <button
                     onClick={() => setResumeMode("upload")}
-                    className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                    className="text-sm font-medium text-blue-800 hover:text-blue-700"
                   >
                     Switch to upload
                   </button>
@@ -809,7 +809,7 @@ function AnalyzePage() {
               <div className="mt-4 text-center">
                 <button
                   onClick={handlePackResumeContinue}
-                  className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+                  className="rounded-lg bg-blue-800 px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-900"
                 >
                   {pendingPackJobCount > 0
                     ? `Generate ${pendingPackJobCount} Tailored CV${pendingPackJobCount !== 1 ? "s" : ""}`

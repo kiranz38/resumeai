@@ -92,7 +92,7 @@ export default function ProUpgradeCard({ onUpgrade }: ProUpgradeCardProps) {
       <div className="absolute bottom-0 left-0 -mb-6 -ml-6 h-24 w-24 rounded-full bg-indigo-200 opacity-20" />
 
       <div className="relative">
-        <div className="mb-2 inline-block rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold text-white">
+        <div className="mb-2 inline-block rounded-full bg-blue-800 px-3 py-1 text-xs font-semibold text-white">
           Pro
         </div>
 
@@ -107,7 +107,7 @@ export default function ProUpgradeCard({ onUpgrade }: ProUpgradeCardProps) {
         <ul className="mb-6 space-y-2">
           {PRO_FEATURES.map((feature) => (
             <li key={feature} className="flex items-start gap-2 text-sm text-gray-700">
-              <svg className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="mt-0.5 h-4 w-4 shrink-0 text-blue-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
               {feature}
@@ -125,7 +125,7 @@ export default function ProUpgradeCard({ onUpgrade }: ProUpgradeCardProps) {
           <button
             onClick={handleUnlockPro}
             disabled={isGenerating}
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-base font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-800 px-6 py-3 text-base font-semibold text-white shadow-sm transition-colors hover:bg-blue-900 disabled:opacity-50"
           >
             {isGenerating ? (
               <>

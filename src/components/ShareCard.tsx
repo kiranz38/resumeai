@@ -30,7 +30,7 @@ export default function ShareCard({ className = "" }: { className?: string }) {
     <div className={`rounded-xl border border-gray-200 bg-white p-4 shadow-sm ${className}`}>
       <div className="mb-3 flex items-center gap-2.5">
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50">
-          <svg className="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="h-4 w-4 text-blue-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
           </svg>
         </div>
@@ -60,7 +60,7 @@ export default function ShareCard({ className = "" }: { className?: string }) {
           onClick={() =>
             openShare("facebook", `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`)
           }
-          className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-50 hover:border-blue-200"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-blue-800 transition-colors hover:bg-blue-50 hover:border-blue-200"
           aria-label="Share on Facebook"
         >
           <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">

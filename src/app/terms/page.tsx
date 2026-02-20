@@ -56,7 +56,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-lg font-semibold text-gray-900">Privacy</h2>
             <p className="mt-2">
-              Your use of ResumeMate AI is also governed by our <a href="/privacy" className="text-blue-600 hover:underline">Privacy Policy</a>. We never store your resume or job description content. See the Privacy Policy for full details on data handling.
+              Your use of ResumeMate AI is also governed by our <a href="/privacy" className="text-blue-800 hover:underline">Privacy Policy</a>. We never store your resume or job description content. See the Privacy Policy for full details on data handling.
             </p>
           </section>
 

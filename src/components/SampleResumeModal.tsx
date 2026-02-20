@@ -19,7 +19,7 @@ export default function SampleResumeModal() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="cursor-pointer inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 sm:gap-2 sm:rounded-full sm:border sm:border-white/40 sm:bg-white/40 sm:px-5 sm:py-2 sm:text-gray-600 sm:shadow-sm sm:shadow-black/5 sm:ring-1 sm:ring-black/5 sm:backdrop-blur-md sm:hover:bg-white/70 sm:hover:text-gray-900"
+        className="cursor-pointer inline-flex items-center gap-1.5 text-sm font-medium text-blue-800 hover:text-blue-800 sm:gap-2 sm:rounded-full sm:border sm:border-white/40 sm:bg-white/40 sm:px-5 sm:py-2 sm:text-gray-600 sm:shadow-sm sm:shadow-black/5 sm:ring-1 sm:ring-black/5 sm:backdrop-blur-md sm:hover:bg-white/70 sm:hover:text-gray-900"
       >
         <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
           <path d="M8 5v14l11-7z" />
@@ -39,7 +39,7 @@ export default function SampleResumeModal() {
             <div className="mt-5 flex gap-3">
               <button
                 onClick={handleConfirm}
-                className="flex-1 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+                className="flex-1 rounded-lg bg-blue-800 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-900"
               >
                 See sample results
               </button>
