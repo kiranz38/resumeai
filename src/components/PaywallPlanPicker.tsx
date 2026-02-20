@@ -121,8 +121,8 @@ export default function PaywallPlanPicker({
   return (
     <div className={compact ? "" : "mx-auto max-w-4xl"}>
       {message && (
-        <div className="mb-4 flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
-          <svg className="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="mb-4 flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800">
+          <svg className="mt-0.5 h-5 w-5 flex-shrink-0 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <span>{message}</span>
@@ -172,12 +172,12 @@ export default function PaywallPlanPicker({
           className={`relative rounded-xl border-2 p-6 transition-all ${
             defaultPlan === "pass"
               ? "border-gray-200 bg-white"
-              : "border-blue-500 bg-blue-50/30 shadow-md"
+              : "border-orange-400 bg-orange-50/30 shadow-md"
           }`}
         >
           {!defaultPlan && (
             <div className="absolute -top-3 left-4">
-              <span className="rounded-full bg-blue-600 px-3 py-0.5 text-xs font-semibold text-white">
+              <span className="rounded-full bg-orange-500 px-3 py-0.5 text-xs font-semibold text-white">
                 Most Popular
               </span>
             </div>
@@ -193,7 +193,7 @@ export default function PaywallPlanPicker({
             <ul className="mt-4 space-y-2">
               {PRO_FEATURES.map((f) => (
                 <li key={f} className="flex items-start gap-2 text-sm text-gray-600">
-                  <span className="mt-0.5 text-blue-500">&#10003;</span>
+                  <span className="mt-0.5 text-orange-500">&#10003;</span>
                   {f}
                 </li>
               ))}

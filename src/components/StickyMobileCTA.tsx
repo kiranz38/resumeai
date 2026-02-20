@@ -22,7 +22,7 @@ export default function StickyMobileCTA() {
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-blue-200 bg-white/95 px-4 py-3 backdrop-blur-sm sm:hidden">
+    <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white/95 px-4 py-3 backdrop-blur-sm sm:hidden">
       <Link
         href="/analyze?action=upload"
         className="flex w-full items-center justify-center gap-2 rounded-lg bg-orange-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-orange-500/20"
