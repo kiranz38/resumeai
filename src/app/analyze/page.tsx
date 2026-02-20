@@ -459,8 +459,8 @@ function AnalyzePage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 }
-                title="Optimize for a Job"
-                description="Match your resume to a specific job and see your Match Score."
+                title="Upload your CV"
+                description="Optimize for a job — match your resume and see your Match Score."
                 badge="Free"
                 onClick={handleOptimize}
               />
