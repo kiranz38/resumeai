@@ -284,6 +284,63 @@ export default function ResultsPage() {
         </p>
       </div>
 
+      {/* Radar Score + Breakdown */}
+      {radar && (
+        <div className="mb-8">
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* Primary radar gauge */}
+            <ScoreCard
+              variant="primary"
+              label="Match Score"
+              score={radar.score}
+              description="How well your resume matches this job"
+              radarLabel={radar.label}
+            />
+
+            {/* Breakdown bars */}
+            <div className="rounded-xl border border-gray-200 bg-white p-6">
+              <h3 className="mb-3 text-sm font-semibold text-gray-700 uppercase tracking-wide">Match Breakdown</h3>
+              <ScoreCard variant="breakdown" label="Hard Skills" score={radar.breakdown.hardSkills} description="" />
+              <ScoreCard variant="breakdown" label="Soft Skills" score={radar.breakdown.softSkills} description="" />
+              <ScoreCard variant="breakdown" label="Results" score={radar.breakdown.measurableResults} description="" />
+              <ScoreCard variant="breakdown" label="Keywords" score={radar.breakdown.keywordOptimization} description="" />
+              <ScoreCard variant="breakdown" label="Formatting" score={radar.breakdown.formattingBestPractices} description="" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Blockers — blurred on free tier */}
+      {radar && radar.blockers.length > 0 && (
+        <div className="mb-8">
+          <h2 className="mb-4 text-lg font-semibold text-gray-900">Top Blockers</h2>
+          <div className="grid gap-4 md:grid-cols-3">
+            {radar.blockers.slice(0, 3).map((blocker, i) => (
+              <BlockerCard
+                key={i}
+                blocker={blocker}
+                index={i}
+                locked={!isDemo && i > 0}
+              />
+            ))}
+          </div>
+          {!isDemo && (
+            <div className="mt-3 text-center">
+              <p className="text-sm text-gray-500">
+                Unlock all blockers with detailed fixes —{" "}
+                <Link href="#pro-upgrade" className="font-semibold text-emerald-600 hover:underline">
+                  Try for $1.50
+                </Link>{" "}
+                or{" "}
+                <Link href="#pro-upgrade" className="font-semibold text-blue-600 hover:underline">
+                  Get Pro
+                </Link>
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Generate tailored CV — plan options */}
       {!isDemo && process.env.NEXT_PUBLIC_PRO_ENABLED !== "false" && (
         <div className="mb-8 rounded-xl border border-gray-200 bg-white p-5">
@@ -349,63 +406,6 @@ export default function ResultsPage() {
           onUpgrade={(plan) => handleQuickCheckout(plan)}
           loading={checkoutLoading !== null}
         />
-      )}
-
-      {/* Radar Score + Breakdown */}
-      {radar && (
-        <div className="mb-8">
-          <div className="grid gap-6 md:grid-cols-2">
-            {/* Primary radar gauge */}
-            <ScoreCard
-              variant="primary"
-              label="Match Score"
-              score={radar.score}
-              description="How well your resume matches this job"
-              radarLabel={radar.label}
-            />
-
-            {/* Breakdown bars */}
-            <div className="rounded-xl border border-gray-200 bg-white p-6">
-              <h3 className="mb-3 text-sm font-semibold text-gray-700 uppercase tracking-wide">Match Breakdown</h3>
-              <ScoreCard variant="breakdown" label="Hard Skills" score={radar.breakdown.hardSkills} description="" />
-              <ScoreCard variant="breakdown" label="Soft Skills" score={radar.breakdown.softSkills} description="" />
-              <ScoreCard variant="breakdown" label="Results" score={radar.breakdown.measurableResults} description="" />
-              <ScoreCard variant="breakdown" label="Keywords" score={radar.breakdown.keywordOptimization} description="" />
-              <ScoreCard variant="breakdown" label="Formatting" score={radar.breakdown.formattingBestPractices} description="" />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Blockers — blurred on free tier */}
-      {radar && radar.blockers.length > 0 && (
-        <div className="mb-8">
-          <h2 className="mb-4 text-lg font-semibold text-gray-900">Top Blockers</h2>
-          <div className="grid gap-4 md:grid-cols-3">
-            {radar.blockers.slice(0, 3).map((blocker, i) => (
-              <BlockerCard
-                key={i}
-                blocker={blocker}
-                index={i}
-                locked={!isDemo && i > 0}
-              />
-            ))}
-          </div>
-          {!isDemo && (
-            <div className="mt-3 text-center">
-              <p className="text-sm text-gray-500">
-                Unlock all blockers with detailed fixes —{" "}
-                <Link href="#pro-upgrade" className="font-semibold text-emerald-600 hover:underline">
-                  Try for $1.50
-                </Link>{" "}
-                or{" "}
-                <Link href="#pro-upgrade" className="font-semibold text-blue-600 hover:underline">
-                  Get Pro
-                </Link>
-              </p>
-            </div>
-          )}
-        </div>
       )}
 
       {/* Keywords, Strengths, Gaps */}
