@@ -19,7 +19,7 @@ export default function SampleResumeModal() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 sm:gap-2 sm:rounded-full sm:border sm:border-white/40 sm:bg-white/40 sm:px-5 sm:py-2 sm:text-gray-600 sm:shadow-sm sm:shadow-black/5 sm:ring-1 sm:ring-black/5 sm:backdrop-blur-md sm:hover:bg-white/70 sm:hover:text-gray-900"
+        className="cursor-pointer inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 sm:gap-2 sm:rounded-full sm:border sm:border-white/40 sm:bg-white/40 sm:px-5 sm:py-2 sm:text-gray-600 sm:shadow-sm sm:shadow-black/5 sm:ring-1 sm:ring-black/5 sm:backdrop-blur-md sm:hover:bg-white/70 sm:hover:text-gray-900"
       >
         <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
           <path d="M8 5v14l11-7z" />
