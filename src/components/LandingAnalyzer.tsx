@@ -44,7 +44,6 @@ export default function LandingAnalyzer() {
   useEffect(() => {
     if (resumeReady && step === "upload") {
       setStep("jd");
-      // Small delay for the DOM to render, then focus JD textarea
       setTimeout(() => {
         jdRef.current?.focus();
         jdRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });

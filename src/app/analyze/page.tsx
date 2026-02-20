@@ -55,7 +55,7 @@ function AnalyzePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialTab = searchParams.get("tab");
-  const [phase, setPhase] = useState<Phase>(initialTab === "jobs" ? "jobs" : "resume_input");
+  const [phase, setPhase] = useState<Phase>(initialTab === "jobs" ? "jobs" : "hub");
   const [resumeMode, setResumeMode] = useState<InputMode>("upload");
   const [resumeText, setResumeText] = useState("");
   const [jobDescription, setJobDescription] = useState("");
@@ -156,7 +156,7 @@ function AnalyzePage() {
         dismissOnboarding();
         setPhase("jobs");
       } else {
-        setPhase("resume_input");
+        setPhase("hub");
       }
     },
     [dismissOnboarding],
