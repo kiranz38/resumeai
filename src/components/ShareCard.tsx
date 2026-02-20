@@ -88,7 +88,7 @@ export default function ShareCard({ className = "" }: { className?: string }) {
           onClick={() =>
             openShare("reddit", `https://www.reddit.com/submit?url=${encodedUrl}&title=${encodedText}`)
           }
-          className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-orange-600 transition-colors hover:bg-orange-50 hover:border-orange-200"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-50 hover:border-amber-200"
           aria-label="Share on Reddit"
         >
           <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">

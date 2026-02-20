@@ -172,12 +172,12 @@ export default function PaywallPlanPicker({
           className={`relative rounded-xl border-2 p-6 transition-all ${
             defaultPlan === "pass"
               ? "border-gray-200 bg-white"
-              : "border-orange-400 bg-orange-50/30 shadow-md"
+              : "border-amber-500 bg-amber-50/30 shadow-md"
           }`}
         >
           {!defaultPlan && (
             <div className="absolute -top-3 left-4">
-              <span className="rounded-full bg-orange-500 px-3 py-0.5 text-xs font-semibold text-white">
+              <span className="rounded-full bg-amber-600 px-3 py-0.5 text-xs font-semibold text-white">
                 Most Popular
               </span>
             </div>
@@ -193,7 +193,7 @@ export default function PaywallPlanPicker({
             <ul className="mt-4 space-y-2">
               {PRO_FEATURES.map((f) => (
                 <li key={f} className="flex items-start gap-2 text-sm text-gray-600">
-                  <span className="mt-0.5 text-orange-500">&#10003;</span>
+                  <span className="mt-0.5 text-amber-600">&#10003;</span>
                   {f}
                 </li>
               ))}
@@ -203,7 +203,7 @@ export default function PaywallPlanPicker({
           <button
             onClick={() => handleCheckout("pro")}
             disabled={loading !== null}
-            className="mt-4 w-full rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-50"
+            className="mt-4 w-full rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-amber-700 disabled:opacity-50"
           >
             {loading === "pro" ? "Processing..." : `Get Pro — ${PRO_PRICE_DISPLAY}`}
           </button>

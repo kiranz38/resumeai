@@ -120,20 +120,20 @@ export default function LandingPage() {
       {/* Hero — F-pattern: text left + visual right on desktop, stacked on mobile */}
       <section className="relative overflow-hidden bg-gradient-to-b from-slate-50 via-white to-white px-4 pb-16 pt-12 sm:pb-24 sm:pt-20">
         {/* Decorative blobs */}
-        <div className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-orange-100/30 blur-3xl" />
+        <div className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-amber-100/30 blur-3xl" />
         <div className="pointer-events-none absolute -right-32 top-20 h-80 w-80 rounded-full bg-amber-100/20 blur-3xl" />
 
         <div className="relative mx-auto max-w-6xl">
           <div className="flex flex-col items-center text-center lg:flex-row lg:items-start lg:gap-16 lg:text-left">
             {/* Left: Copy + CTA */}
             <div className="lg:flex-1 lg:pt-8">
-              <span className="mb-4 inline-block rounded-full bg-orange-100 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-orange-700">
+              <span className="mb-4 inline-block rounded-full bg-amber-100 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-amber-700">
                 Free instant analysis
               </span>
               <h1 className="font-[var(--font-inter)] text-[28px] font-extrabold leading-tight tracking-[-0.04em] text-gray-900 sm:text-5xl lg:text-[3.5rem]">
                 Tailor your CV to any
                 <br />
-                <span className="bg-gradient-to-r from-orange-500 to-amber-600 bg-clip-text text-transparent">job description.</span>
+                <span className="bg-gradient-to-r from-amber-600 to-amber-700 bg-clip-text text-transparent">job description.</span>
               </h1>
               <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-gray-600 sm:mt-5 sm:text-lg lg:mx-0">
                 Most resumes get rejected before a human ever reads them.
@@ -164,7 +164,7 @@ export default function LandingPage() {
               <div className="mt-4 flex flex-col items-center gap-3 sm:mt-8 sm:gap-4 lg:items-start">
                 <Link
                   href="/analyze?action=upload"
-                  className="group relative inline-flex min-h-[48px] items-center gap-3 rounded-xl bg-orange-500 px-10 py-4 text-lg font-bold text-white shadow-lg shadow-orange-500/25 transition-all hover:-translate-y-0.5 hover:bg-orange-600 hover:shadow-xl hover:shadow-orange-500/30"
+                  className="group relative inline-flex min-h-[48px] items-center gap-3 rounded-xl bg-amber-600 px-10 py-4 text-lg font-bold text-white shadow-lg shadow-amber-600/25 transition-all hover:-translate-y-0.5 hover:bg-amber-700 hover:shadow-xl hover:shadow-amber-600/30"
                 >
                   <svg className="h-6 w-6 transition-transform group-hover:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -209,7 +209,7 @@ export default function LandingPage() {
                       </div>
                       <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-gray-100">
                         <div
-                          className="h-full rounded-full bg-gradient-to-r from-orange-400 to-green-500 transition-all duration-1000"
+                          className="h-full rounded-full bg-gradient-to-r from-amber-500 to-green-500 transition-all duration-1000"
                           style={{ width: `${d.after}%` }}
                         />
                       </div>
@@ -255,7 +255,7 @@ export default function LandingPage() {
           </div>
           <Link
             href="/analyze?action=upload"
-            className="mt-8 inline-flex items-center gap-2 rounded-lg bg-orange-500 px-6 py-3 text-sm font-bold text-white shadow-sm hover:bg-orange-600 transition-colors"
+            className="mt-8 inline-flex items-center gap-2 rounded-lg bg-amber-600 px-6 py-3 text-sm font-bold text-white shadow-sm hover:bg-amber-700 transition-colors"
           >
             Try It Now — Free
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -311,7 +311,7 @@ export default function LandingPage() {
                 <svg className="h-8 w-8 rotate-90 text-slate-400 sm:rotate-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
-                <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-orange-700">ResumeMate AI</span>
+                <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">ResumeMate AI</span>
               </div>
             </FadeInOnScroll>
             {/* After */}
@@ -331,7 +331,7 @@ export default function LandingPage() {
           <p className="mt-8 text-sm text-gray-500">
             +37 point improvement — same resume, same experience, better presentation.
           </p>
-          <p className="mt-2 text-xs font-medium text-orange-600">
+          <p className="mt-2 text-xs font-medium text-amber-700">
             Optimized resumes are 3x more likely to land interview callbacks.
           </p>
         </div>
@@ -451,9 +451,9 @@ export default function LandingPage() {
 
             {/* Pro Plan — highlighted "Most Popular" */}
             <FadeInOnScroll delay={150}>
-              <div className="relative rounded-xl border-2 border-orange-400 bg-white p-8 shadow-md text-left">
+              <div className="relative rounded-xl border-2 border-amber-500 bg-white p-8 shadow-md text-left">
                 <div className="absolute -top-3 left-4">
-                  <span className="rounded-full bg-orange-500 px-3 py-0.5 text-xs font-semibold text-white">
+                  <span className="rounded-full bg-amber-600 px-3 py-0.5 text-xs font-semibold text-white">
                     Most Popular
                   </span>
                 </div>
@@ -477,14 +477,14 @@ export default function LandingPage() {
                     "Re-generate versions (x2)",
                   ].map((f) => (
                     <li key={f} className="flex items-start gap-2">
-                      <span className="mt-0.5 text-orange-500">&#10003;</span>
+                      <span className="mt-0.5 text-amber-600">&#10003;</span>
                       {f}
                     </li>
                   ))}
                 </ul>
                 <Link
                   href="/analyze?action=upload"
-                  className="mt-6 block rounded-lg bg-orange-500 px-6 py-2.5 text-center text-sm font-semibold text-white hover:bg-orange-600"
+                  className="mt-6 block rounded-lg bg-amber-600 px-6 py-2.5 text-center text-sm font-semibold text-white hover:bg-amber-700"
                 >
                   Get My Tailored CV — {PRO_PRICE_DISPLAY}
                 </Link>
@@ -565,7 +565,7 @@ export default function LandingPage() {
           </p>
           <Link
             href="/analyze?action=upload"
-            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-orange-500 px-8 py-3.5 text-base font-bold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-orange-600 hover:shadow-md"
+            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-amber-600 px-8 py-3.5 text-base font-bold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-amber-700 hover:shadow-md"
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />

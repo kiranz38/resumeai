@@ -99,7 +99,7 @@ export default function ExitIntentPopup({ score, missingKeywords }: ExitIntentPo
                 trackEvent("exit_intent_cta_clicked");
                 document.getElementById("pro-upgrade")?.scrollIntoView({ behavior: "smooth" });
               }}
-              className="w-full rounded-lg bg-orange-500 px-6 py-3 text-sm font-bold text-white hover:bg-orange-600 transition-colors"
+              className="w-full rounded-lg bg-amber-600 px-6 py-3 text-sm font-bold text-white hover:bg-amber-700 transition-colors"
             >
               Fix My Resume Now — Free
             </Link>
