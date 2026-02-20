@@ -2,6 +2,7 @@ import Link from "next/link";
 import FAQ from "@/components/FAQ";
 import ShareCard from "@/components/ShareCard";
 import LandingAnalyzer from "@/components/LandingAnalyzer";
+import SampleResumeModal from "@/components/SampleResumeModal";
 import { TRIAL_PRICE_DISPLAY, PRO_PRICE_DISPLAY, CAREER_PASS_DISPLAY } from "@/lib/constants";
 
 const IS_FUNNEL_V2 = process.env.NEXT_PUBLIC_FUNNEL_V2 === "true";
@@ -152,14 +153,7 @@ export default function LandingPage() {
             )}
             <p className="text-sm text-gray-500">No account needed — upload &amp; analyze instantly</p>
             <div className="flex items-center gap-3">
-              {/* Mobile: colored text link | Desktop: glassy pill */}
-              <Link
-                href="/demo"
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 sm:gap-2 sm:rounded-full sm:border sm:border-white/40 sm:bg-white/40 sm:px-5 sm:py-2 sm:text-gray-600 sm:shadow-sm sm:shadow-black/5 sm:ring-1 sm:ring-black/5 sm:backdrop-blur-md sm:hover:bg-white/70 sm:hover:text-gray-900"
-              >
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
-                Try sample resume
-              </Link>
+              <SampleResumeModal />
               <span className="hidden text-sm text-gray-400 sm:inline">PDF, DOCX, or paste text</span>
             </div>
           </div>
