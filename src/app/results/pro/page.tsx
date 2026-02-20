@@ -34,14 +34,14 @@ export default function ProResultsPageWrapper() {
       fallback={
         <div className="flex min-h-[50vh] items-center justify-center px-4">
           <div className="mx-auto w-full max-w-sm text-center">
-            <svg className="mx-auto h-8 w-8 animate-spin text-blue-800" viewBox="0 0 24 24" fill="none">
+            <svg className="mx-auto h-8 w-8 animate-spin text-primary" viewBox="0 0 24 24" fill="none">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
             </svg>
             <p className="mt-3 text-base font-medium text-gray-700">Preparing your tailored resume...</p>
             <div className="mt-4">
               <div className="h-2 w-full rounded-full bg-gray-200">
-                <div className="h-2 w-[2%] rounded-full bg-blue-800 transition-all duration-700 ease-out" />
+                <div className="h-2 w-[2%] rounded-full bg-primary transition-all duration-700 ease-out" />
               </div>
               <div className="mt-2 text-xs text-gray-400">Usually takes 60–90 seconds</div>
             </div>
@@ -577,7 +577,7 @@ function ProResultsPage() {
               <div className="mt-4 flex justify-center gap-3">
                 <button
                   onClick={() => window.location.reload()}
-                  className="rounded-lg bg-blue-800 px-5 py-2 text-sm font-medium text-white hover:bg-blue-900"
+                  className="rounded-lg bg-primary px-5 py-2 text-sm font-medium text-white hover:bg-primary-hover"
                 >
                   Try Again
                 </button>
@@ -591,7 +591,7 @@ function ProResultsPage() {
             </>
           ) : (
             <>
-              <svg className="mx-auto h-8 w-8 animate-spin text-blue-800" viewBox="0 0 24 24" fill="none">
+              <svg className="mx-auto h-8 w-8 animate-spin text-primary" viewBox="0 0 24 24" fill="none">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
               </svg>
@@ -606,7 +606,7 @@ function ProResultsPage() {
                   </div>
                   <div className="h-2 w-full rounded-full bg-gray-200">
                     <div
-                      className="h-2 rounded-full bg-blue-800 transition-all duration-500 ease-out"
+                      className="h-2 rounded-full bg-primary transition-all duration-500 ease-out"
                       style={{ width: `${loadingProgress}%` }}
                     />
                   </div>
@@ -677,7 +677,7 @@ function ProResultsPage() {
         <div className="mb-4" data-print-hide>
           <Link
             href="/results/pack"
-            className="inline-flex items-center gap-1 text-sm text-blue-800 hover:text-blue-800"
+            className="inline-flex items-center gap-1 text-sm text-primary hover:text-primary"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -689,7 +689,7 @@ function ProResultsPage() {
 
       {/* Header */}
       <div className="mb-6" data-print-hide>
-        <div className={`mb-1 inline-block rounded-full px-3 py-0.5 text-xs font-semibold text-white ${isDemo ? "bg-gray-500" : currentPlan === "trial" ? "bg-emerald-600" : "bg-blue-800"}`}>
+        <div className={`mb-1 inline-block rounded-full px-3 py-0.5 text-xs font-semibold text-white ${isDemo ? "bg-gray-500" : currentPlan === "trial" ? "bg-emerald-600" : "bg-primary"}`}>
           {isDemo ? "Demo" : currentPlan === "trial" ? "Career Trial" : "Pro"}
         </div>
         <h1 className="text-3xl font-bold text-gray-900">Your Full Tailor Pack</h1>
@@ -717,7 +717,7 @@ function ProResultsPage() {
             </p>
             <Link
               href="/analyze"
-              className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-blue-800 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-900 transition-colors"
+              className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover transition-colors"
             >
               Try with your resume
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -744,7 +744,7 @@ function ProResultsPage() {
                 sessionStorage.setItem("rt_pending_pro", "true");
                 window.location.href = "/pricing";
               }}
-              className="shrink-0 rounded-lg bg-blue-800 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-900"
+              className="shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover"
             >
               Upgrade to Pro — {PRO_PRICE_DISPLAY}
             </button>
@@ -822,13 +822,13 @@ function ProResultsPage() {
           <div className="flex rounded-lg border border-gray-200 text-sm">
             <button
               onClick={() => setViewMode("edit")}
-              className={`px-3 py-1.5 ${viewMode === "edit" ? "bg-blue-800 text-white" : "text-gray-600 hover:bg-gray-50"} rounded-l-lg transition-colors`}
+              className={`px-3 py-1.5 ${viewMode === "edit" ? "bg-primary text-white" : "text-gray-600 hover:bg-gray-50"} rounded-l-lg transition-colors`}
             >
               Edit
             </button>
             <button
               onClick={() => setViewMode("preview")}
-              className={`px-3 py-1.5 ${viewMode === "preview" ? "bg-blue-800 text-white" : "text-gray-600 hover:bg-gray-50"} rounded-r-lg transition-colors`}
+              className={`px-3 py-1.5 ${viewMode === "preview" ? "bg-primary text-white" : "text-gray-600 hover:bg-gray-50"} rounded-r-lg transition-colors`}
             >
               Preview
             </button>
@@ -884,7 +884,7 @@ function ProResultsPage() {
                   <div className="w-1 shrink-0 bg-blue-500" />
                   <div className="flex-1 p-4">
                     <div className="mb-2 flex items-center gap-3">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-sm font-bold text-blue-800">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-sm font-bold text-primary">
                         {(exp.company || "?")[0].toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -1018,7 +1018,7 @@ function ProResultsPage() {
               <h2 className="text-lg font-semibold text-gray-900">Cover Letter</h2>
               <button
                 onClick={() => copyToClipboard(result.coverLetter.paragraphs.join("\n\n"))}
-                className="text-sm text-blue-800 hover:underline"
+                className="text-sm text-primary hover:underline"
               >
                 Copy to clipboard
               </button>
@@ -1131,7 +1131,7 @@ function ProResultsPage() {
                   <span className="text-xs font-medium text-green-600 uppercase tracking-wide">After</span>
                   <p className="mt-0.5 text-sm font-medium text-gray-900">{rewrite.rewritten}</p>
                 </div>
-                <p className="text-sm text-blue-800">{rewrite.notes}</p>
+                <p className="text-sm text-primary">{rewrite.notes}</p>
               </div>
             ))}
           </div>
@@ -1172,8 +1172,8 @@ function ProResultsPage() {
           <h2 className="mb-4 text-lg font-semibold text-blue-900">Next Actions</h2>
           <ol className="space-y-2">
             {result.nextActions.map((action, i) => (
-              <li key={i} className="flex items-start gap-3 text-sm text-blue-800">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-200 text-xs font-semibold text-blue-800">
+              <li key={i} className="flex items-start gap-3 text-sm text-primary">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-200 text-xs font-semibold text-primary">
                   {i + 1}
                 </span>
                 {action}
@@ -1205,7 +1205,7 @@ function ProResultsPage() {
               <button
                 onClick={handleSendEmail}
                 disabled={sendingEmail || !emailInput.includes("@")}
-                className="rounded-lg bg-blue-800 px-5 py-2 text-sm font-medium text-white hover:bg-blue-900 disabled:opacity-50"
+                className="rounded-lg bg-primary px-5 py-2 text-sm font-medium text-white hover:bg-primary-hover disabled:opacity-50"
               >
                 {sendingEmail ? "Sending..." : "Send"}
               </button>
@@ -1218,15 +1218,15 @@ function ProResultsPage() {
       {/* Navigation */}
       <div className="mt-8 flex items-center justify-between" data-print-hide>
         {fromPack ? (
-          <Link href="/results/pack" className="text-base font-medium text-blue-800 hover:underline">
+          <Link href="/results/pack" className="text-base font-medium text-primary hover:underline">
             Back to Pack Results
           </Link>
         ) : (
-          <Link href="/results" className="text-base font-medium text-blue-800 hover:underline">
+          <Link href="/results" className="text-base font-medium text-primary hover:underline">
             Back to free analysis
           </Link>
         )}
-        <Link href="/analyze" className="text-base font-medium text-blue-800 hover:underline">
+        <Link href="/analyze" className="text-base font-medium text-primary hover:underline">
           Analyze another resume
         </Link>
       </div>
@@ -1280,7 +1280,7 @@ function ProResultsPage() {
                 <div className="mt-3 flex justify-center gap-3">
                   <Link
                     href="/pricing"
-                    className="rounded-lg bg-blue-800 px-6 py-2.5 text-sm font-semibold text-white hover:bg-blue-900"
+                    className="rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-white hover:bg-primary-hover"
                     onClick={() => trackEvent("trial_upgrade_clicked", { context: "bottom_cta" })}
                   >
                     Upgrade to Pro — {PRO_PRICE_DISPLAY}
@@ -1307,7 +1307,7 @@ function ProResultsPage() {
                       sessionStorage.removeItem("rt_jd_text");
                       window.location.href = "/analyze";
                     }}
-                    className="rounded-lg bg-blue-800 px-6 py-2.5 text-sm font-semibold text-white hover:bg-blue-900"
+                    className="rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-white hover:bg-primary-hover"
                   >
                     Optimize another job
                   </button>
@@ -1482,7 +1482,7 @@ function StickyActionBar({ result, liveRadarScore, radarBefore, radarAfter, plan
             <button
               onClick={handleExportZIP}
               disabled={downloading}
-              className="inline-flex items-center gap-1.5 rounded-l-lg bg-blue-800 px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-blue-900 disabled:opacity-60 sm:gap-2 sm:px-5 sm:text-sm"
+              className="inline-flex items-center gap-1.5 rounded-l-lg bg-primary px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-primary-hover disabled:opacity-60 sm:gap-2 sm:px-5 sm:text-sm"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -1493,7 +1493,7 @@ function StickyActionBar({ result, liveRadarScore, radarBefore, radarAfter, plan
             {/* Dropdown chevron */}
             <button
               onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="inline-flex items-center rounded-r-lg border-l border-blue-500 bg-blue-800 px-2 py-2 text-white hover:bg-blue-900"
+              className="inline-flex items-center rounded-r-lg border-l border-blue-500 bg-primary px-2 py-2 text-white hover:bg-primary-hover"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />

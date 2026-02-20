@@ -161,7 +161,7 @@ export default function SpotlightOverlay({
             </button>
             <button
               onClick={onNext}
-              className="rounded-lg bg-blue-800 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-900"
+              className="rounded-lg bg-primary px-4 py-1.5 text-sm font-medium text-white hover:bg-primary-hover"
             >
               {currentStep < steps.length - 1 ? "Next" : "Done"}
             </button>

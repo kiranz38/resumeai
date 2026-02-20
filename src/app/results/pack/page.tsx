@@ -359,7 +359,7 @@ function PackResultsInner() {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <div className="text-center">
-          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-blue-800 border-t-transparent" />
+          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           <p className="mt-3 text-gray-500">Preparing bulk generation...</p>
         </div>
       </div>
@@ -425,7 +425,7 @@ function PackResultsInner() {
         </div>
         <div className="h-2.5 overflow-hidden rounded-full bg-gray-200">
           <div
-            className="h-full rounded-full bg-blue-800 transition-all duration-300 ease-out"
+            className="h-full rounded-full bg-primary transition-all duration-300 ease-out"
             style={{ width: `${overallPct}%` }}
           />
         </div>
@@ -455,7 +455,7 @@ function PackResultsInner() {
                 {(result.stage === "parsing" ||
                   result.stage === "generating" ||
                   result.stage === "validating") && (
-                  <div className="h-8 w-8 flex-shrink-0 animate-spin rounded-full border-2 border-blue-800 border-t-transparent" />
+                  <div className="h-8 w-8 flex-shrink-0 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                 )}
                 {result.stage === "complete" && (
                   <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-green-100">
@@ -539,7 +539,7 @@ function PackResultsInner() {
                     </button>
                     <button
                       onClick={() => handleViewResult(result)}
-                      className="rounded-lg bg-blue-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-900"
+                      className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-hover"
                     >
                       View CV
                     </button>
@@ -560,7 +560,7 @@ export default function PackResultsPage() {
       fallback={
         <div className="flex min-h-[50vh] items-center justify-center">
           <div className="text-center">
-            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-blue-800 border-t-transparent" />
+            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
             <p className="mt-3 text-gray-500">Loading...</p>
           </div>
         </div>

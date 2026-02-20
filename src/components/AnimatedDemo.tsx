@@ -120,7 +120,7 @@ export default function AnimatedDemo() {
                   </svg>
                 </div>
                 <p className="text-xs sm:text-sm font-semibold text-gray-700">
-                  <span className="text-blue-800">Click to upload</span> or drag and drop
+                  <span className="text-primary">Click to upload</span> or drag and drop
                 </p>
                 <p className="mt-1 text-[10px] sm:text-xs text-gray-400">PDF, DOCX, or TXT — up to 10 MB</p>
                 <div className="mt-3 flex items-center justify-center gap-1.5">
@@ -151,7 +151,7 @@ export default function AnimatedDemo() {
           <div className={`absolute inset-0 flex flex-col items-center justify-center p-4 sm:p-6 transition-all duration-700 ${step === 1 ? "opacity-100 translate-x-0" : "opacity-0 translate-x-8 pointer-events-none"}`}>
             <div className="w-full max-w-sm text-center">
               {/* Spinner */}
-              <svg className="mx-auto h-7 w-7 animate-spin text-blue-800" viewBox="0 0 24 24" fill="none">
+              <svg className="mx-auto h-7 w-7 animate-spin text-primary" viewBox="0 0 24 24" fill="none">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
               </svg>
@@ -164,7 +164,7 @@ export default function AnimatedDemo() {
                   <span>{progressPct}%</span>
                 </div>
                 <div className="h-1.5 w-full rounded-full bg-gray-200">
-                  <div className="h-full rounded-full bg-blue-800 transition-all duration-500 ease-out" style={{ width: `${progressPct}%` }} />
+                  <div className="h-full rounded-full bg-primary transition-all duration-500 ease-out" style={{ width: `${progressPct}%` }} />
                 </div>
               </div>
 
@@ -214,7 +214,7 @@ export default function AnimatedDemo() {
                       <span className="text-xl sm:text-2xl font-bold text-yellow-600">{scoreAnim}</span>
                     </div>
                   </div>
-                  <p className="text-[10px] font-semibold text-blue-800">Needs Sharpening</p>
+                  <p className="text-[10px] font-semibold text-primary">Needs Sharpening</p>
                   <p className="text-[9px] text-gray-400">Match Score</p>
                 </div>
 
@@ -271,7 +271,7 @@ export default function AnimatedDemo() {
                     </div>
                     <div className="absolute inset-0 z-10 flex items-end justify-center rounded-lg pb-2"
                       style={{ background: "linear-gradient(to bottom, transparent 5%, rgba(255,255,255,0.95) 30%, white 45%)" }}>
-                      <svg className="h-3.5 w-3.5 text-blue-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="h-3.5 w-3.5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                       </svg>
                     </div>
@@ -286,7 +286,7 @@ export default function AnimatedDemo() {
             <div className="mx-auto max-w-lg">
               {/* Header */}
               <div className="mb-1">
-                <span className="rounded-full bg-blue-800 px-2 py-0.5 text-[8px] font-semibold text-white">Pro</span>
+                <span className="rounded-full bg-primary px-2 py-0.5 text-[8px] font-semibold text-white">Pro</span>
               </div>
               <p className="mb-3 text-sm font-bold text-gray-900">Your Full Tailor Pack</p>
 
@@ -336,7 +336,7 @@ export default function AnimatedDemo() {
                     <div className="w-0.5 shrink-0 bg-blue-500" />
                     <div className="flex-1 p-2">
                       <div className="flex items-center gap-1.5 mb-1">
-                        <div className="flex h-5 w-5 items-center justify-center rounded bg-blue-50 text-[7px] font-bold text-blue-800">A</div>
+                        <div className="flex h-5 w-5 items-center justify-center rounded bg-blue-50 text-[7px] font-bold text-primary">A</div>
                         <div>
                           <span className="text-[8px] font-semibold text-gray-900">Tech Lead</span>
                           <span className="ml-1 text-[8px] text-gray-500">Acme Corp</span>
@@ -379,8 +379,8 @@ export default function AnimatedDemo() {
                 <span className="rounded-full bg-green-100 px-2 py-0.5 text-[9px] font-bold text-green-700">Match: 84 <span className="text-green-600">(+37)</span></span>
                 <div className="flex items-center gap-1.5">
                   <span className="rounded border border-gray-300 px-2 py-1 text-[8px] font-medium text-gray-600">Copy All</span>
-                  <span className="rounded-l bg-blue-800 px-2.5 py-1 text-[8px] font-semibold text-white">Download</span>
-                  <span className="rounded-r border-l border-blue-500 bg-blue-800 px-1 py-1 text-[8px] text-white">
+                  <span className="rounded-l bg-primary px-2.5 py-1 text-[8px] font-semibold text-white">Download</span>
+                  <span className="rounded-r border-l border-blue-500 bg-primary px-1 py-1 text-[8px] text-white">
                     <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                   </span>
                 </div>

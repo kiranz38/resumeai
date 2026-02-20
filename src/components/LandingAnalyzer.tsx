@@ -195,7 +195,7 @@ export default function LandingAnalyzer() {
 
       {/* Progress */}
       {progress && (
-        <div className="mb-4 flex items-center justify-center gap-2 text-sm text-blue-800">
+        <div className="mb-4 flex items-center justify-center gap-2 text-sm text-primary">
           <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
@@ -236,7 +236,7 @@ export default function LandingAnalyzer() {
                 </p>
                 <button
                   onClick={() => setInputMode("upload")}
-                  className="text-xs text-blue-800 hover:text-blue-800"
+                  className="text-xs text-primary hover:text-primary"
                 >
                   Switch to file upload
                 </button>
@@ -272,7 +272,7 @@ export default function LandingAnalyzer() {
             <button
               onClick={handleAnalyze}
               disabled={isAnalyzing || !jdReady || !resumeReady}
-              className="inline-flex items-center gap-2 rounded-lg bg-blue-800 px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-900 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
             >
               Check my resume
             </button>
@@ -304,7 +304,7 @@ function StepDot({ active, done, label }: { active: boolean; done: boolean; labe
     <div className="flex items-center gap-1.5">
       <div
         className={`h-2.5 w-2.5 rounded-full transition-colors ${
-          done ? "bg-green-500" : active ? "bg-blue-800" : "bg-gray-200"
+          done ? "bg-green-500" : active ? "bg-primary" : "bg-gray-200"
         }`}
       />
       <span className={`text-xs ${active ? "font-medium text-gray-700" : "text-gray-400"}`}>

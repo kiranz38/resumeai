@@ -131,7 +131,7 @@ export default function ExamplePage() {
               "PDF, DOCX, TXT exports",
             ].map((item) => (
               <div key={item} className="flex items-center gap-2">
-                <svg className="h-4 w-4 text-blue-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
                 {item}
@@ -145,7 +145,7 @@ export default function ExamplePage() {
       <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
         <Link
           href="/analyze"
-          className="rounded-lg bg-blue-800 px-8 py-3 text-base font-semibold text-white shadow-sm hover:bg-blue-900"
+          className="rounded-lg bg-primary px-8 py-3 text-base font-semibold text-white shadow-sm hover:bg-primary-hover"
         >
           Analyze Your Resume
         </Link>

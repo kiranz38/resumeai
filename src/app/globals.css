@@ -15,6 +15,8 @@ html {
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --color-primary: #4d70eb;
+  --color-primary-hover: #3a5cd4;
 }
 
 body {
@@ -81,9 +83,9 @@ body {
 
 /* ── Dashboard animations ── */
 @keyframes pulse-ring {
-  0% { box-shadow: 0 0 0 0 rgba(30, 64, 175, 0.5); }
-  70% { box-shadow: 0 0 0 10px rgba(30, 64, 175, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(30, 64, 175, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(77, 112, 235, 0.5); }
+  70% { box-shadow: 0 0 0 10px rgba(77, 112, 235, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(77, 112, 235, 0); }
 }
 .animate-pulse-ring { animation: pulse-ring 2s ease-out infinite; }
 
@@ -94,8 +96,8 @@ body {
 .animate-slide-up-in { animation: slide-up-in 0.4s ease-out forwards; }
 
 @keyframes spotlight-glow {
-  0%, 100% { box-shadow: 0 0 0 4px rgba(30, 64, 175, 0.3); }
-  50% { box-shadow: 0 0 0 8px rgba(30, 64, 175, 0.15); }
+  0%, 100% { box-shadow: 0 0 0 4px rgba(77, 112, 235, 0.3); }
+  50% { box-shadow: 0 0 0 8px rgba(77, 112, 235, 0.15); }
 }
 .animate-spotlight-glow { animation: spotlight-glow 2s ease-in-out infinite; }
 

@@ -142,7 +142,7 @@ export default function ResumePreviewCard({
             <button
               onClick={() => onUpgrade("pro")}
               disabled={loading === true}
-              className="w-full sm:w-auto rounded-lg bg-blue-800 px-6 py-2 sm:py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-900 disabled:opacity-50"
+              className="w-full sm:w-auto rounded-lg bg-primary px-6 py-2 sm:py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover disabled:opacity-50"
             >
               {loading ? "Redirecting..." : "Get Pro — $5"}
             </button>

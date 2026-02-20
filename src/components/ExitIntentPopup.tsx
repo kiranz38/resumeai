@@ -66,7 +66,7 @@ export default function ExitIntentPopup({ score, missingKeywords }: ExitIntentPo
         {/* Content */}
         <div className="text-center">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-blue-100">
-            <svg className="h-7 w-7 text-blue-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="h-7 w-7 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
           </div>
@@ -76,7 +76,7 @@ export default function ExitIntentPopup({ score, missingKeywords }: ExitIntentPo
             <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-red-50 px-4 py-2">
               <span className="text-sm text-gray-600">Your score:</span>
               <span className={`text-2xl font-bold ${
-                score >= 75 ? "text-green-600" : score >= 60 ? "text-blue-800" : "text-red-600"
+                score >= 75 ? "text-green-600" : score >= 60 ? "text-primary" : "text-red-600"
               }`}>
                 {score}
               </span>
@@ -98,7 +98,7 @@ export default function ExitIntentPopup({ score, missingKeywords }: ExitIntentPo
                 setShow(false);
                 trackEvent("exit_intent_cta_clicked");
               }}
-              className="w-full rounded-lg bg-blue-800 px-6 py-3 text-sm font-bold text-white hover:bg-blue-900 transition-colors"
+              className="w-full rounded-lg bg-primary px-6 py-3 text-sm font-bold text-white hover:bg-primary-hover transition-colors"
             >
               Check My Resume — Free
             </Link>

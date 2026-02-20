@@ -22,7 +22,7 @@ export default function BlockerCard({ blocker, index, locked = false }: BlockerC
 
       {/* How */}
       <div className="mb-2 rounded-lg bg-blue-50 px-3 py-2">
-        <p className="text-sm text-blue-800">
+        <p className="text-sm text-primary">
           <span className="font-semibold">Fix: </span>
           {blocker.how}
         </p>
@@ -54,7 +54,7 @@ export default function BlockerCard({ blocker, index, locked = false }: BlockerC
           }}
         >
           <div className="px-5 pb-5 text-center">
-            <svg className="mx-auto h-5 w-5 text-blue-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="mx-auto h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
             <p className="mt-1 text-sm font-semibold text-blue-700">

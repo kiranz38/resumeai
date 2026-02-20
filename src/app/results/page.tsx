@@ -147,13 +147,13 @@ export default function ResultsPage() {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <div className="text-center">
-          <svg className="mx-auto h-8 w-8 animate-spin text-blue-800" viewBox="0 0 24 24" fill="none">
+          <svg className="mx-auto h-8 w-8 animate-spin text-primary" viewBox="0 0 24 24" fill="none">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
           </svg>
           <p className="mt-3 text-sm text-gray-500">Loading results...</p>
           <p className="mt-2 text-xs text-gray-400">If this takes more than a few seconds, refresh or go back.</p>
-          <Link href="/analyze" className="mt-3 inline-block text-sm font-medium text-blue-800 hover:underline">
+          <Link href="/analyze" className="mt-3 inline-block text-sm font-medium text-primary hover:underline">
             Back to Analyze
           </Link>
         </div>
@@ -170,7 +170,7 @@ export default function ResultsPage() {
           <div className="mt-6 flex gap-3 justify-center">
             <button
               onClick={() => router.push("/analyze")}
-              className="rounded-lg bg-blue-800 px-6 py-2.5 text-sm font-semibold text-white hover:bg-blue-900"
+              className="rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-white hover:bg-primary-hover"
             >
               Check My Resume — Free
             </button>
@@ -207,7 +207,7 @@ export default function ResultsPage() {
               sessionStorage.setItem("rt_is_demo", "true");
               router.push("/results/pro");
             }}
-            className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-blue-800 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-900 transition-colors"
+            className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover transition-colors"
           >
             Continue to CV
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -361,7 +361,7 @@ export default function ResultsPage() {
         <div className="mb-8 rounded-xl border border-blue-200 bg-gradient-to-r from-blue-50 to-blue-50 p-5">
           <div className="flex items-start gap-3">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100">
-              <svg className="h-4 w-4 text-blue-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
               </svg>
             </div>
@@ -373,7 +373,7 @@ export default function ResultsPage() {
                     ? "Your resume is unlikely to pass most ATS filters"
                     : "Your resume is losing to stronger applicants"}
               </p>
-              <p className="mt-1 text-sm text-blue-800">
+              <p className="mt-1 text-sm text-primary">
                 {result.atsResult.missingKeywords.length > 0 && (
                   <>Your CV is missing <span className="font-semibold">{result.atsResult.missingKeywords.length} critical keywords</span> for this role. </>
                 )}
@@ -384,7 +384,7 @@ export default function ResultsPage() {
               </p>
               <button
                 onClick={() => document.getElementById("pro-upgrade")?.scrollIntoView({ behavior: "smooth" })}
-                className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-blue-800 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-900 transition-colors"
+                className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary-hover transition-colors"
               >
                 Get My Tailored Resume
                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -418,7 +418,7 @@ export default function ResultsPage() {
                   Try for $1.50
                 </Link>{" "}
                 or{" "}
-                <Link href="#pro-upgrade" className="font-semibold text-blue-800 hover:underline">
+                <Link href="#pro-upgrade" className="font-semibold text-primary hover:underline">
                   Get Pro
                 </Link>
               </p>
@@ -458,13 +458,13 @@ export default function ResultsPage() {
               disabled={checkoutLoading !== null}
               className="group relative rounded-lg border-2 border-blue-200 bg-blue-50/30 px-4 py-3 text-left transition-colors hover:border-blue-400 hover:bg-blue-50 disabled:opacity-50"
             >
-              <span className="absolute -top-2.5 right-3 rounded-full bg-blue-800 px-2 py-px text-[10px] font-bold text-white">Best Value</span>
+              <span className="absolute -top-2.5 right-3 rounded-full bg-primary px-2 py-px text-[10px] font-bold text-white">Best Value</span>
               <div className="flex items-baseline justify-between">
                 <span className="text-sm font-semibold text-gray-900">Pro</span>
                 <span className="text-sm font-bold text-blue-700">{PRO_PRICE_DISPLAY}</span>
               </div>
               <p className="mt-1 text-xs text-gray-500">PDF/DOCX exports + 2 re-generations</p>
-              {checkoutLoading === "pro" && <p className="mt-1 text-xs font-medium text-blue-800">Redirecting...</p>}
+              {checkoutLoading === "pro" && <p className="mt-1 text-xs font-medium text-primary">Redirecting...</p>}
             </button>
             {/* Trial — low commitment entry */}
             <button
@@ -626,15 +626,15 @@ export default function ResultsPage() {
         if (!capturedEmail) return null;
         return (
           <div className="mt-6 rounded-xl border border-blue-200 bg-blue-50 p-5 text-center">
-            <p className="text-sm text-blue-800">
+            <p className="text-sm text-primary">
               Want your full tailored CV sent to <span className="font-semibold">{capturedEmail}</span>?
             </p>
-            <p className="mt-1 text-xs text-blue-800">
+            <p className="mt-1 text-xs text-primary">
               Upgrade to Pro and we&apos;ll email your complete resume pack — PDF, cover letter, and insights.
             </p>
             <button
               onClick={() => document.getElementById("pro-upgrade")?.scrollIntoView({ behavior: "smooth" })}
-              className="mt-3 rounded-lg bg-blue-800 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-900 transition-colors"
+              className="mt-3 rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-hover transition-colors"
             >
               Get My Resume Pack — {PRO_PRICE_DISPLAY}
             </button>
@@ -659,7 +659,7 @@ export default function ResultsPage() {
       <div className="mt-8 text-center">
         <Link
           href="/analyze"
-          className="text-base font-medium text-blue-800 hover:underline"
+          className="text-base font-medium text-primary hover:underline"
         >
           Analyze another resume
         </Link>

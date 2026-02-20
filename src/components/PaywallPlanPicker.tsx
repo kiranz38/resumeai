@@ -172,12 +172,12 @@ export default function PaywallPlanPicker({
           className={`relative rounded-xl border-2 p-6 transition-all ${
             defaultPlan === "pass"
               ? "border-gray-200 bg-white"
-              : "border-blue-800 bg-blue-50/30 shadow-md"
+              : "border-primary bg-blue-50/30 shadow-md"
           }`}
         >
           {!defaultPlan && (
             <div className="absolute -top-3 left-4">
-              <span className="rounded-full bg-blue-800 px-3 py-0.5 text-xs font-semibold text-white">
+              <span className="rounded-full bg-primary px-3 py-0.5 text-xs font-semibold text-white">
                 Most Popular
               </span>
             </div>
@@ -193,7 +193,7 @@ export default function PaywallPlanPicker({
             <ul className="mt-4 space-y-2">
               {PRO_FEATURES.map((f) => (
                 <li key={f} className="flex items-start gap-2 text-sm text-gray-600">
-                  <span className="mt-0.5 text-blue-800">&#10003;</span>
+                  <span className="mt-0.5 text-primary">&#10003;</span>
                   {f}
                 </li>
               ))}
@@ -203,7 +203,7 @@ export default function PaywallPlanPicker({
           <button
             onClick={() => handleCheckout("pro")}
             disabled={loading !== null}
-            className="mt-4 w-full rounded-lg bg-blue-800 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-900 disabled:opacity-50"
+            className="mt-4 w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
             {loading === "pro" ? "Processing..." : `Get My Tailored Resume — ${PRO_PRICE_DISPLAY}`}
           </button>
