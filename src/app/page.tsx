@@ -191,32 +191,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* How it works — 3 steps */}
+      {/* Interactive Demo + How it works */}
       <section className="border-t border-gray-100 bg-white px-4 py-16">
-        <div className="mx-auto max-w-4xl">
-          <h2 className="text-center text-2xl font-bold text-gray-900">
-            Three steps. 30 seconds.
-          </h2>
-          <div className="mt-10 grid gap-8 md:grid-cols-3">
-            {[
-              { step: "1", title: "Upload your CV", desc: "Drop a PDF or DOCX — we extract it instantly." },
-              { step: "2", title: "Paste the job description", desc: "Copy the target listing so we can match keywords." },
-              { step: "3", title: "Get your Match Score", desc: "See what's blocking callbacks and how to fix it." },
-            ].map((s) => (
-              <div key={s.step} className="text-center">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-600 text-lg font-bold text-white">
-                  {s.step}
-                </div>
-                <h3 className="mt-4 text-base font-semibold text-gray-900">{s.title}</h3>
-                <p className="mt-1 text-sm text-gray-500">{s.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Interactive Demo — "See it in action" */}
-      <section className="bg-gradient-to-b from-white to-gray-50 px-4 py-16">
         <div className="mx-auto max-w-4xl text-center">
           <h2 className="text-2xl font-bold text-gray-900">See it in action</h2>
           <p className="mt-2 text-gray-600">
@@ -234,6 +210,23 @@ export default function LandingPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
             </svg>
           </Link>
+
+          {/* 3 steps below the demo */}
+          <div className="mt-16 grid gap-8 md:grid-cols-3">
+            {[
+              { step: "1", title: "Upload your CV", desc: "Drop a PDF or DOCX — we extract it instantly." },
+              { step: "2", title: "Paste the job description", desc: "Copy the target listing so we can match keywords." },
+              { step: "3", title: "Get your Match Score", desc: "See what's blocking callbacks and how to fix it." },
+            ].map((s) => (
+              <div key={s.step} className="text-center">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-600 text-lg font-bold text-white">
+                  {s.step}
+                </div>
+                <h3 className="mt-4 text-base font-semibold text-gray-900">{s.title}</h3>
+                <p className="mt-1 text-sm text-gray-500">{s.desc}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
