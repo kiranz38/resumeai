@@ -310,6 +310,40 @@ export default function ResultsPage() {
         </div>
       )}
 
+      {/* Urgency messaging */}
+      {radar && !isDemo && (
+        <div className="mb-8 rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-5">
+          <div className="flex items-start gap-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100">
+              <svg className="h-4 w-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-amber-900">
+                {radar.score < 50
+                  ? "Your resume is likely getting auto-rejected"
+                  : "Your resume needs optimization to stand out"}
+              </p>
+              <p className="mt-1 text-sm text-amber-800">
+                75% of resumes are rejected by ATS systems before a human ever sees them.
+                A tailored CV can boost your Match Score by <span className="font-semibold">20-35 points</span> and
+                dramatically increase your callback rate.
+              </p>
+              <button
+                onClick={() => document.getElementById("pro-upgrade")?.scrollIntoView({ behavior: "smooth" })}
+                className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-4 py-2 text-xs font-semibold text-white hover:bg-amber-700 transition-colors"
+              >
+                Get a tailored CV now
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Blockers — blurred on free tier */}
       {radar && radar.blockers.length > 0 && (
         <div className="mb-8">

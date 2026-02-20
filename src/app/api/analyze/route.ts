@@ -49,7 +49,25 @@ export async function POST(request: Request) {
     const rewritePreviews = generateRewritePreviews(candidateProfile);
 
     // Compute radar score
-    const radarResult = scoreRadar(candidateProfile, jobProfile);
+    const rawRadar = scoreRadar(candidateProfile, jobProfile);
+
+    // Free-tier score cap: ensure score never exceeds 60
+    // so there's always a clear improvement opportunity for Pro
+    const FREE_TIER_CAP = 60;
+    const radarResult = rawRadar.score > FREE_TIER_CAP
+      ? {
+          ...rawRadar,
+          score: FREE_TIER_CAP,
+          label: rawRadar.label === "Strong Match" ? "Moderate Match" as const : rawRadar.label,
+          breakdown: {
+            hardSkills: Math.min(rawRadar.breakdown.hardSkills, 65),
+            softSkills: Math.min(rawRadar.breakdown.softSkills, 70),
+            measurableResults: Math.min(rawRadar.breakdown.measurableResults, 60),
+            keywordOptimization: Math.min(rawRadar.breakdown.keywordOptimization, 55),
+            formattingBestPractices: Math.min(rawRadar.breakdown.formattingBestPractices, 70),
+          },
+        }
+      : rawRadar;
 
     const result: FreeAnalysisResult = {
       atsResult,
