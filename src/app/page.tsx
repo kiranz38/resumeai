@@ -1,11 +1,8 @@
 import Link from "next/link";
 import FAQ from "@/components/FAQ";
 import ShareCard from "@/components/ShareCard";
-import LandingAnalyzer from "@/components/LandingAnalyzer";
 import SampleResumeModal from "@/components/SampleResumeModal";
 import { TRIAL_PRICE_DISPLAY, PRO_PRICE_DISPLAY, CAREER_PASS_DISPLAY } from "@/lib/constants";
-
-const IS_FUNNEL_V2 = process.env.NEXT_PUBLIC_FUNNEL_V2 === "true";
 
 const FAQ_ITEMS = [
   {
@@ -130,27 +127,15 @@ export default function LandingPage() {
 
           {/* Primary CTA — large, unmissable, min 48px touch target */}
           <div className="mt-4 flex flex-col items-center gap-3 sm:mt-8 sm:gap-4">
-            {IS_FUNNEL_V2 ? (
-              <a
-                href="#analyze"
-                className="group relative inline-flex min-h-[48px] items-center gap-3 rounded-xl bg-blue-600 px-10 py-4 text-lg font-bold text-white shadow-lg shadow-blue-600/25 transition-all hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-600/30"
-              >
-                <svg className="h-6 w-6 transition-transform group-hover:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-                Upload Your Resume
-              </a>
-            ) : (
-              <Link
-                href="/analyze"
-                className="group relative inline-flex min-h-[48px] items-center gap-3 rounded-xl bg-blue-600 px-10 py-4 text-lg font-bold text-white shadow-lg shadow-blue-600/25 transition-all hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-600/30"
-              >
-                <svg className="h-6 w-6 transition-transform group-hover:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-                Upload Your Resume
-              </Link>
-            )}
+            <Link
+              href="/analyze"
+              className="group relative inline-flex min-h-[48px] items-center gap-3 rounded-xl bg-blue-600 px-10 py-4 text-lg font-bold text-white shadow-lg shadow-blue-600/25 transition-all hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-600/30"
+            >
+              <svg className="h-6 w-6 transition-transform group-hover:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              Upload Your Resume
+            </Link>
             <p className="text-sm text-gray-500">No account needed — upload &amp; analyze instantly</p>
             <div className="flex items-center gap-3">
               <SampleResumeModal />
@@ -174,21 +159,6 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
-
-      {/* Inline Analyzer (Funnel V2) */}
-      {IS_FUNNEL_V2 && (
-        <section className="bg-white px-4 py-12 sm:py-16">
-          <div className="mx-auto max-w-4xl text-center">
-            <h2 className="mb-2 text-2xl font-bold text-gray-900">
-              Check your resume now
-            </h2>
-            <p className="mb-8 text-sm text-gray-500">
-              Upload your resume, paste the job description, and get your Match Score instantly.
-            </p>
-            <LandingAnalyzer />
-          </div>
-        </section>
-      )}
 
       {/* How it works — 3 steps */}
       <section className="border-t border-gray-100 bg-white px-4 py-16">
@@ -274,21 +244,12 @@ export default function LandingPage() {
                   </li>
                 ))}
               </ul>
-              {IS_FUNNEL_V2 ? (
-                <a
-                  href="#analyze"
-                  className="mt-6 block rounded-lg border border-gray-300 px-6 py-2.5 text-center text-sm font-semibold text-gray-700 hover:bg-gray-50"
-                >
-                  Start free scan
-                </a>
-              ) : (
-                <Link
-                  href="/analyze"
-                  className="mt-6 block rounded-lg border border-gray-300 px-6 py-2.5 text-center text-sm font-semibold text-gray-700 hover:bg-gray-50"
-                >
-                  Start free scan
-                </Link>
-              )}
+              <Link
+                href="/analyze"
+                className="mt-6 block rounded-lg border border-gray-300 px-6 py-2.5 text-center text-sm font-semibold text-gray-700 hover:bg-gray-50"
+              >
+                Start free scan
+              </Link>
             </div>
 
             {/* Career Trial */}
@@ -416,27 +377,15 @@ export default function LandingPage() {
           <p className="mt-2 text-blue-100">
             Upload your resume and get your Match Score in under a minute. Free, no signup.
           </p>
-          {IS_FUNNEL_V2 ? (
-            <a
-              href="#analyze"
-              className="mt-6 inline-flex items-center gap-2 rounded-xl bg-white px-8 py-3.5 text-base font-bold text-blue-600 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
-            >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-              </svg>
-              Upload Your Resume Now
-            </a>
-          ) : (
-            <Link
-              href="/analyze"
-              className="mt-6 inline-flex items-center gap-2 rounded-xl bg-white px-8 py-3.5 text-base font-bold text-blue-600 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
-            >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-              </svg>
-              Upload Your Resume Now
-            </Link>
-          )}
+          <Link
+            href="/analyze"
+            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-white px-8 py-3.5 text-base font-bold text-blue-600 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+            Upload Your Resume Now
+          </Link>
         </div>
       </section>
 
