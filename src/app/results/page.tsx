@@ -377,15 +377,15 @@ export default function ResultsPage() {
                   <>Your CV is missing <span className="font-semibold">{result.atsResult.missingKeywords.length} critical keywords</span> for this role. </>
                 )}
                 {radar.score < 50
-                  ? "Resumes scoring below 50 have a 4% callback rate. A tailored CV can bring yours above 75 — where callbacks jump to 38%."
-                  : `With a score of ${radar.score}, you're competing against candidates scoring 75+. A tailored CV can boost your score by 20-35 points.`
+                  ? "Candidates with optimized resumes get callbacks at 8x the rate. A tailored CV can bring your score above 75 — where interview requests surge."
+                  : `With a score of ${radar.score}, you're close. Candidates scoring 75+ get 3x more callbacks. A tailored CV can boost your score by 20-35 points.`
                 }
               </p>
               <button
                 onClick={() => document.getElementById("pro-upgrade")?.scrollIntoView({ behavior: "smooth" })}
                 className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-4 py-2 text-xs font-semibold text-white hover:bg-amber-700 transition-colors"
               >
-                Fix my resume now
+                Optimize My Resume Now
                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
@@ -480,6 +480,27 @@ export default function ResultsPage() {
               {checkoutError}
             </div>
           )}
+          {/* Guarantee + trust signals */}
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-green-700">
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              100% Money-Back Guarantee
+            </span>
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-gray-500">
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              Secured by Stripe
+            </span>
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-gray-500">
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              </svg>
+              One-time payment
+            </span>
+          </div>
         </div>
       )}
 

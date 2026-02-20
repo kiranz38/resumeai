@@ -3,6 +3,7 @@ import FAQ from "@/components/FAQ";
 import ShareCard from "@/components/ShareCard";
 import SampleResumeModal from "@/components/SampleResumeModal";
 import SocialProofCounter from "@/components/SocialProofCounter";
+import StickyMobileCTA from "@/components/StickyMobileCTA";
 import { TRIAL_PRICE_DISPLAY, PRO_PRICE_DISPLAY, CAREER_PASS_DISPLAY } from "@/lib/constants";
 
 const FAQ_ITEMS = [
@@ -108,6 +109,9 @@ const TESTIMONIALS = [
 export default function LandingPage() {
   return (
     <div className="overflow-x-hidden">
+      {/* Sticky mobile CTA — appears after scrolling past hero */}
+      <StickyMobileCTA />
+
       {/* Hero */}
       <section className="relative overflow-hidden bg-gradient-to-b from-blue-50 via-white to-white px-4 pb-16 pt-12 sm:pb-24 sm:pt-20">
         {/* Decorative blobs */}
@@ -157,9 +161,9 @@ export default function LandingPage() {
               <svg className="h-6 w-6 transition-transform group-hover:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
               </svg>
-              Upload Your Resume
+              Optimize My Resume — Free
             </Link>
-            <p className="text-sm text-gray-500">No account needed — upload &amp; analyze instantly</p>
+            <p className="text-sm text-gray-500">No credit card. No signup. Results in 60 seconds.</p>
             <div className="flex items-center gap-3">
               <SampleResumeModal />
               <span className="hidden text-sm text-gray-400 sm:inline">PDF, DOCX, or paste text</span>
@@ -253,8 +257,8 @@ export default function LandingPage() {
           <p className="mt-8 text-sm text-gray-500">
             +37 point improvement — same resume, same experience, better presentation.
           </p>
-          <p className="mt-2 text-xs font-medium text-red-500">
-            A score below 50 means most ATS systems will auto-reject your application.
+          <p className="mt-2 text-xs font-medium text-blue-600">
+            Optimized resumes are 3x more likely to land interview callbacks.
           </p>
         </div>
       </section>
@@ -358,7 +362,7 @@ export default function LandingPage() {
                 href="/analyze?action=upload"
                 className="mt-6 block rounded-lg border border-gray-300 px-6 py-2.5 text-center text-sm font-semibold text-gray-700 hover:bg-gray-50"
               >
-                Start free scan
+                Scan My Resume Free
               </Link>
             </div>
 
@@ -472,8 +476,29 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <p className="mt-6 text-xs text-gray-400">
-            Free quick scan included — no payment required to start. Secure payment via Stripe.
+          {/* Guarantee + trust badges */}
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-700">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              100% Money-Back Guarantee
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-600">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              Secured by Stripe
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-600">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              </svg>
+              One-time payment
+            </span>
+          </div>
+          <p className="mt-4 text-xs text-gray-400">
+            Free quick scan included — no payment required to start.
           </p>
         </div>
       </section>
@@ -495,8 +520,9 @@ export default function LandingPage() {
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
             </svg>
-            Upload Your Resume Now
+            Optimize My Resume Now
           </Link>
+          <p className="mt-3 text-sm text-blue-200">No credit card. No signup. Free instant analysis.</p>
         </div>
       </section>
 
