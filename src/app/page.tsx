@@ -2,6 +2,7 @@ import Link from "next/link";
 import FAQ from "@/components/FAQ";
 import ShareCard from "@/components/ShareCard";
 import SampleResumeModal from "@/components/SampleResumeModal";
+import SocialProofCounter from "@/components/SocialProofCounter";
 import { TRIAL_PRICE_DISPLAY, PRO_PRICE_DISPLAY, CAREER_PASS_DISPLAY } from "@/lib/constants";
 
 const FAQ_ITEMS = [
@@ -123,8 +124,9 @@ export default function LandingPage() {
             <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">job description.</span>
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-gray-600 sm:mt-5 sm:text-lg">
-            Upload your resume, paste the job description, and get a modified CV
-            optimized for that role — in under a minute.
+            Most resumes get rejected before a human ever reads them.
+            Upload yours, paste the job description, and get a tailored CV
+            that actually passes the filter — in under a minute.
           </p>
 
           {/* Micro flow — Upload → Match → Download */}
@@ -164,23 +166,8 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Social proof counter */}
-          <div className="mt-8 flex items-center justify-center gap-6 sm:mt-10">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-gray-900">10,000+</p>
-              <p className="text-xs text-gray-500">Resumes optimized</p>
-            </div>
-            <div className="h-8 w-px bg-gray-200" />
-            <div className="text-center">
-              <p className="text-2xl font-bold text-gray-900">30 sec</p>
-              <p className="text-xs text-gray-500">Average analysis time</p>
-            </div>
-            <div className="h-8 w-px bg-gray-200" />
-            <div className="text-center">
-              <p className="text-2xl font-bold text-gray-900">4.8/5</p>
-              <p className="text-xs text-gray-500">User satisfaction</p>
-            </div>
-          </div>
+          {/* Social proof counter — dynamic, client component */}
+          <SocialProofCounter />
 
           {/* Trust strip — "No signup" badge hidden on mobile (shown above CTA instead) */}
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
@@ -227,7 +214,7 @@ export default function LandingPage() {
       <section className="bg-gradient-to-b from-white to-blue-50/50 px-4 py-16">
         <div className="mx-auto max-w-3xl text-center">
           <h2 className="text-2xl font-bold text-gray-900">
-            See the difference in seconds
+            Stop losing interviews to a weak resume
           </h2>
           <p className="mt-2 text-gray-600">
             Real example: a Software Engineer resume matched against a Senior Full-Stack role.
@@ -266,6 +253,9 @@ export default function LandingPage() {
           <p className="mt-8 text-sm text-gray-500">
             +37 point improvement — same resume, same experience, better presentation.
           </p>
+          <p className="mt-2 text-xs font-medium text-red-500">
+            A score below 50 means most ATS systems will auto-reject your application.
+          </p>
         </div>
       </section>
 
@@ -273,7 +263,7 @@ export default function LandingPage() {
       <section className="px-4 py-16">
         <div className="mx-auto max-w-5xl">
           <h2 className="text-center text-2xl font-bold text-gray-900">
-            Everything you need to land the interview
+            Stop guessing why you&apos;re not getting callbacks
           </h2>
           <div className="mt-10 grid gap-8 md:grid-cols-3">
             {BENEFITS.map((benefit) => (
@@ -492,10 +482,11 @@ export default function LandingPage() {
       <section className="bg-blue-600 px-4 py-12">
         <div className="mx-auto max-w-3xl text-center">
           <h2 className="text-2xl font-bold text-white sm:text-3xl">
-            Modify your CV for the job you want
+            Don&apos;t send another application with an unoptimized CV
           </h2>
           <p className="mt-2 text-blue-100">
-            Upload your resume, paste the job description, and download a tailored CV. Free, no signup.
+            Every generic resume you send is an interview you&apos;ll never get.
+            Upload, tailor, and download — free, no signup.
           </p>
           <Link
             href="/analyze?action=upload"

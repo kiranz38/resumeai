@@ -310,7 +310,52 @@ export default function ResultsPage() {
         </div>
       )}
 
-      {/* Urgency messaging */}
+      {/* Progress indicator — completion bias */}
+      {radar && !isDemo && (
+        <div className="mb-8 rounded-xl border border-gray-200 bg-white p-5">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm font-semibold text-gray-900">Your optimization progress</p>
+            <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-700">60% complete</span>
+          </div>
+          <div className="flex items-center gap-1">
+            {[
+              { label: "Upload", done: true },
+              { label: "Analysis", done: true },
+              { label: "Score", done: true },
+              { label: "Tailoring", done: false },
+              { label: "Download", done: false },
+            ].map((step, i) => (
+              <div key={step.label} className="flex flex-1 flex-col items-center gap-1.5">
+                <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
+                  step.done
+                    ? "bg-green-500 text-white"
+                    : "border-2 border-dashed border-gray-300 text-gray-400"
+                }`}>
+                  {step.done ? (
+                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                  ) : (
+                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                  )}
+                </div>
+                <span className={`text-[10px] font-medium ${step.done ? "text-gray-700" : "text-gray-400"}`}>
+                  {step.label}
+                </span>
+                {i < 4 && (
+                  <div className={`absolute h-0.5 w-full ${step.done ? "bg-green-500" : "bg-gray-200"}`} style={{ display: "none" }} />
+                )}
+              </div>
+            ))}
+          </div>
+          <div className="mt-2 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+            <div className="h-full w-3/5 rounded-full bg-gradient-to-r from-green-400 to-green-500 transition-all" />
+          </div>
+          <p className="mt-3 text-xs text-gray-500">
+            Upgrade to get a <span className="font-semibold text-gray-700">fully tailored CV</span> and complete your optimization.
+          </p>
+        </div>
+      )}
+
+      {/* Personalized urgency messaging */}
       {radar && !isDemo && (
         <div className="mb-8 rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-5">
           <div className="flex items-start gap-3">
@@ -321,20 +366,26 @@ export default function ResultsPage() {
             </div>
             <div>
               <p className="text-sm font-semibold text-amber-900">
-                {radar.score < 50
-                  ? "Your resume is likely getting auto-rejected"
-                  : "Your resume needs optimization to stand out"}
+                {radar.score < 40
+                  ? "Your resume is being auto-rejected right now"
+                  : radar.score < 55
+                    ? "Your resume is unlikely to pass most ATS filters"
+                    : "Your resume is losing to stronger applicants"}
               </p>
               <p className="mt-1 text-sm text-amber-800">
-                75% of resumes are rejected by ATS systems before a human ever sees them.
-                A tailored CV can boost your Match Score by <span className="font-semibold">20-35 points</span> and
-                dramatically increase your callback rate.
+                {result.atsResult.missingKeywords.length > 0 && (
+                  <>Your CV is missing <span className="font-semibold">{result.atsResult.missingKeywords.length} critical keywords</span> for this role. </>
+                )}
+                {radar.score < 50
+                  ? "Resumes scoring below 50 have a 4% callback rate. A tailored CV can bring yours above 75 — where callbacks jump to 38%."
+                  : `With a score of ${radar.score}, you're competing against candidates scoring 75+. A tailored CV can boost your score by 20-35 points.`
+                }
               </p>
               <button
                 onClick={() => document.getElementById("pro-upgrade")?.scrollIntoView({ behavior: "smooth" })}
                 className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-4 py-2 text-xs font-semibold text-white hover:bg-amber-700 transition-colors"
               >
-                Get a tailored CV now
+                Fix my resume now
                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
@@ -383,33 +434,7 @@ export default function ResultsPage() {
             <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-semibold text-blue-700">AI-powered</span>
           </div>
           <div className="grid gap-3 sm:grid-cols-3">
-            <button
-              onClick={() => handleQuickCheckout("trial")}
-              disabled={checkoutLoading !== null}
-              className="group rounded-lg border border-gray-200 px-4 py-3 text-left transition-colors hover:border-emerald-300 hover:bg-emerald-50/50 disabled:opacity-50"
-            >
-              <div className="flex items-baseline justify-between">
-                <span className="text-sm font-semibold text-gray-900">Career Trial</span>
-                <span className="text-sm font-bold text-emerald-700">{TRIAL_PRICE_DISPLAY}</span>
-              </div>
-              <p className="mt-1 text-xs text-gray-500">Full CV + cover letter for 1 job</p>
-              {checkoutLoading === "trial" && <p className="mt-1 text-xs font-medium text-emerald-600">Redirecting...</p>}
-            </button>
-            <button
-              onClick={() => handleQuickCheckout("pro")}
-              disabled={checkoutLoading !== null}
-              className="group rounded-lg border-2 border-blue-200 bg-blue-50/30 px-4 py-3 text-left transition-colors hover:border-blue-400 hover:bg-blue-50 disabled:opacity-50"
-            >
-              <div className="flex items-baseline justify-between">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-sm font-semibold text-gray-900">Pro</span>
-                  <span className="rounded bg-blue-600 px-1.5 py-px text-[10px] font-bold text-white">Popular</span>
-                </div>
-                <span className="text-sm font-bold text-blue-700">{PRO_PRICE_DISPLAY}</span>
-              </div>
-              <p className="mt-1 text-xs text-gray-500">PDF/DOCX exports + 2 re-generations</p>
-              {checkoutLoading === "pro" && <p className="mt-1 text-xs font-medium text-blue-600">Redirecting...</p>}
-            </button>
+            {/* Career Pass first — price anchor (highest price first) */}
             <button
               onClick={() => handleQuickCheckout("pass")}
               disabled={checkoutLoading !== null}
@@ -421,6 +446,33 @@ export default function ResultsPage() {
               </div>
               <p className="mt-1 text-xs text-gray-500">50 jobs + dashboard + all exports</p>
               {checkoutLoading === "pass" && <p className="mt-1 text-xs font-medium text-indigo-600">Redirecting...</p>}
+            </button>
+            {/* Pro — "Best Value" draws attention after seeing Career Pass price */}
+            <button
+              onClick={() => handleQuickCheckout("pro")}
+              disabled={checkoutLoading !== null}
+              className="group relative rounded-lg border-2 border-blue-200 bg-blue-50/30 px-4 py-3 text-left transition-colors hover:border-blue-400 hover:bg-blue-50 disabled:opacity-50"
+            >
+              <span className="absolute -top-2.5 right-3 rounded-full bg-blue-600 px-2 py-px text-[10px] font-bold text-white">Best Value</span>
+              <div className="flex items-baseline justify-between">
+                <span className="text-sm font-semibold text-gray-900">Pro</span>
+                <span className="text-sm font-bold text-blue-700">{PRO_PRICE_DISPLAY}</span>
+              </div>
+              <p className="mt-1 text-xs text-gray-500">PDF/DOCX exports + 2 re-generations</p>
+              {checkoutLoading === "pro" && <p className="mt-1 text-xs font-medium text-blue-600">Redirecting...</p>}
+            </button>
+            {/* Trial — low commitment entry */}
+            <button
+              onClick={() => handleQuickCheckout("trial")}
+              disabled={checkoutLoading !== null}
+              className="group rounded-lg border border-gray-200 px-4 py-3 text-left transition-colors hover:border-emerald-300 hover:bg-emerald-50/50 disabled:opacity-50"
+            >
+              <div className="flex items-baseline justify-between">
+                <span className="text-sm font-semibold text-gray-900">Career Trial</span>
+                <span className="text-sm font-bold text-emerald-700">{TRIAL_PRICE_DISPLAY}</span>
+              </div>
+              <p className="mt-1 text-xs text-gray-500">Full CV + cover letter for 1 job</p>
+              {checkoutLoading === "trial" && <p className="mt-1 text-xs font-medium text-emerald-600">Redirecting...</p>}
             </button>
           </div>
           {checkoutError && (
@@ -546,10 +598,10 @@ export default function ResultsPage() {
       {!isDemo && process.env.NEXT_PUBLIC_PRO_ENABLED !== "false" && (
         <div className="mt-10" id="pro-upgrade">
           <h2 className="mb-4 text-center text-xl font-bold text-gray-900">
-            Unlock the full analysis
+            Don&apos;t keep applying with an unoptimized resume
           </h2>
           <p className="mb-6 text-center text-sm text-gray-500">
-            Try everything for $1.50, or go Pro for PDF exports and re-generations.
+            Every application you send without tailoring is a wasted opportunity. Fix it now from {TRIAL_PRICE_DISPLAY}.
           </p>
           <PaywallPlanPicker context="free_results" />
         </div>
