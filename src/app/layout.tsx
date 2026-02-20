@@ -36,11 +36,20 @@ export const metadata: Metadata = {
     url: "https://resumemate.ai",
     siteName: "ResumeMate AI",
     locale: "en_US",
+    images: [
+      {
+        url: "/api/og",
+        width: 1200,
+        height: 630,
+        alt: "ResumeMate AI — Match Score 47 → 84",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "ResumeMate AI — Hiring Manager Radar for your resume",
     description: "Get your Radar Score, see what's blocking callbacks, and fix it in minutes.",
+    images: ["/api/og"],
   },
   robots: {
     index: true,

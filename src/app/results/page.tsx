@@ -170,7 +170,7 @@ export default function ResultsPage() {
           <div className="mt-6 flex gap-3 justify-center">
             <button
               onClick={() => router.push("/analyze")}
-              className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+              className="rounded-lg bg-orange-500 px-6 py-2.5 text-sm font-semibold text-white hover:bg-orange-600"
             >
               Check my resume
             </button>
@@ -207,7 +207,7 @@ export default function ResultsPage() {
               sessionStorage.setItem("rt_is_demo", "true");
               router.push("/results/pro");
             }}
-            className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+            className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 transition-colors"
           >
             Continue to CV
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -634,7 +634,7 @@ export default function ResultsPage() {
             </p>
             <button
               onClick={() => document.getElementById("pro-upgrade")?.scrollIntoView({ behavior: "smooth" })}
-              className="mt-3 rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+              className="mt-3 rounded-lg bg-orange-500 px-5 py-2 text-sm font-semibold text-white hover:bg-orange-600 transition-colors"
             >
               Get My Resume Pack — {PRO_PRICE_DISPLAY}
             </button>

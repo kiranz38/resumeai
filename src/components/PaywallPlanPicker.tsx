@@ -203,7 +203,7 @@ export default function PaywallPlanPicker({
           <button
             onClick={() => handleCheckout("pro")}
             disabled={loading !== null}
-            className="mt-4 w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+            className="mt-4 w-full rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-50"
           >
             {loading === "pro" ? "Processing..." : `Get Pro — ${PRO_PRICE_DISPLAY}`}
           </button>
