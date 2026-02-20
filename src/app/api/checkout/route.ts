@@ -101,9 +101,10 @@ export async function POST(request: Request) {
           },
         ];
 
+    // Enable card + wallets (Apple Pay, Google Pay) + Stripe Link (1-click checkout)
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
-      payment_method_types: ["card"],
+      payment_method_types: ["card", "link"],
       line_items: lineItems,
       success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}&plan=${product}&redirect=${encodeURIComponent(config.successPath)}`,
       cancel_url: `${origin}/results?cancelled=true`,

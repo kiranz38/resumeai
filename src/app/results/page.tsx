@@ -620,6 +620,28 @@ export default function ResultsPage() {
       {/* Share card */}
       <ShareCard className="mt-8" />
 
+      {/* Email capture follow-up — show if user provided email during analyze */}
+      {!isDemo && (() => {
+        const capturedEmail = typeof window !== "undefined" ? sessionStorage.getItem("rt_capture_email") : null;
+        if (!capturedEmail) return null;
+        return (
+          <div className="mt-6 rounded-xl border border-blue-200 bg-blue-50 p-5 text-center">
+            <p className="text-sm text-blue-800">
+              Want your full tailored CV sent to <span className="font-semibold">{capturedEmail}</span>?
+            </p>
+            <p className="mt-1 text-xs text-blue-600">
+              Upgrade to Pro and we&apos;ll email your complete resume pack — PDF, cover letter, and insights.
+            </p>
+            <button
+              onClick={() => document.getElementById("pro-upgrade")?.scrollIntoView({ behavior: "smooth" })}
+              className="mt-3 rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+            >
+              Get My Resume Pack — {PRO_PRICE_DISPLAY}
+            </button>
+          </div>
+        );
+      })()}
+
       {/* Plan upgrade CTA — hidden in demo or when Pro is disabled */}
       {!isDemo && process.env.NEXT_PUBLIC_PRO_ENABLED !== "false" && (
         <div className="mt-10" id="pro-upgrade">

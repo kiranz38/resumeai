@@ -110,9 +110,11 @@ export async function POST(request: Request) {
           quantity: 1,
         }];
 
+    // Enable card + wallets (Apple Pay, Google Pay) + Stripe Link (1-click checkout)
+    // Note: Apple Pay requires domain verification in Stripe Dashboard → Settings → Payments → Apple Pay
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
-      payment_method_types: ["card"],
+      payment_method_types: ["card", "link"],
       line_items: lineItems,
       success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}&plan=${plan}&redirect=${encodeURIComponent(config.successPath)}`,
       cancel_url: `${origin}/pricing?cancelled=true`,

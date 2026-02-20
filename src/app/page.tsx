@@ -4,6 +4,7 @@ import ShareCard from "@/components/ShareCard";
 import SampleResumeModal from "@/components/SampleResumeModal";
 import SocialProofCounter from "@/components/SocialProofCounter";
 import StickyMobileCTA from "@/components/StickyMobileCTA";
+import AnimatedDemo from "@/components/AnimatedDemo";
 import { PRO_PRICE_DISPLAY, CAREER_PASS_DISPLAY } from "@/lib/constants";
 
 const FAQ_ITEMS = [
@@ -211,6 +212,28 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Interactive Demo — "See it in action" */}
+      <section className="bg-gradient-to-b from-white to-gray-50 px-4 py-16">
+        <div className="mx-auto max-w-4xl text-center">
+          <h2 className="text-2xl font-bold text-gray-900">See it in action</h2>
+          <p className="mt-2 text-gray-600">
+            Upload, match, download — watch the entire flow in seconds.
+          </p>
+          <div className="mt-10">
+            <AnimatedDemo />
+          </div>
+          <Link
+            href="/analyze?action=upload"
+            className="mt-8 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-sm font-bold text-white shadow-sm hover:bg-blue-700 transition-colors"
+          >
+            Try It Yourself — Free
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
+          </Link>
         </div>
       </section>
 

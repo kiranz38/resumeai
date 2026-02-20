@@ -70,6 +70,7 @@ function AnalyzePage() {
   const [activeNav, setActiveNav] = useState<"dashboard" | "jobs">(initialTab === "jobs" ? "jobs" : "dashboard");
   const [autoFilledJobTitle, setAutoFilledJobTitle] = useState<string | null>(null);
   const [pendingPackJobCount, setPendingPackJobCount] = useState(0);
+  const [captureEmail, setCaptureEmail] = useState("");
 
   // Onboarding state
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -281,6 +282,11 @@ function AnalyzePage() {
     setIsAnalyzing(true);
     setPhase("analyzing");
     setProgress("Parsing resume and job description...");
+
+    // Store captured email for results page pre-fill
+    if (captureEmail && captureEmail.includes("@")) {
+      sessionStorage.setItem("rt_capture_email", captureEmail);
+    }
 
     try {
       trackEvent("analysis_started");
@@ -650,6 +656,22 @@ function AnalyzePage() {
                 className="h-48 w-full resize-none rounded-lg border border-gray-300 p-3 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 disabled={isAnalyzing}
               />
+              {/* Optional email capture — abandoned analysis recovery */}
+              {!isAnalyzing && jdReady && resumeReady && (
+                <div className="mt-3 flex items-center gap-2 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2">
+                  <svg className="h-4 w-4 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  <input
+                    type="email"
+                    value={captureEmail}
+                    onChange={(e) => setCaptureEmail(e.target.value)}
+                    placeholder="Email me my results (optional)"
+                    className="flex-1 bg-transparent text-sm text-gray-700 placeholder-gray-400 outline-none"
+                  />
+                </div>
+              )}
+
               <div className="mt-3 flex items-center justify-between">
                 <p className="text-sm text-gray-400">
                   {jobDescription ? `${jobDescription.length.toLocaleString()} characters` : "\u00A0"}
