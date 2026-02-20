@@ -128,7 +128,7 @@ export default function LandingPage() {
           {/* Primary CTA — large, unmissable, min 48px touch target */}
           <div className="mt-4 flex flex-col items-center gap-3 sm:mt-8 sm:gap-4">
             <Link
-              href="/analyze"
+              href="/analyze?action=upload"
               className="group relative inline-flex min-h-[48px] items-center gap-3 rounded-xl bg-blue-600 px-10 py-4 text-lg font-bold text-white shadow-lg shadow-blue-600/25 transition-all hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-600/30"
             >
               <svg className="h-6 w-6 transition-transform group-hover:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -245,7 +245,7 @@ export default function LandingPage() {
                 ))}
               </ul>
               <Link
-                href="/analyze"
+                href="/analyze?action=upload"
                 className="mt-6 block rounded-lg border border-gray-300 px-6 py-2.5 text-center text-sm font-semibold text-gray-700 hover:bg-gray-50"
               >
                 Start free scan
@@ -283,7 +283,7 @@ export default function LandingPage() {
                 ))}
               </ul>
               <Link
-                href="/analyze"
+                href="/analyze?action=upload"
                 className="mt-6 block rounded-lg bg-emerald-600 px-6 py-2.5 text-center text-sm font-semibold text-white hover:bg-emerald-700"
               >
                 Try Career Trial — {TRIAL_PRICE_DISPLAY}
@@ -322,7 +322,7 @@ export default function LandingPage() {
                 ))}
               </ul>
               <Link
-                href="/analyze"
+                href="/analyze?action=upload"
                 className="mt-6 block rounded-lg bg-blue-600 px-6 py-2.5 text-center text-sm font-semibold text-white hover:bg-blue-700"
               >
                 Get Pro — {PRO_PRICE_DISPLAY}
@@ -354,7 +354,7 @@ export default function LandingPage() {
                 ))}
               </ul>
               <Link
-                href="/analyze"
+                href="/analyze?action=upload"
                 className="mt-6 block rounded-lg border border-indigo-300 bg-indigo-50 px-6 py-2.5 text-center text-sm font-semibold text-indigo-700 hover:bg-indigo-100"
               >
                 Get Career Pass — {CAREER_PASS_DISPLAY}
@@ -378,7 +378,7 @@ export default function LandingPage() {
             Upload your resume and get your Match Score in under a minute. Free, no signup.
           </p>
           <Link
-            href="/analyze"
+            href="/analyze?action=upload"
             className="mt-6 inline-flex items-center gap-2 rounded-xl bg-white px-8 py-3.5 text-base font-bold text-blue-600 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
