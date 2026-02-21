@@ -57,6 +57,7 @@ export function sanitizeText(input: string): string {
 
 const MAX_PAYLOAD_BYTES: Record<string, number> = {
   analyze: 100_000,        // ~100KB (25k resume + 15k JD + overhead)
+  "quick-scan": 60_000,    // ~60KB (resume only)
   "generate-pro": 100_000,
   "generate-pack": 400_000, // resume + up to 10 JDs
   checkout: 1_000,          // tiny
@@ -90,6 +91,13 @@ export const AnalyzeRequestSchema = z.object({
     .string()
     .min(1, "Job description text is required.")
     .max(15_000, "Job description is too long. Please limit to 15,000 characters."),
+});
+
+export const QuickScanRequestSchema = z.object({
+  resumeText: z
+    .string()
+    .min(1, "Resume text is required.")
+    .max(25_000, "Resume text is too long. Please limit to 25,000 characters."),
 });
 
 export const GenerateProRequestSchema = z.object({

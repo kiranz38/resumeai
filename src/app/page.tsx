@@ -131,14 +131,14 @@ export default function LandingPage() {
                 Free instant analysis
               </span>
               <h1 className="font-[var(--font-inter)] text-[28px] font-extrabold leading-tight tracking-[-0.04em] text-gray-900 sm:text-5xl lg:text-[3.5rem]">
-                Tailor your CV to any
+                Your resume is getting
                 <br />
-                <span className="bg-gradient-to-r from-primary to-indigo-600 bg-clip-text text-transparent">job description.</span>
+                <span className="bg-gradient-to-r from-red-500 to-primary bg-clip-text text-transparent">auto-rejected.</span>{" "}
+                <span className="text-gray-900">Find out why — free.</span>
               </h1>
               <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-gray-600 sm:mt-5 sm:text-lg lg:mx-0">
-                Most resumes get rejected before a human ever reads them.
-                Upload yours, paste the job description, and get a tailored CV
-                that actually passes the filter — in under a minute.
+                Upload your CV, paste the job description, and see exactly which keywords
+                and signals are missing. Takes 60 seconds.
               </p>
 
               {/* Micro flow — Upload → Match → Download */}
@@ -248,7 +248,7 @@ export default function LandingPage() {
         <div className="mx-auto max-w-4xl text-center">
           <h2 className="text-2xl font-bold text-gray-900">See it in action</h2>
           <p className="mt-2 text-gray-600">
-            Upload, match, download — watch the entire flow in seconds.
+            Upload your CV and see how you score against real market roles — no job description needed.
           </p>
           <div className="mt-10">
             <AnimatedDemo />
@@ -267,8 +267,8 @@ export default function LandingPage() {
           <div className="mt-16 grid gap-8 md:grid-cols-3">
             {[
               { step: "1", title: "Upload your CV", desc: "Drop a PDF or DOCX — we extract it instantly." },
-              { step: "2", title: "Paste the job description", desc: "Copy the target listing so we can match keywords." },
-              { step: "3", title: "Get your Match Score", desc: "See what's blocking callbacks and how to fix it." },
+              { step: "2", title: "We match against real roles", desc: "Your CV is scored against 45+ job profiles across your field." },
+              { step: "3", title: "See where you stand", desc: "Get scores for 8-10 roles — including career growth paths." },
             ].map((s) => (
               <div key={s.step} className="text-center">
                 <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary text-lg font-bold text-white">
@@ -409,6 +409,9 @@ export default function LandingPage() {
           <p className="mt-2 text-gray-600">
             No subscription. No surprises. Just results.
           </p>
+          <p className="mt-3 text-sm text-gray-500">
+            Professional resume writers charge <span className="font-semibold text-gray-700">$300–500</span> per rewrite. Get the same result for <span className="font-semibold text-primary">$5</span>, instantly.
+          </p>
 
           <div className="mt-10 grid gap-6 md:grid-cols-3">
             {/* Free Quick Scan */}
@@ -479,7 +482,7 @@ export default function LandingPage() {
                   ))}
                 </ul>
                 <Link
-                  href="/analyze?action=upload"
+                  href="/analyze?action=deep"
                   className="mt-6 block rounded-lg bg-primary px-6 py-3 text-center text-sm font-semibold text-white hover:bg-primary-hover"
                 >
                   Get My Tailored Resume — {PRO_PRICE_DISPLAY}
@@ -513,7 +516,7 @@ export default function LandingPage() {
                   ))}
                 </ul>
                 <Link
-                  href="/analyze?action=upload"
+                  href="/analyze?action=deep"
                   className="mt-6 block rounded-lg border border-indigo-300 bg-indigo-50 px-6 py-2.5 text-center text-sm font-semibold text-indigo-700 hover:bg-indigo-100"
                 >
                   Get Career Pass — {CAREER_PASS_DISPLAY}

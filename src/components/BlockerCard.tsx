@@ -4,11 +4,26 @@ interface BlockerCardProps {
   blocker: RadarBlocker;
   index: number;
   locked?: boolean;
+  onUpgrade?: () => void;
 }
 
-export default function BlockerCard({ blocker, index, locked = false }: BlockerCardProps) {
+export default function BlockerCard({ blocker, index, locked = false, onUpgrade }: BlockerCardProps) {
+  const handleLockedClick = () => {
+    if (onUpgrade) {
+      onUpgrade();
+    } else {
+      document.getElementById("pro-upgrade")?.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   return (
-    <div className={`relative rounded-xl border border-gray-200 bg-white p-5 ${locked ? "min-h-[180px] select-none overflow-hidden" : ""}`}>
+    <div
+      className={`relative rounded-xl border border-gray-200 bg-white p-5 ${locked ? "min-h-[180px] cursor-pointer select-none overflow-hidden transition-shadow hover:shadow-md hover:border-blue-200" : ""}`}
+      onClick={locked ? handleLockedClick : undefined}
+      role={locked ? "button" : undefined}
+      tabIndex={locked ? 0 : undefined}
+      onKeyDown={locked ? (e) => { if (e.key === "Enter" || e.key === " ") handleLockedClick(); } : undefined}
+    >
       {/* Header */}
       <div className="mb-2 flex items-start gap-2">
         <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
@@ -58,8 +73,11 @@ export default function BlockerCard({ blocker, index, locked = false }: BlockerC
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
             <p className="mt-1 text-sm font-semibold text-blue-700">
-              Unlock detailed fixes &mdash; Pro
+              Tap to unlock all fixes
             </p>
+            <span className="mt-2 inline-block rounded-lg bg-primary px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover">
+              Unlock
+            </span>
           </div>
         </div>
       )}

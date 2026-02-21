@@ -8,6 +8,8 @@ interface ResumePreviewCardProps {
   improvedBullets: Array<{ original: string; improved: string }>;
   onUpgrade: (plan: "trial" | "pro") => void;
   loading?: boolean;
+  missingKeywordCount?: number;
+  weakBulletCount?: number;
 }
 
 /**
@@ -20,6 +22,8 @@ export default function ResumePreviewCard({
   improvedBullets,
   onUpgrade,
   loading,
+  missingKeywordCount = 0,
+  weakBulletCount = 0,
 }: ResumePreviewCardProps) {
   const name = candidate.name || "Your Name";
   const topRole = candidate.experience[0];
@@ -128,7 +132,7 @@ export default function ResumePreviewCard({
         {/* CTA — directly after fade, no scrolling needed */}
         <div className="px-4 pb-4 pt-0 sm:px-8 sm:pb-8 sm:pt-1 text-center">
           <p className="text-sm font-medium text-gray-700 mb-0.5 sm:mb-1">
-            Unlock your full tailored resume, cover letter, and ATS optimization
+            Your full resume includes{missingKeywordCount > 0 ? <> <span className="font-bold">{missingKeywordCount} keyword additions</span>,</> : ""}{weakBulletCount > 0 ? <> <span className="font-bold">{weakBulletCount} rewritten bullets</span>,</> : ""} and a <span className="font-bold">custom cover letter</span>. Unlock now.
           </p>
           <p className="text-xs text-gray-400 mb-2.5 sm:mb-4">Includes PDF/DOCX export, keyword checklist, and recruiter insights</p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-2">

@@ -92,6 +92,9 @@ export const analysisCache = new TTLCache<unknown>(10 * 60 * 1000, 50);
 /** Cache for Pro generation results (keyed by input hash) */
 export const proCache = new TTLCache<unknown>(15 * 60 * 1000, 20);
 
+/** Cache for Quick Scan results (keyed by resume hash) */
+export const quickScanCache = new TTLCache<unknown>(10 * 60 * 1000, 50);
+
 /**
  * Generate a collision-resistant cache key from input strings using SHA-256.
  */

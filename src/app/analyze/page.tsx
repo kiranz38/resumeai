@@ -16,6 +16,8 @@ type InputMode = "upload" | "paste";
 type Phase =
   | "hub"
   | "resume_input"
+  | "quick_resume_input"
+  | "quick_analyzing"
   | "jd_input"
   | "ready"
   | "analyzing"
@@ -34,6 +36,7 @@ const STEP_LABELS = ["Resume", "Job Description"] as const;
 function getStepIndex(phase: Phase): number {
   switch (phase) {
     case "resume_input":
+    case "quick_resume_input":
       return 0;
     case "jd_input":
     case "analyzing":
@@ -56,8 +59,13 @@ function AnalyzePage() {
   const searchParams = useSearchParams();
   const initialTab = searchParams.get("tab");
   const initialAction = searchParams.get("action");
+  const initialPhase = searchParams.get("phase");
   const [phase, setPhase] = useState<Phase>(
-    initialTab === "jobs" ? "jobs" : initialAction === "upload" ? "resume_input" : "hub"
+    initialTab === "jobs" ? "jobs"
+    : initialPhase === "jd_input" ? "jd_input"
+    : initialAction === "upload" ? "quick_resume_input"
+    : initialAction === "deep" ? "resume_input"
+    : "hub"
   );
   const [resumeMode, setResumeMode] = useState<InputMode>("upload");
   const [resumeText, setResumeText] = useState("");
@@ -100,6 +108,17 @@ function AnalyzePage() {
     if (typeof window !== "undefined" && !localStorage.getItem(ONBOARDING_KEY)) {
       setShowOnboarding(true);
     }
+  }, []);
+
+  // Pre-load resume from sessionStorage when coming from Quick Scan bridge
+  useEffect(() => {
+    if (initialPhase === "jd_input" && !resumeText) {
+      const saved = sessionStorage.getItem("rt_resume_text");
+      if (saved && saved.length >= 50) {
+        setResumeText(saved);
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Memoized spotlight steps
@@ -149,7 +168,7 @@ function AnalyzePage() {
 
   const handleQuickAnalyze = useCallback(() => {
     dismissOnboarding();
-    setPhase("resume_input");
+    setPhase("quick_resume_input");
     setActiveNav("dashboard");
   }, [dismissOnboarding]);
 
@@ -165,6 +184,83 @@ function AnalyzePage() {
     },
     [dismissOnboarding],
   );
+
+  // Quick Scan handler
+  const handleQuickScan = useCallback(() => {
+    dismissOnboarding();
+    setPhase("quick_resume_input");
+  }, [dismissOnboarding]);
+
+  // Quick Scan analyze handler
+  const handleQuickScanAnalyze = useCallback(async () => {
+    setError(null);
+
+    if (!resumeText.trim()) {
+      setError("Please provide your resume text.");
+      return;
+    }
+    if (resumeText.trim().length < 50) {
+      setError("Resume seems too short. Please provide more content.");
+      return;
+    }
+
+    const detection = detectResume(resumeText);
+    if (!detection.isLikelyResume) {
+      setError(
+        detection.message ||
+          "This doesn't look like a resume. Please provide your actual resume content.",
+      );
+      return;
+    }
+
+    dismissOnboarding();
+    setIsAnalyzing(true);
+    setPhase("quick_analyzing");
+    setProgress("Scanning your resume against market roles...");
+
+    try {
+      trackEvent("quick_scan_started");
+
+      const response = await fetch("/api/quick-scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          resumeText: resumeText.slice(0, MAX_RESUME_LENGTH),
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(
+          data.error || `Quick scan failed (${response.status})`,
+        );
+      }
+
+      const result = await response.json();
+
+      sessionStorage.setItem("rt_quick_scan", JSON.stringify(result));
+      sessionStorage.setItem("rt_resume_text", resumeText);
+      sessionStorage.setItem("rt_scan_mode", "quick");
+
+      trackEvent("quick_scan_completed", {
+        bestScore: result.bestMatchScore,
+        bestRole: result.bestMatchRole,
+        matchCount: result.roleMatches?.length,
+      });
+
+      setProgress("Redirecting to results...");
+      router.push("/results/quick");
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Quick scan failed. Please try again.",
+      );
+      setIsAnalyzing(false);
+      setPhase("quick_resume_input");
+      setProgress("");
+    }
+  }, [resumeText, router, dismissOnboarding]);
 
   // Tile actions
   const handleOptimize = useCallback(() => {
@@ -403,6 +499,9 @@ function AnalyzePage() {
       case "resume_input":
         setPhase("hub");
         break;
+      case "quick_resume_input":
+        setPhase("hub");
+        break;
       case "jd_input":
         setPhase("resume_input");
         break;
@@ -462,14 +561,25 @@ function AnalyzePage() {
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <DashboardTile
+                icon={
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                }
+                title="Quick Resume Scan"
+                description="Upload your CV and see how you score against the market. No job description needed."
+                badge="Free"
+                onClick={handleQuickScan}
+              />
+              <DashboardTile
                 ref={optimizeTileRef}
                 icon={
                   <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 }
-                title="Upload your CV"
-                description="Optimize for a job — match your resume and see your Match Score."
+                title="Match Against a Job"
+                description="Upload your CV + paste a job description for a precise match score."
                 badge="Free"
                 onClick={handleOptimize}
               />
@@ -543,6 +653,106 @@ function AnalyzePage() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* ── Quick Scan Resume Input ── */}
+        {phase === "quick_resume_input" && (
+          <div className="animate-slide-up-in mx-auto max-w-2xl">
+            <div className="mb-4">
+              <button
+                onClick={handleBack}
+                className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Back
+              </button>
+            </div>
+            <div className="mb-4 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3">
+              <div className="flex items-start gap-2">
+                <svg className="mt-0.5 h-5 w-5 shrink-0 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <div>
+                  <p className="text-sm font-medium text-blue-800">Quick Scan — No job description needed</p>
+                  <p className="mt-0.5 text-xs text-blue-600">We&apos;ll analyze your CV against real market requirements for your field.</p>
+                </div>
+              </div>
+            </div>
+            {resumeMode === "upload" ? (
+              <ResumeUploader
+                fileName={fileName}
+                resumeText={resumeText}
+                disabled={isAnalyzing}
+                onFileUpload={handleFileUpload}
+                onRemove={() => {
+                  setFileName(null);
+                  setResumeText("");
+                }}
+                onSwitchToPaste={() => setResumeMode("paste")}
+              />
+            ) : (
+              <div className="rounded-xl border border-gray-200 bg-white p-6">
+                <div className="mb-4 flex items-center justify-between">
+                  <h2 className="text-lg font-semibold text-gray-900">Paste Your Resume</h2>
+                  <button
+                    onClick={() => setResumeMode("upload")}
+                    className="text-sm font-medium text-primary hover:text-blue-700"
+                  >
+                    Switch to upload
+                  </button>
+                </div>
+                <textarea
+                  value={resumeText}
+                  onChange={(e) => setResumeText(e.target.value)}
+                  placeholder="Paste your resume text here..."
+                  className="h-64 w-full resize-none rounded-lg border border-gray-300 p-3 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  disabled={isAnalyzing}
+                />
+                {resumeText && (
+                  <p className="mt-2 text-sm text-gray-400">
+                    {resumeText.length.toLocaleString()} characters
+                  </p>
+                )}
+              </div>
+            )}
+            {resumeReady && (
+              <div className="mt-4 text-center">
+                <button
+                  onClick={handleQuickScanAnalyze}
+                  disabled={isAnalyzing}
+                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isAnalyzing ? (
+                    <>
+                      <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      Scanning...
+                    </>
+                  ) : (
+                    "Scan My Resume"
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Quick Scan Analyzing Progress ── */}
+        {phase === "quick_analyzing" && progress && (
+          <div className="mx-auto mt-4 max-w-2xl text-center">
+            <svg className="mx-auto h-8 w-8 animate-spin text-primary" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+            <p className="mt-3 text-sm text-gray-500">{progress}</p>
+            <p className="mt-2 text-xs text-gray-400">
+              Matching your CV against 45+ role profiles...
+            </p>
           </div>
         )}
 

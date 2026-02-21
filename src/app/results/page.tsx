@@ -320,25 +320,29 @@ export default function ResultsPage() {
           </div>
           <div className="flex items-center gap-1">
             {[
-              { label: "Upload", done: true },
-              { label: "Analysis", done: true },
-              { label: "Score", done: true },
-              { label: "Tailoring", done: false },
-              { label: "Download", done: false },
+              { label: "Upload", done: true, next: false },
+              { label: "Analysis", done: true, next: false },
+              { label: "Score", done: true, next: false },
+              { label: "Ready to generate", done: false, next: true },
+              { label: "Download", done: false, next: false },
             ].map((step, i) => (
               <div key={step.label} className="flex flex-1 flex-col items-center gap-1.5">
                 <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
                   step.done
                     ? "bg-green-500 text-white"
-                    : "border-2 border-dashed border-gray-300 text-gray-400"
+                    : step.next
+                      ? "border-2 border-primary bg-blue-50 text-primary animate-pulse"
+                      : "border-2 border-dashed border-gray-300 text-gray-400"
                 }`}>
                   {step.done ? (
                     <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                  ) : step.next ? (
+                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
                   ) : (
                     <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
                   )}
                 </div>
-                <span className={`text-[10px] font-medium ${step.done ? "text-gray-700" : "text-gray-400"}`}>
+                <span className={`text-[10px] font-medium ${step.done ? "text-gray-700" : step.next ? "text-primary font-semibold" : "text-gray-400"}`}>
                   {step.label}
                 </span>
                 {i < 4 && (
@@ -386,7 +390,7 @@ export default function ResultsPage() {
                 onClick={() => document.getElementById("pro-upgrade")?.scrollIntoView({ behavior: "smooth" })}
                 className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary-hover transition-colors"
               >
-                Get My Tailored Resume
+                Fix All {result.atsResult.missingKeywords.length + result.gaps.length} Issues Now
                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
@@ -407,6 +411,7 @@ export default function ResultsPage() {
                 blocker={blocker}
                 index={i}
                 locked={!isDemo && i > 0}
+                onUpgrade={() => document.getElementById("pro-upgrade")?.scrollIntoView({ behavior: "smooth" })}
               />
             ))}
           </div>
@@ -517,6 +522,8 @@ export default function ResultsPage() {
           improvedBullets={result.rewritePreviews}
           onUpgrade={(plan) => handleQuickCheckout(plan)}
           loading={checkoutLoading !== null}
+          missingKeywordCount={result.atsResult.missingKeywords.length}
+          weakBulletCount={result.rewritePreviews.length}
         />
       )}
 
@@ -645,12 +652,34 @@ export default function ResultsPage() {
       {/* Plan upgrade CTA — hidden in demo or when Pro is disabled */}
       {!isDemo && process.env.NEXT_PUBLIC_PRO_ENABLED !== "false" && (
         <div className="mt-10" id="pro-upgrade">
-          <h2 className="mb-4 text-center text-xl font-bold text-gray-900">
-            Don&apos;t keep applying with an unoptimized resume
+          <h2 className="mb-2 text-center text-xl font-bold text-gray-900">
+            Your tailored resume is ready
           </h2>
-          <p className="mb-6 text-center text-sm text-gray-500">
-            Every application you send without tailoring is a wasted opportunity. Fix it now from {TRIAL_PRICE_DISPLAY}.
+          <p className="mb-4 text-center text-sm text-gray-500">
+            We&apos;ve already analyzed your resume and prepared your fixes. Unlock them now.
           </p>
+
+          {/* Personalized summary */}
+          {radar && (
+            <div className="mx-auto mb-5 max-w-2xl rounded-lg border border-blue-100 bg-blue-50/50 px-4 py-3 text-center text-sm text-gray-700">
+              Your resume scored <span className="font-bold text-gray-900">{radar.score}/100</span>
+              {result.jobProfile.title ? <> for <span className="font-semibold">{result.jobProfile.title}</span>{result.jobProfile.company ? ` at ${result.jobProfile.company}` : ""}</> : ""}.
+              {result.atsResult.missingKeywords.length > 0 && <> We found <span className="font-bold text-red-600">{result.atsResult.missingKeywords.length} missing keywords</span></>}
+              {result.rewritePreviews.length > 0 && <> and <span className="font-bold text-red-600">{result.rewritePreviews.length} weak bullets</span></>}.
+              {" "}Your tailored resume fixes all <span className="font-bold text-primary">{result.atsResult.missingKeywords.length + result.rewritePreviews.length} issues</span> and is ready to generate.
+            </div>
+          )}
+
+          {/* Session urgency */}
+          <div className="mx-auto mb-5 max-w-md text-center">
+            <p className="inline-flex items-center gap-1.5 text-xs text-amber-600">
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Your analysis is saved for this session only. Close this tab and your results are gone.
+            </p>
+          </div>
+
           <PaywallPlanPicker context="free_results" />
         </div>
       )}
