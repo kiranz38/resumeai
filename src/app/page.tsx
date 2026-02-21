@@ -137,17 +137,38 @@ export default function LandingPage() {
                 <span className="text-gray-900">Find out why — free.</span>
               </h1>
               <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-gray-600 sm:mt-5 sm:text-lg lg:mx-0">
-                Upload your CV, paste the job description, and see exactly which keywords
-                and signals are missing. Takes 60 seconds.
+                Upload your CV and see exactly which keywords and skills are missing
+                across 8–10 matching roles in your field. Takes 60 seconds.
               </p>
 
-              {/* Micro flow — Upload → Match → Download */}
-              <div className="mt-5 flex items-center justify-center gap-2 text-sm font-medium text-gray-400 sm:mt-6 lg:justify-start">
+              {/* Stats bar — real data, builds credibility */}
+              <div className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 sm:mt-6 lg:justify-start">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xl font-extrabold text-red-500">250</span>
+                  <span className="text-xs text-gray-500 leading-tight">applicants per<br />job opening</span>
+                </div>
+                <div className="h-6 w-px bg-gray-200" />
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xl font-extrabold text-red-500">97%</span>
+                  <span className="text-xs text-gray-500 leading-tight">of resumes<br />never get a call</span>
+                </div>
+                <div className="h-6 w-px bg-gray-200" />
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xl font-extrabold text-primary">6 sec</span>
+                  <span className="text-xs text-gray-500 leading-tight">average recruiter<br />review time</span>
+                </div>
+              </div>
+              <p className="mt-2 flex justify-center lg:justify-start">
+                <span className="text-[10px] text-gray-400">Sources: Glassdoor, CareerSidekick, Ladders eye-tracking study</span>
+              </p>
+
+              {/* Micro flow — Upload → Scan → Results */}
+              <div className="mt-4 flex items-center justify-center gap-2 text-sm font-medium text-gray-400 lg:justify-start">
                 <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700">Upload</span>
                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700">Match</span>
+                <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700">Scan</span>
                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700">Download</span>
+                <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700">Results</span>
               </div>
 
               {/* "No signup" badge — above CTA on mobile, below on desktop */}
