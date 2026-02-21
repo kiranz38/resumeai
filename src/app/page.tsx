@@ -141,21 +141,19 @@ export default function LandingPage() {
                 across 8–10 matching roles in your field. Takes 60 seconds.
               </p>
 
-              {/* Stats bar — real data, builds credibility */}
-              <div className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 sm:mt-6 lg:justify-start">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xl font-extrabold text-red-500">250</span>
-                  <span className="text-xs text-gray-500 leading-tight">applicants per<br />job opening</span>
+              {/* Stats cards — real data, builds credibility */}
+              <div className="mt-6 grid grid-cols-3 gap-2 sm:gap-3 sm:mt-7 lg:max-w-lg">
+                <div className="rounded-xl border border-red-100 bg-gradient-to-br from-red-50 to-white p-3 sm:p-4 text-center shadow-sm">
+                  <p className="text-2xl sm:text-3xl font-extrabold text-red-500">250</p>
+                  <p className="mt-0.5 text-[9px] sm:text-[11px] font-medium text-gray-500 leading-tight">applicants per<br />job opening</p>
                 </div>
-                <div className="h-6 w-px bg-gray-200" />
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xl font-extrabold text-red-500">97%</span>
-                  <span className="text-xs text-gray-500 leading-tight">of resumes<br />never get a call</span>
+                <div className="rounded-xl border border-red-100 bg-gradient-to-br from-red-50 to-white p-3 sm:p-4 text-center shadow-sm">
+                  <p className="text-2xl sm:text-3xl font-extrabold text-red-500">97%</p>
+                  <p className="mt-0.5 text-[9px] sm:text-[11px] font-medium text-gray-500 leading-tight">of resumes never<br />get a call</p>
                 </div>
-                <div className="h-6 w-px bg-gray-200" />
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xl font-extrabold text-primary">6 sec</span>
-                  <span className="text-xs text-gray-500 leading-tight">average recruiter<br />review time</span>
+                <div className="rounded-xl border border-blue-100 bg-gradient-to-br from-blue-50 to-white p-3 sm:p-4 text-center shadow-sm">
+                  <p className="text-2xl sm:text-3xl font-extrabold text-primary">6 sec</p>
+                  <p className="mt-0.5 text-[9px] sm:text-[11px] font-medium text-gray-500 leading-tight">avg. recruiter<br />review time</p>
                 </div>
               </div>
               <p className="mt-2 flex justify-center lg:justify-start">
