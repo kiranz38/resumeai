@@ -106,3 +106,8 @@ body {
   50% { transform: translateY(-6px); }
 }
 .animate-bounce-slow { animation: bounce-slow 2s ease-in-out infinite; }
+
+/* ── Rotating text transition ── */
+.duration-400 {
+  transition-duration: 400ms;
+}

@@ -1,10 +1,9 @@
 import Link from "next/link";
 import FAQ from "@/components/FAQ";
 import ShareCard from "@/components/ShareCard";
-import SampleResumeModal from "@/components/SampleResumeModal";
-import SocialProofCounter from "@/components/SocialProofCounter";
 import StickyMobileCTA from "@/components/StickyMobileCTA";
 import AnimatedDemo from "@/components/AnimatedDemo";
+import RotatingText from "@/components/RotatingText";
 import FadeInOnScroll from "@/components/FadeInOnScroll";
 import { PRO_PRICE_DISPLAY, CAREER_PASS_DISPLAY } from "@/lib/constants";
 
@@ -79,12 +78,12 @@ const BENEFITS = [
   },
 ];
 
-const TRUST_ITEMS = [
-  "No signup required",
-  "Privacy-first — nothing stored",
-  "One-time payment",
-  "No auto-renew",
-  "Clear pricing",
+const AVATAR_FACES = [
+  { initial: "S", color: "bg-slate-600" },
+  { initial: "J", color: "bg-primary" },
+  { initial: "L", color: "bg-indigo-500" },
+  { initial: "M", color: "bg-emerald-500" },
+  { initial: "A", color: "bg-amber-500" },
 ];
 
 const TESTIMONIALS = [
@@ -117,173 +116,81 @@ export default function LandingPage() {
       {/* Sticky mobile CTA — appears after scrolling past hero */}
       <StickyMobileCTA />
 
-      {/* Hero — F-pattern: text left + visual right on desktop, stacked on mobile */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-blue-50/50 via-white to-white px-4 pb-16 pt-12 sm:pb-24 sm:pt-20">
-        {/* Decorative blobs */}
-        <div className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-blue-100/40 blur-3xl" />
-        <div className="pointer-events-none absolute -right-32 top-20 h-80 w-80 rounded-full bg-indigo-100/30 blur-3xl" />
-
+      {/* Hero — clean, minimal, resume.io inspired */}
+      <section className="relative overflow-hidden bg-white px-4 pb-16 pt-16 sm:pb-24 sm:pt-24">
         <div className="relative mx-auto max-w-6xl">
-          <div className="flex flex-col items-center text-center lg:flex-row lg:items-start lg:gap-16 lg:text-left">
+          <div className="flex flex-col items-center text-center lg:flex-row lg:items-center lg:gap-16 lg:text-left">
             {/* Left: Copy + CTA */}
-            <div className="lg:flex-1 lg:pt-8">
-              <span className="mb-4 inline-block rounded-full bg-blue-100 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-blue-700">
-                Free instant analysis
-              </span>
-              <h1 className="font-[var(--font-inter)] text-[28px] font-extrabold leading-tight tracking-[-0.04em] text-gray-900 sm:text-5xl lg:text-[3.5rem]">
-                Your resume is getting
-                <br />
-                <span className="bg-gradient-to-r from-red-500 to-primary bg-clip-text text-transparent">auto-rejected.</span>{" "}
-                <span className="text-gray-900">Find out why — free.</span>
+            <div className="lg:flex-1">
+              <h1 className="text-[32px] font-extrabold leading-[1.15] tracking-[-0.03em] text-gray-900 sm:text-5xl lg:text-[3.5rem]">
+                The resume that gets you{" "}
+                <RotatingText />
               </h1>
-              <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-gray-600 sm:mt-5 sm:text-lg lg:mx-0">
-                Upload your CV and see exactly which keywords and skills are missing
-                across 8–10 matching roles in your field. Takes 60 seconds.
+              <p className="mx-auto mt-5 max-w-lg text-lg leading-relaxed text-gray-500 sm:text-xl lg:mx-0">
+                Upload your CV. See what&apos;s missing. Fix it in 60 seconds.
               </p>
-
-              {/* Stats cards — real data, builds credibility */}
-              <div className="mt-6 grid grid-cols-3 gap-2 sm:gap-3 sm:mt-7 lg:max-w-lg">
-                <div className="rounded-xl border border-red-100 bg-gradient-to-br from-red-50 to-white p-3 sm:p-4 text-center shadow-sm">
-                  <p className="text-2xl sm:text-3xl font-extrabold text-red-500">250</p>
-                  <p className="mt-0.5 text-[9px] sm:text-[11px] font-medium text-gray-500 leading-tight">applicants per<br />job opening</p>
-                </div>
-                <div className="rounded-xl border border-red-100 bg-gradient-to-br from-red-50 to-white p-3 sm:p-4 text-center shadow-sm">
-                  <p className="text-2xl sm:text-3xl font-extrabold text-red-500">97%</p>
-                  <p className="mt-0.5 text-[9px] sm:text-[11px] font-medium text-gray-500 leading-tight">of resumes never<br />get a call</p>
-                </div>
-                <div className="rounded-xl border border-blue-100 bg-gradient-to-br from-blue-50 to-white p-3 sm:p-4 text-center shadow-sm">
-                  <p className="text-2xl sm:text-3xl font-extrabold text-primary">6 sec</p>
-                  <p className="mt-0.5 text-[9px] sm:text-[11px] font-medium text-gray-500 leading-tight">avg. recruiter<br />review time</p>
-                </div>
-              </div>
-              <p className="mt-2 flex justify-center lg:justify-start">
-                <span className="text-[10px] text-gray-400">Sources: Glassdoor, CareerSidekick, Ladders eye-tracking study</span>
-              </p>
-
-              {/* Micro flow — Upload → Scan → Results */}
-              <div className="mt-4 flex items-center justify-center gap-2 text-sm font-medium text-gray-400 lg:justify-start">
-                <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700">Upload</span>
-                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700">Scan</span>
-                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700">Results</span>
-              </div>
-
-              {/* "No signup" badge — above CTA on mobile, below on desktop */}
-              <div className="mt-6 flex justify-center sm:hidden">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700">
-                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  No signup required
-                </span>
-              </div>
 
               {/* Primary CTA */}
-              <div className="mt-4 flex flex-col items-center gap-3 sm:mt-8 sm:gap-4 lg:items-start">
+              <div className="mt-8 flex flex-col items-center gap-4 lg:items-start">
                 <Link
                   href="/analyze?action=upload"
                   className="group relative inline-flex min-h-[48px] items-center gap-3 rounded-xl bg-primary px-10 py-4 text-lg font-bold text-white shadow-lg shadow-primary/25 transition-all hover:-translate-y-0.5 hover:bg-primary-hover hover:shadow-xl hover:shadow-primary/30"
                 >
-                  <svg className="h-6 w-6 transition-transform group-hover:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                  </svg>
                   Check My Resume — Free
                 </Link>
-                <p className="text-sm text-gray-500">No credit card. No signup. Results in 60 seconds.</p>
-                <div className="flex items-center gap-3">
-                  <SampleResumeModal />
-                  <span className="hidden text-sm text-gray-400 sm:inline">PDF, DOCX, or paste text</span>
-                </div>
+                <p className="text-sm text-gray-400">
+                  No signup · No credit card · Instant results
+                </p>
               </div>
-            </div>
 
-            {/* Right: Score visual — desktop only */}
-            <div className="mt-10 hidden w-full max-w-sm lg:mt-0 lg:block lg:flex-shrink-0">
-              <div className="rounded-2xl border border-gray-200/60 bg-white/80 p-6 shadow-xl shadow-blue-900/5 backdrop-blur-sm">
-                <p className="text-center text-xs font-semibold uppercase tracking-wide text-gray-400">Match Score Preview</p>
-                <div className="mt-4 flex items-center justify-center gap-6">
-                  <div className="text-center">
-                    <p className="text-4xl font-bold text-red-500">47</p>
-                    <p className="mt-1 text-[11px] text-gray-400">Before</p>
-                  </div>
-                  <svg className="h-6 w-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                  </svg>
-                  <div className="text-center">
-                    <p className="text-4xl font-bold text-green-500">84</p>
-                    <p className="mt-1 text-[11px] text-gray-400">After</p>
-                  </div>
-                </div>
-                <div className="mt-5 space-y-2">
-                  {[
-                    { label: "Keywords", before: 35, after: 88 },
-                    { label: "Impact", before: 42, after: 81 },
-                    { label: "Format", before: 60, after: 90 },
-                  ].map((d) => (
-                    <div key={d.label}>
-                      <div className="flex items-center justify-between text-[11px] text-gray-500">
-                        <span>{d.label}</span>
-                        <span className="font-medium text-green-600">+{d.after - d.before}</span>
-                      </div>
-                      <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-gray-100">
-                        <div
-                          className="h-full rounded-full bg-gradient-to-r from-blue-500 to-green-500 transition-all duration-1000"
-                          style={{ width: `${d.after}%` }}
-                        />
-                      </div>
+              {/* Avatar faces social proof */}
+              <div className="mt-8 flex items-center justify-center gap-3 lg:justify-start">
+                <div className="flex -space-x-2">
+                  {AVATAR_FACES.map((a) => (
+                    <div
+                      key={a.initial}
+                      className={`flex h-8 w-8 items-center justify-center rounded-full ${a.color} text-xs font-bold text-white ring-2 ring-white`}
+                    >
+                      {a.initial}
                     </div>
                   ))}
                 </div>
-                <p className="mt-4 text-center text-xs text-gray-400">
-                  +37 point improvement — same experience, better presentation
-                </p>
+                <div className="flex items-center gap-1.5">
+                  <div className="flex">
+                    {[...Array(5)].map((_, i) => (
+                      <svg key={i} className="h-4 w-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    ))}
+                  </div>
+                  <span className="text-sm text-gray-500">
+                    Trusted by 10,000+ job seekers
+                  </span>
+                </div>
               </div>
+            </div>
+
+            {/* Right: AnimatedDemo — desktop only */}
+            <div className="mt-12 w-full max-w-md lg:mt-0 lg:flex-shrink-0">
+              <AnimatedDemo />
             </div>
           </div>
 
-          {/* Social proof + trust — full width below both columns */}
-          <div className="mt-8 text-center">
-            <SocialProofCounter />
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-              {TRUST_ITEMS.map((item) => (
-                <span
-                  key={item}
-                  className={`inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700${item === "No signup required" ? " hidden sm:inline-flex" : ""}`}
-                >
-                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  {item}
-                </span>
-              ))}
-            </div>
-          </div>
+          {/* Thin stats strip */}
+          <p className="mt-12 text-center text-sm text-gray-400">
+            250 applicants compete for every opening · 97% never get a call · Recruiters spend 6 seconds on your resume
+          </p>
         </div>
       </section>
 
-      {/* Interactive Demo + How it works */}
+      {/* How it works — 3 steps */}
       <section className="border-t border-gray-100 bg-white px-4 py-16">
         <div className="mx-auto max-w-4xl text-center">
-          <h2 className="text-2xl font-bold text-gray-900">See it in action</h2>
+          <h2 className="text-2xl font-bold text-gray-900">How it works</h2>
           <p className="mt-2 text-gray-600">
             Upload your CV and see how you score against real market roles — no job description needed.
           </p>
-          <div className="mt-10">
-            <AnimatedDemo />
-          </div>
-          <Link
-            href="/analyze?action=upload"
-            className="mt-8 inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-bold text-white shadow-sm hover:bg-primary-hover transition-colors"
-          >
-            Check My Resume — Free
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-            </svg>
-          </Link>
-
-          {/* 3 steps below the demo */}
-          <div className="mt-16 grid gap-8 md:grid-cols-3">
+          <div className="mt-12 grid gap-8 md:grid-cols-3">
             {[
               { step: "1", title: "Upload your CV", desc: "Drop a PDF or DOCX — we extract it instantly." },
               { step: "2", title: "We match against real roles", desc: "Your CV is scored against 45+ job profiles across your field." },
