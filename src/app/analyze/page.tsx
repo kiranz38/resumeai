@@ -72,6 +72,8 @@ function AnalyzePage() {
   const [jobDescription, setJobDescription] = useState("");
   const [fileName, setFileName] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [extractionProgress, setExtractionProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<string>("");
   const [resumeWarning, setResumeWarning] = useState<string | null>(null);
@@ -299,18 +301,31 @@ function AnalyzePage() {
 
       setError(null);
       setFileName(file.name);
-      setProgress("Extracting text from file...");
+      setIsExtracting(true);
+      setExtractionProgress(0);
+
+      // Simulate progress while extracting
+      const progressInterval = setInterval(() => {
+        setExtractionProgress((p) => {
+          if (p >= 90) { clearInterval(progressInterval); return 90; }
+          return p + Math.random() * 15 + 5;
+        });
+      }, 200);
 
       try {
         const { extractTextFromFile } = await import("@/lib/file-parser");
         const text = await extractTextFromFile(file);
+
+        clearInterval(progressInterval);
+        setExtractionProgress(100);
 
         if (!text || text.trim().length < 20) {
           setError(
             "Could not extract enough text from the file. Try pasting your resume instead.",
           );
           setFileName(null);
-          setProgress("");
+          setIsExtracting(false);
+          setExtractionProgress(0);
           return;
         }
 
@@ -324,19 +339,24 @@ function AnalyzePage() {
           setResumeWarning(null);
         }
 
+        // Brief pause at 100% so user sees completion
+        await new Promise((r) => setTimeout(r, 300));
         setResumeText(text);
-        setProgress("");
+        setIsExtracting(false);
+        setExtractionProgress(0);
         trackEvent("resume_uploaded", {
           fileType: file.name.split(".").pop() || "unknown",
         });
       } catch (err) {
+        clearInterval(progressInterval);
         setError(
           err instanceof Error
             ? err.message
             : "Failed to parse file. Try pasting your resume instead.",
         );
         setFileName(null);
-        setProgress("");
+        setIsExtracting(false);
+        setExtractionProgress(0);
       }
     },
     [],
@@ -718,27 +738,44 @@ function AnalyzePage() {
                 )}
               </div>
             )}
-            {resumeReady && (
-              <div className="mt-4 text-center">
-                <button
-                  onClick={handleQuickScanAnalyze}
-                  disabled={isAnalyzing}
-                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {isAnalyzing ? (
-                    <>
-                      <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                      </svg>
-                      Scanning...
-                    </>
-                  ) : (
-                    "Scan My Resume"
-                  )}
-                </button>
+            {/* Extraction progress bar */}
+            {isExtracting && (
+              <div className="mt-4">
+                <div className="flex items-center justify-between text-xs text-gray-500 mb-1.5">
+                  <span>Extracting text from resume...</span>
+                  <span>{Math.round(Math.min(extractionProgress, 100))}%</span>
+                </div>
+                <div className="h-1.5 w-full rounded-full bg-gray-200">
+                  <div
+                    className="h-full rounded-full bg-primary transition-all duration-300 ease-out"
+                    style={{ width: `${Math.min(extractionProgress, 100)}%` }}
+                  />
+                </div>
               </div>
             )}
+
+            {/* Scan button — always visible, disabled until ready */}
+            <div className="mt-4 text-center">
+              <button
+                onClick={handleQuickScanAnalyze}
+                disabled={isAnalyzing || isExtracting || !resumeReady}
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isAnalyzing ? (
+                  <>
+                    <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Scanning...
+                  </>
+                ) : isExtracting ? (
+                  "Extracting..."
+                ) : (
+                  "Scan My Resume"
+                )}
+              </button>
+            </div>
           </div>
         )}
 
