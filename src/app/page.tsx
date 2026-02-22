@@ -136,7 +136,7 @@ export default function LandingPage() {
               Only 3% of resumes make it past the first screen
             </p>
             {/* min-h reserves space for the longest rotating word so layout doesn't shift */}
-            <h1 className="text-2xl font-extrabold leading-[1.15] tracking-[-0.02em] text-gray-900 sm:min-h-[6rem] sm:text-[2.75rem] lg:min-h-[7.5rem] lg:text-[3.25rem]">
+            <h1 className="min-h-[3.5rem] text-2xl font-extrabold leading-[1.15] tracking-[-0.02em] text-gray-900 sm:min-h-[6rem] sm:text-[2.75rem] lg:min-h-[7.5rem] lg:text-[3.25rem]">
               The resume that gets you{" "}
               <RotatingText />
             </h1>
