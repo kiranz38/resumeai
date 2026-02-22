@@ -256,62 +256,78 @@ export default function AnimatedDemo() {
             </div>
           </div>
 
-          {/* ══════ Step 3: Pro Upgrade — Before/After ══════ */}
-          <div className={`absolute inset-0 p-4 sm:p-6 transition-all duration-700 ${step === 3 ? "opacity-100 translate-x-0" : "opacity-0 translate-x-8 pointer-events-none"}`}>
+          {/* ══════ Step 3: Pro Upgrade — Resume Preview ══════ */}
+          <div className={`absolute inset-0 p-3 sm:p-4 transition-all duration-700 ${step === 3 ? "opacity-100 translate-x-0" : "opacity-0 translate-x-8 pointer-events-none"}`}>
             <div className="mx-auto max-w-lg">
-              {/* Pro badge */}
-              <div className="mb-1">
-                <span className="rounded-full bg-primary px-2 py-0.5 text-[8px] font-semibold text-white">Pro</span>
-              </div>
-              <p className="mb-3 text-sm font-bold text-gray-900">Your Tailored Resume is Ready</p>
-
-              {/* Before/After score banner */}
-              <div className="mb-3 rounded-xl border border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 p-3">
-                <div className="flex items-center gap-3">
-                  <div className="text-[10px] text-gray-600">Before: <span className="font-bold text-gray-900">58</span></div>
-                  <svg className="h-4 w-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                  </svg>
-                  <div className="text-[10px]">
-                    New Score: <span className="text-xl font-bold text-green-700">89</span>
-                    <span className="ml-1 rounded-full bg-green-100 px-1.5 py-0.5 text-[9px] font-semibold text-green-700">+31</span>
-                  </div>
-                  <span className="ml-auto text-[9px] font-semibold text-green-700">Strong Match</span>
+              {/* Header row */}
+              <div className="mb-2 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="rounded-full bg-primary px-2 py-0.5 text-[8px] font-semibold text-white">Pro</span>
+                  <p className="text-xs sm:text-sm font-bold text-gray-900">Your Tailored Resume</p>
                 </div>
+                <span className="rounded-full bg-green-100 px-2 py-0.5 text-[9px] font-bold text-green-700">Score: 89</span>
               </div>
 
-              {/* What's included */}
-              <div className="mb-3 rounded-xl border border-gray-200 bg-white p-3">
-                <p className="mb-2 text-[9px] font-semibold text-gray-500 uppercase tracking-wide">Your Tailor Pack Includes</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { label: "Keywords Added", value: "14", icon: "+" },
-                    { label: "Bullets Rewritten", value: "8", icon: "~" },
-                    { label: "Cover Letter", value: "1", icon: ">" },
-                    { label: "Score Boost", value: "+31", icon: "^" },
-                  ].map((item) => (
-                    <div key={item.label} className="flex items-center gap-2 rounded-lg bg-gray-50 px-2.5 py-2">
-                      <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 text-[10px] font-bold text-primary">{item.icon}</span>
-                      <div>
-                        <p className="text-sm font-bold text-gray-900">{item.value}</p>
-                        <p className="text-[8px] text-gray-500">{item.label}</p>
-                      </div>
+              {/* Resume document preview */}
+              <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+                {/* Resume header */}
+                <div className="border-b border-gray-100 px-4 py-3">
+                  <p className="text-sm sm:text-base font-bold text-gray-900 tracking-wide">SARAH CHEN</p>
+                  <p className="text-[9px] sm:text-[10px] text-gray-500 mt-0.5">Senior Software Engineer · san.chen@email.com · San Francisco, CA</p>
+                </div>
+
+                {/* Summary */}
+                <div className="border-b border-gray-50 px-4 py-2">
+                  <p className="text-[8px] font-bold text-gray-700 uppercase tracking-wider mb-0.5">Summary</p>
+                  <p className="text-[8px] sm:text-[9px] text-gray-600 leading-snug">Full-stack engineer with 6+ years building scalable distributed systems. Specialized in cloud-native architectures, CI/CD pipelines, and cross-functional team leadership.</p>
+                </div>
+
+                {/* Experience */}
+                <div className="border-b border-gray-50 px-4 py-2">
+                  <p className="text-[8px] font-bold text-gray-700 uppercase tracking-wider mb-1">Experience</p>
+                  <div className="mb-1.5">
+                    <div className="flex items-baseline justify-between">
+                      <p className="text-[9px] sm:text-[10px] font-semibold text-gray-900">Senior Software Engineer</p>
+                      <p className="text-[7px] text-gray-400">2021 – Present</p>
                     </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Bullet rewrite preview */}
-              <div className="rounded-xl border border-gray-200 bg-white p-3">
-                <p className="mb-2 text-[9px] font-semibold text-gray-500 uppercase tracking-wide">Bullet Rewrite Preview</p>
-                <div className="space-y-2">
-                  <div className="rounded-lg bg-red-50 px-2.5 py-1.5">
-                    <p className="text-[8px] font-semibold text-red-400 uppercase">Before</p>
-                    <p className="text-[9px] sm:text-[10px] text-red-700 leading-tight">Worked on the backend migration project</p>
+                    <p className="text-[8px] text-primary font-medium">Stripe · San Francisco, CA</p>
+                    <ul className="mt-0.5 space-y-0.5">
+                      <li className="flex gap-1 text-[8px] sm:text-[9px] text-gray-600 leading-snug">
+                        <span className="shrink-0 text-gray-400">•</span>
+                        <span>Led migration of monolith to microservices, <span className="font-semibold text-green-700 bg-green-50 px-0.5 rounded">reducing deploy time by 73%</span> and improving uptime to 99.9%</span>
+                      </li>
+                      <li className="flex gap-1 text-[8px] sm:text-[9px] text-gray-600 leading-snug">
+                        <span className="shrink-0 text-gray-400">•</span>
+                        <span>Architected real-time payment processing pipeline handling <span className="font-semibold text-green-700 bg-green-50 px-0.5 rounded">$2.4B+ daily transactions</span></span>
+                      </li>
+                      <li className="flex gap-1 text-[8px] sm:text-[9px] text-gray-600 leading-snug">
+                        <span className="shrink-0 text-gray-400">•</span>
+                        <span>Mentored team of 5 engineers; promoted 2 to senior within 12 months</span>
+                      </li>
+                    </ul>
                   </div>
-                  <div className="rounded-lg bg-green-50 px-2.5 py-1.5">
-                    <p className="text-[8px] font-semibold text-green-400 uppercase">After</p>
-                    <p className="text-[9px] sm:text-[10px] text-green-700 leading-tight">Led migration of monolith to microservices architecture, reducing deploy time by 73% and improving uptime to 99.9%</p>
+                  <div>
+                    <div className="flex items-baseline justify-between">
+                      <p className="text-[9px] sm:text-[10px] font-semibold text-gray-900">Software Engineer</p>
+                      <p className="text-[7px] text-gray-400">2018 – 2021</p>
+                    </div>
+                    <p className="text-[8px] text-primary font-medium">Airbnb · San Francisco, CA</p>
+                    <ul className="mt-0.5 space-y-0.5">
+                      <li className="flex gap-1 text-[8px] sm:text-[9px] text-gray-600 leading-snug">
+                        <span className="shrink-0 text-gray-400">•</span>
+                        <span>Built search ranking algorithm that <span className="font-semibold text-green-700 bg-green-50 px-0.5 rounded">increased booking conversion by 18%</span></span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Skills */}
+                <div className="px-4 py-2">
+                  <p className="text-[8px] font-bold text-gray-700 uppercase tracking-wider mb-1">Skills</p>
+                  <div className="flex flex-wrap gap-1">
+                    {["TypeScript", "React", "Node.js", "AWS", "Kubernetes", "PostgreSQL", "GraphQL", "CI/CD"].map((s) => (
+                      <span key={s} className="rounded bg-gray-100 px-1.5 py-0.5 text-[7px] sm:text-[8px] font-medium text-gray-600">{s}</span>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -320,13 +336,13 @@ export default function AnimatedDemo() {
             {/* Sticky download bar */}
             <div className="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-white/95 backdrop-blur-sm">
               <div className="flex items-center justify-between px-4 py-2">
-                <span className="rounded-full bg-green-100 px-2 py-0.5 text-[9px] font-bold text-green-700">Score: 89 <span className="text-green-600">(+31)</span></span>
+                <div className="flex items-center gap-2">
+                  <span className="rounded-full bg-green-100 px-2 py-0.5 text-[9px] font-bold text-green-700">+31 pts</span>
+                  <span className="text-[8px] text-gray-500">PDF · DOCX · TXT</span>
+                </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="rounded border border-gray-300 px-2 py-1 text-[8px] font-medium text-gray-600">Copy All</span>
-                  <span className="rounded-l bg-primary px-2.5 py-1 text-[8px] font-semibold text-white">Download</span>
-                  <span className="rounded-r border-l border-blue-500 bg-primary px-1 py-1 text-[8px] text-white">
-                    <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                  </span>
+                  <span className="rounded border border-gray-300 px-2 py-1 text-[8px] font-medium text-gray-600">Copy</span>
+                  <span className="rounded bg-primary px-3 py-1 text-[8px] font-semibold text-white">Download Resume</span>
                 </div>
               </div>
             </div>
