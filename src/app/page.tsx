@@ -132,7 +132,7 @@ export default function LandingPage() {
         <div className="relative z-10 mx-auto max-w-6xl px-4 pb-16 pt-16 sm:pb-24 sm:pt-24 lg:pb-28 lg:pt-28">
           <div className="max-w-xl text-center lg:max-w-lg lg:text-left">
             {/* Urgency hook */}
-            <p className="mb-4 inline-block rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 sm:text-sm">
+            <p className="mb-4 inline-block rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold text-primary backdrop-blur-sm sm:text-sm">
               Only 3% of resumes make it past the first screen
             </p>
             {/* min-h reserves space for the longest rotating word so layout doesn't shift */}
