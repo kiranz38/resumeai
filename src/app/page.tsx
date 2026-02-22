@@ -131,6 +131,10 @@ export default function LandingPage() {
 
         <div className="relative z-10 mx-auto max-w-6xl px-4 pb-16 pt-16 sm:pb-24 sm:pt-24 lg:pb-28 lg:pt-28">
           <div className="max-w-xl text-center lg:max-w-lg lg:text-left">
+            {/* Urgency hook */}
+            <p className="mb-4 inline-block rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-600 sm:text-sm">
+              Only 3% of resumes make it past the first screen
+            </p>
             {/* min-h reserves space for the longest rotating word so layout doesn't shift */}
             <h1 className="min-h-[4.5rem] text-[1.75rem] font-extrabold leading-[1.1] tracking-[-0.02em] text-gray-900 sm:min-h-[6rem] sm:text-[2.75rem] lg:min-h-[7.5rem] lg:text-[3.25rem]">
               The resume that gets you{" "}
@@ -183,12 +187,12 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Mobile: show image below text */}
+          {/* Mobile: show full image below text */}
           <div className="mt-10 lg:hidden">
             <img
               src="/images/hero-mockup.png"
               alt="ResumeMate product screenshot showing a resume analysis with score improvement"
-              className="mx-auto w-full max-w-sm"
+              className="mx-auto w-full max-w-sm rounded-lg"
             />
           </div>
 
@@ -196,6 +200,13 @@ export default function LandingPage() {
           <p className="mt-12 text-center text-xs text-gray-400 sm:text-sm lg:mt-16 lg:text-left">
             250 applicants compete for every opening · 97% never get a call · Recruiters spend 6 seconds on your resume
           </p>
+        </div>
+      </section>
+
+      {/* Interactive demo — right below hero */}
+      <section className="bg-white px-4 pb-16 pt-8 sm:pt-12">
+        <div className="mx-auto max-w-2xl">
+          <AnimatedDemo />
         </div>
       </section>
 
@@ -220,11 +231,6 @@ export default function LandingPage() {
                 <p className="mt-1 text-sm text-gray-500">{s.desc}</p>
               </div>
             ))}
-          </div>
-
-          {/* Interactive demo */}
-          <div className="mx-auto mt-12 max-w-2xl">
-            <AnimatedDemo />
           </div>
         </div>
       </section>
