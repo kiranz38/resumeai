@@ -107,6 +107,19 @@ body {
 }
 .animate-bounce-slow { animation: bounce-slow 2s ease-in-out infinite; }
 
+/* ── Hero progress bar grow animation ── */
+@keyframes grow-bar {
+  from { width: 0%; }
+}
+.animate-grow-bar { animation: grow-bar 1.2s ease-out forwards; }
+
+/* ── Typewriter cursor blink ── */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.animate-blink { animation: blink 0.75s step-end infinite; }
+
 /* ── Rotating text transition ── */
 .duration-400 {
   transition-duration: 400ms;

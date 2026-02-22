@@ -1,36 +1,60 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 const WORDS = ["interviews", "callbacks", "your dream job", "noticed"];
-const INTERVAL = 3000;
+const TYPE_SPEED = 80; // ms per character typing
+const DELETE_SPEED = 50; // ms per character deleting
+const PAUSE_AFTER_TYPE = 2000; // pause when word is fully typed
+const PAUSE_AFTER_DELETE = 400; // pause before typing next word
 
 export default function RotatingText() {
-  const [index, setIndex] = useState(0);
-  const [visible, setVisible] = useState(true);
+  const [displayed, setDisplayed] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const wordIndex = useRef(0);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setVisible(false);
-      setTimeout(() => {
-        setIndex((i) => (i + 1) % WORDS.length);
-        setVisible(true);
-      }, 400); // match fade-out duration
-    }, INTERVAL);
-    return () => clearInterval(timer);
-  }, []);
+    const currentWord = WORDS[wordIndex.current];
+
+    let timeout: ReturnType<typeof setTimeout>;
+
+    if (!isDeleting) {
+      // Typing
+      if (displayed.length < currentWord.length) {
+        timeout = setTimeout(() => {
+          setDisplayed(currentWord.slice(0, displayed.length + 1));
+        }, TYPE_SPEED);
+      } else {
+        // Word fully typed — pause then start deleting
+        timeout = setTimeout(() => {
+          setIsDeleting(true);
+        }, PAUSE_AFTER_TYPE);
+      }
+    } else {
+      // Deleting
+      if (displayed.length > 0) {
+        timeout = setTimeout(() => {
+          setDisplayed(displayed.slice(0, -1));
+        }, DELETE_SPEED);
+      } else {
+        // Fully deleted — move to next word
+        wordIndex.current = (wordIndex.current + 1) % WORDS.length;
+        setIsDeleting(false);
+        timeout = setTimeout(() => {
+          // small pause before next word starts typing
+        }, PAUSE_AFTER_DELETE);
+      }
+    }
+
+    return () => clearTimeout(timeout);
+  }, [displayed, isDeleting]);
 
   return (
-    <span className="inline-block overflow-hidden align-bottom">
-      <span
-        className={`inline-block bg-gradient-to-r from-primary to-indigo-500 bg-clip-text text-transparent transition-all duration-400 ${
-          visible
-            ? "translate-y-0 opacity-100"
-            : "translate-y-3 opacity-0"
-        }`}
-      >
-        {WORDS[index]}
+    <span className="inline-block align-bottom">
+      <span className="inline bg-gradient-to-r from-primary to-indigo-500 bg-clip-text text-transparent">
+        {displayed}
       </span>
+      <span className="animate-blink ml-[1px] inline-block h-[1em] w-[2px] translate-y-[2px] bg-primary align-baseline" />
     </span>
   );
 }
