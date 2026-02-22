@@ -191,11 +191,11 @@ export default function LandingPage() {
           </div>
 
           {/* Mobile: show image below content */}
-          <div className="mt-6 lg:hidden">
+          <div className="mt-8 lg:hidden">
             <img
               src="/images/hero-mockup.png?v=2"
               alt="ResumeMate product screenshot showing a resume analysis with score improvement"
-              className="mx-auto w-full max-w-[300px] sm:max-w-sm rounded-lg"
+              className="mx-auto w-full max-w-[340px] sm:max-w-md rounded-lg"
             />
           </div>
 
