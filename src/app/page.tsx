@@ -156,7 +156,10 @@ export default function LandingPage() {
                 </svg>
               </Link>
               <p className="text-[10px] text-gray-400 sm:text-sm">
-                Free · No signup required
+                Free · No signup required ·{" "}
+                <a href="#demo" className="text-primary underline underline-offset-2 hover:text-primary-hover">
+                  See demo
+                </a>
               </p>
             </div>
 
@@ -204,7 +207,7 @@ export default function LandingPage() {
       </section>
 
       {/* Interactive demo — right below hero */}
-      <section className="bg-white px-4 pb-16 pt-8 sm:pt-12">
+      <section id="demo" className="scroll-mt-16 bg-white px-4 pb-16 pt-8 sm:pt-12">
         <div className="mx-auto max-w-2xl">
           <h2 className="mb-6 text-center text-2xl font-bold text-gray-900">See it in action</h2>
           <AnimatedDemo />
