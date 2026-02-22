@@ -129,10 +129,10 @@ export default function LandingPage() {
           <div className="absolute inset-y-0 left-0 w-[42%] bg-gradient-to-r from-gray-50 from-70% to-transparent" />
         </div>
 
-        <div className="relative z-10 mx-auto max-w-6xl px-4 pb-4 pt-6 sm:pb-24 sm:pt-24 lg:pb-28 lg:pt-28">
+        <div className="relative z-10 mx-auto max-w-6xl px-4 pb-3 pt-4 sm:pb-24 sm:pt-24 lg:pb-28 lg:pt-28">
           <div className="max-w-xl text-center lg:max-w-lg lg:text-left">
             {/* Urgency hook */}
-            <p className="mb-2 inline-block rounded-full border border-primary/20 bg-primary/5 px-3 py-0.5 text-[11px] font-semibold text-primary backdrop-blur-sm sm:mb-4 sm:py-1 sm:text-sm">
+            <p className="mb-1 inline-block rounded-full border border-primary/20 bg-primary/5 px-3 py-0.5 text-[11px] font-semibold text-primary backdrop-blur-sm sm:mb-4 sm:py-1 sm:text-sm">
               Only 3% of resumes make it past the first screen
             </p>
             {/* min-h reserves space for the longest rotating word so layout doesn't shift */}
@@ -140,12 +140,12 @@ export default function LandingPage() {
               The resume that gets you{" "}
               <RotatingText />
             </h1>
-            <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-gray-500 sm:mt-5 sm:text-lg lg:mx-0">
+            <p className="mx-auto mt-1 max-w-md text-xs leading-snug text-gray-500 sm:mt-5 sm:leading-relaxed sm:text-lg lg:mx-0">
               Upload your CV, see what&apos;s holding you back, and fix it instantly.
             </p>
 
             {/* Primary CTA */}
-            <div className="mt-3 flex flex-col items-center gap-1 sm:mt-10 sm:gap-3 lg:items-start">
+            <div className="mt-2 flex flex-col items-center gap-0.5 sm:mt-10 sm:gap-3 lg:items-start">
               <Link
                 href="/analyze?action=upload"
                 className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white shadow-md shadow-primary/20 transition-all hover:-translate-y-0.5 hover:bg-primary-hover hover:shadow-lg hover:shadow-primary/25 sm:px-8 sm:py-3.5 sm:text-base"
@@ -161,7 +161,7 @@ export default function LandingPage() {
             </div>
 
             {/* Avatar faces social proof — scaled down on mobile */}
-            <div className="mt-3 flex flex-wrap items-center justify-center gap-2 sm:mt-10 sm:gap-3 lg:justify-start">
+            <div className="mt-2 flex flex-wrap items-center justify-center gap-2 sm:mt-10 sm:gap-3 lg:justify-start">
               <div className="flex -space-x-1.5 sm:-space-x-2">
                 {AVATAR_FACES.map((a) => (
                   <div
@@ -188,16 +188,16 @@ export default function LandingPage() {
           </div>
 
           {/* Mobile: show image right after CTA */}
-          <div className="mt-2 lg:hidden">
+          <div className="mt-1 lg:hidden">
             <img
               src="/images/hero-mockup.png?v=2"
               alt="ResumeMate product screenshot showing a resume analysis with score improvement"
-              className="mx-auto w-full max-w-[260px] sm:max-w-sm rounded-lg"
+              className="mx-auto w-full max-w-[240px] sm:max-w-sm rounded-lg"
             />
           </div>
 
           {/* Stats strip — scaled down on mobile */}
-          <p className="mt-2 text-center text-[9px] text-gray-400 sm:mt-12 sm:text-sm lg:mt-16 lg:text-left">
+          <p className="mt-1 text-center text-[9px] text-gray-400 sm:mt-12 sm:text-sm lg:mt-16 lg:text-left">
             250 applicants compete for every opening · 97% never get a call · Recruiters spend 6 seconds on your resume
           </p>
         </div>
