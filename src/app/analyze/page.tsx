@@ -579,7 +579,21 @@ function AnalyzePage() {
                 sidebar.
               </p>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {/* Create Resume — featured tile on top */}
+            <DashboardTile
+              icon={
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+              }
+              title="Create Resume"
+              description="Build a professional resume from scratch using our template-based builder. Choose from 8 premium templates."
+              badge="Free to build"
+              onClick={() => router.push("/create")}
+            />
+
+            {/* Upload / Scan tiles — dark blue background */}
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <DashboardTile
                 icon={
                   <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -589,6 +603,7 @@ function AnalyzePage() {
                 title="Quick Resume Scan"
                 description="Upload your CV and see how you score against the market. No job description needed."
                 badge="Free"
+                variant="dark"
                 onClick={handleQuickScan}
               />
               <DashboardTile
@@ -601,6 +616,7 @@ function AnalyzePage() {
                 title="Match Against a Job"
                 description="Upload your CV + paste a job description for a precise match score."
                 badge="Free"
+                variant="dark"
                 onClick={handleOptimize}
               />
               <DashboardTile
@@ -612,17 +628,8 @@ function AnalyzePage() {
                 title="Bulk CV Generator"
                 description="Add up to 5 job descriptions and get a tailored CV for each one — all generated in one go."
                 badge="From $19.99"
+                variant="dark"
                 onClick={handleApplyPack}
-              />
-              <DashboardTile
-                icon={
-                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                }
-                title="Create from Scratch"
-                description="Start with a blank canvas and build a tailored resume from scratch."
-                comingSoon
               />
             </div>
           </div>

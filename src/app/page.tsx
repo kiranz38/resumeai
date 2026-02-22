@@ -3,6 +3,7 @@ import FAQ from "@/components/FAQ";
 import ShareCard from "@/components/ShareCard";
 import StickyMobileCTA from "@/components/StickyMobileCTA";
 import AnimatedDemo from "@/components/AnimatedDemo";
+import CreateResumeDemo from "@/components/CreateResumeDemo";
 import RotatingText from "@/components/RotatingText";
 import FadeInOnScroll from "@/components/FadeInOnScroll";
 import { PRO_PRICE_DISPLAY, CAREER_PASS_DISPLAY } from "@/lib/constants";
@@ -116,17 +117,21 @@ export default function LandingPage() {
       {/* Sticky mobile CTA — appears after scrolling past hero */}
       <StickyMobileCTA />
 
-      {/* Hero — full-width background image with text overlay */}
-      <section className="relative overflow-hidden bg-gray-50">
-        {/* Background image — right-aligned, sharp, no wash-out */}
+      {/* Hero — full-width background matched to hero image tint */}
+      <section className="relative overflow-hidden" style={{ background: "#f0f2f7" }}>
+        {/* Background image — right-aligned, sharp, blends with section bg */}
         <div className="absolute inset-0 hidden lg:block">
           <img
             src="/images/hero-mockup.png?v=2"
             alt=""
             className="absolute right-[10%] top-1/2 w-[55%] max-w-[780px] -translate-y-1/2"
+            style={{
+              maskImage: "radial-gradient(ellipse 80% 70% at 55% 50%, black 40%, transparent 100%)",
+              WebkitMaskImage: "radial-gradient(ellipse 80% 70% at 55% 50%, black 40%, transparent 100%)",
+            }}
           />
-          {/* Minimal gradient — thin fade only behind the text column */}
-          <div className="absolute inset-y-0 left-0 w-[42%] bg-gradient-to-r from-gray-50 from-70% to-transparent" />
+          {/* Gradient fade behind the text column — matches hero bg */}
+          <div className="absolute inset-y-0 left-0 w-[42%]" style={{ background: "linear-gradient(to right, #f0f2f7 70%, transparent)" }} />
         </div>
 
         <div className="relative z-10 mx-auto max-w-6xl px-4 pb-8 pt-10 sm:pb-24 sm:pt-24 lg:pb-28 lg:pt-28">
@@ -147,13 +152,19 @@ export default function LandingPage() {
             {/* Primary CTA */}
             <div className="mt-5 flex flex-col items-center gap-1.5 sm:mt-10 sm:gap-3 lg:items-start">
               <Link
-                href="/analyze?action=upload"
+                href="/create"
                 className="inline-flex items-center gap-2 rounded-xl bg-primary px-7 py-3 text-sm font-semibold text-white shadow-md shadow-primary/20 transition-all hover:-translate-y-0.5 hover:bg-primary-hover hover:shadow-lg hover:shadow-primary/25 sm:px-8 sm:py-3.5 sm:text-base"
               >
-                Upload my resume
+                Create Resume
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
+              </Link>
+              <Link
+                href="/analyze?action=upload"
+                className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-7 py-3 text-sm font-semibold text-primary shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:bg-blue-100 hover:shadow-md sm:px-8 sm:py-3.5 sm:text-base"
+              >
+                Upload my resume
               </Link>
               <p className="text-[11px] text-gray-400 sm:text-sm">
                 Free · No signup required ·{" "}
@@ -195,7 +206,11 @@ export default function LandingPage() {
             <img
               src="/images/hero-mockup.png?v=2"
               alt="ResumeMate product screenshot showing a resume analysis with score improvement"
-              className="mx-auto w-full max-w-[380px] sm:max-w-md rounded-lg"
+              className="mx-auto w-full max-w-[380px] sm:max-w-md"
+              style={{
+                maskImage: "radial-gradient(ellipse 85% 80% at 50% 50%, black 45%, transparent 100%)",
+                WebkitMaskImage: "radial-gradient(ellipse 85% 80% at 50% 50%, black 45%, transparent 100%)",
+              }}
             />
           </div>
 
@@ -206,11 +221,20 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Interactive demo — right below hero */}
-      <section id="demo" className="scroll-mt-16 bg-white px-4 pb-16 pt-8 sm:pt-12">
+      {/* Interactive demo — right below hero, gradient bridges the color */}
+      <section id="demo" className="scroll-mt-16 px-4 pb-16 pt-8 sm:pt-12" style={{ background: "linear-gradient(to bottom, #f0f2f7, #ffffff 30%)" }}>
         <div className="mx-auto max-w-2xl">
           <h2 className="mb-6 text-center text-2xl font-bold text-gray-900">See it in action</h2>
           <AnimatedDemo />
+        </div>
+      </section>
+
+      {/* Create Resume demo */}
+      <section className="bg-white px-4 pb-16 pt-8 sm:pt-12">
+        <div className="mx-auto max-w-2xl">
+          <h2 className="mb-2 text-center text-2xl font-bold text-gray-900">Build from scratch</h2>
+          <p className="mb-6 text-center text-sm text-gray-500">Pick a template, fill in your details, and export a polished resume in minutes.</p>
+          <CreateResumeDemo />
         </div>
       </section>
 

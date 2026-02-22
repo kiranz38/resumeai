@@ -49,6 +49,7 @@ export const LEGAL_DISCLAIMER =
 export const NAV_LINKS = [
   { href: "/", label: "Home" },
   { href: "/analyze", label: "Analyze" },
+  { href: "/create", label: "Create" },
   { href: "/analyze?tab=jobs", label: "Job Board" },
   { href: "/career", label: "Dashboard" },
   { href: "/pricing", label: "Pricing" },
