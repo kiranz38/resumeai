@@ -15,6 +15,7 @@ import ExperienceForm from "@/components/builder/ExperienceForm";
 import EducationForm from "@/components/builder/EducationForm";
 import SkillsForm from "@/components/builder/SkillsForm";
 import PreviewPanel from "@/components/builder/PreviewPanel";
+import CompletenessBar from "@/components/builder/CompletenessBar";
 import ExportBar from "@/components/builder/ExportBar";
 
 const TOTAL_STEPS = 6;
@@ -135,7 +136,8 @@ export default function CreatePage() {
             <div className="hidden lg:grid lg:grid-cols-2 lg:gap-6">
               <div className="min-w-0">{renderStepForm()}</div>
               <div className="min-w-0">
-                <div className="sticky top-6">
+                <div className="sticky top-6 space-y-4">
+                  <CompletenessBar resume={resume} />
                   <PreviewPanel resume={resume} templateId={templateId} />
                 </div>
               </div>
@@ -143,6 +145,11 @@ export default function CreatePage() {
 
             {/* Mobile: form with preview toggle */}
             <div className="lg:hidden">
+              {/* Mobile completeness */}
+              <div className="mb-4">
+                <CompletenessBar resume={resume} />
+              </div>
+
               {/* Mobile preview toggle */}
               <div className="mb-4 flex rounded-lg border border-gray-200 bg-white p-1">
                 <button
