@@ -195,7 +195,7 @@ export default function LandingPage() {
             <img
               src="/images/hero-mockup.png?v=2"
               alt="ResumeMate product screenshot showing a resume analysis with score improvement"
-              className="mx-auto w-full max-w-[340px] sm:max-w-md rounded-lg"
+              className="mx-auto w-full max-w-[380px] sm:max-w-md rounded-lg"
             />
           </div>
 
