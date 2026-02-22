@@ -140,13 +140,12 @@ export default function LandingPage() {
               The resume that gets you{" "}
               <RotatingText />
             </h1>
-            {/* Subtitle — hidden on small mobile to save space */}
-            <p className="mx-auto mt-5 hidden max-w-md text-lg leading-relaxed text-gray-500 sm:block lg:mx-0">
+            <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-gray-500 sm:mt-5 sm:text-lg lg:mx-0">
               Upload your CV, see what&apos;s holding you back, and fix it instantly.
             </p>
 
             {/* Primary CTA */}
-            <div className="mt-4 flex flex-col items-center gap-1.5 sm:mt-10 sm:gap-3 lg:items-start">
+            <div className="mt-3 flex flex-col items-center gap-1 sm:mt-10 sm:gap-3 lg:items-start">
               <Link
                 href="/analyze?action=upload"
                 className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white shadow-md shadow-primary/20 transition-all hover:-translate-y-0.5 hover:bg-primary-hover hover:shadow-lg hover:shadow-primary/25 sm:px-8 sm:py-3.5 sm:text-base"
@@ -156,49 +155,49 @@ export default function LandingPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
               </Link>
-              <p className="text-[11px] text-gray-400 sm:text-sm">
+              <p className="text-[10px] text-gray-400 sm:text-sm">
                 Free · No signup required
               </p>
             </div>
 
-            {/* Avatar faces social proof — hidden on small mobile, shown sm+ */}
-            <div className="mt-4 hidden flex-wrap items-center justify-center gap-3 sm:mt-10 sm:flex lg:justify-start">
-              <div className="flex -space-x-2">
+            {/* Avatar faces social proof — scaled down on mobile */}
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-2 sm:mt-10 sm:gap-3 lg:justify-start">
+              <div className="flex -space-x-1.5 sm:-space-x-2">
                 {AVATAR_FACES.map((a) => (
                   <div
                     key={a.initial}
-                    className={`flex h-8 w-8 items-center justify-center rounded-full ${a.color} text-xs font-bold text-white ring-2 ring-white`}
+                    className={`flex h-5 w-5 items-center justify-center rounded-full ${a.color} text-[8px] font-bold text-white ring-1 ring-white sm:h-8 sm:w-8 sm:text-xs sm:ring-2`}
                   >
                     {a.initial}
                   </div>
                 ))}
               </div>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1">
                 <div className="flex">
                   {[...Array(5)].map((_, i) => (
-                    <svg key={i} className="h-4 w-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                    <svg key={i} className="h-3 w-3 text-yellow-400 sm:h-4 sm:w-4" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                     </svg>
                   ))}
                 </div>
-                <span className="text-sm text-gray-500">
-                  Trusted by 10,000+ job seekers
+                <span className="text-[10px] text-gray-500 sm:text-sm">
+                  10,000+ job seekers
                 </span>
               </div>
             </div>
           </div>
 
           {/* Mobile: show image right after CTA */}
-          <div className="mt-3 lg:hidden">
+          <div className="mt-2 lg:hidden">
             <img
               src="/images/hero-mockup.png?v=2"
               alt="ResumeMate product screenshot showing a resume analysis with score improvement"
-              className="mx-auto w-full max-w-[280px] sm:max-w-sm rounded-lg"
+              className="mx-auto w-full max-w-[260px] sm:max-w-sm rounded-lg"
             />
           </div>
 
-          {/* Thin stats strip — hidden on mobile, shown sm+ */}
-          <p className="mt-12 hidden text-center text-sm text-gray-400 sm:block lg:mt-16 lg:text-left">
+          {/* Stats strip — scaled down on mobile */}
+          <p className="mt-2 text-center text-[9px] text-gray-400 sm:mt-12 sm:text-sm lg:mt-16 lg:text-left">
             250 applicants compete for every opening · 97% never get a call · Recruiters spend 6 seconds on your resume
           </p>
         </div>
