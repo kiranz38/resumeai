@@ -1,7 +1,9 @@
 "use client";
 
-import { useReducer, useEffect, useState, useCallback } from "react";
+import { useReducer, useEffect, useState, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { resumeReducer, EMPTY_RESUME } from "@/lib/resume-reducer";
+import { trackEvent } from "@/lib/analytics";
 import {
   loadScratchResume,
   debouncedSave,
@@ -21,11 +23,13 @@ import ExportBar from "@/components/builder/ExportBar";
 const TOTAL_STEPS = 6;
 
 export default function CreatePage() {
+  const router = useRouter();
   const [resume, dispatch] = useReducer(resumeReducer, EMPTY_RESUME);
   const [templateId, setTemplateId] = useState("modern-ats");
   const [step, setStep] = useState(0);
   const [hydrated, setHydrated] = useState(false);
   const [showMobilePreview, setShowMobilePreview] = useState(false);
+  const trackedSteps = useRef<Set<number>>(new Set());
 
   // Hydrate from localStorage on mount
   useEffect(() => {
@@ -34,6 +38,21 @@ export default function CreatePage() {
     setTemplateId(loadScratchTemplate());
     setHydrated(true);
   }, []);
+
+  // Track page view on mount
+  useEffect(() => {
+    if (!hydrated) return;
+    trackEvent("builder_started");
+  }, [hydrated]);
+
+  // Track each step (once per step per session)
+  const STEP_NAMES = ["template", "contact", "experience", "education", "skills", "export"];
+  useEffect(() => {
+    if (!hydrated) return;
+    if (trackedSteps.current.has(step)) return;
+    trackedSteps.current.add(step);
+    trackEvent("builder_step_viewed", { step: step, step_name: STEP_NAMES[step] });
+  }, [step, hydrated]);
 
   // Auto-save on every change (debounced)
   useEffect(() => {
@@ -44,10 +63,27 @@ export default function CreatePage() {
   const handleTemplateChange = useCallback((id: string) => {
     setTemplateId(id);
     saveScratchTemplate(id);
+    trackEvent("builder_template_selected", { template_id: id });
   }, []);
 
   const goNext = () => setStep((s) => Math.min(s + 1, TOTAL_STEPS - 1));
   const goBack = () => setStep((s) => Math.max(s - 1, 0));
+
+  const handleQuickScan = useCallback(async () => {
+    trackEvent("builder_quick_scan_clicked");
+    const { proDocumentToText } = await import("@/lib/pro-document");
+    const text = proDocumentToText({
+      resume,
+      coverLetter: {
+        date: "",
+        paragraphs: [],
+        closing: "",
+        signatureName: resume.name,
+      },
+    });
+    sessionStorage.setItem("rt_resume_text", text);
+    router.push("/analyze?action=upload");
+  }, [resume, router]);
 
   // Don't render until hydrated to avoid flicker
   if (!hydrated) {
@@ -137,7 +173,7 @@ export default function CreatePage() {
               <div className="min-w-0">{renderStepForm()}</div>
               <div className="min-w-0">
                 <div className="sticky top-6 space-y-4">
-                  <CompletenessBar resume={resume} />
+                  <CompletenessBar resume={resume} onQuickScan={handleQuickScan} />
                   <PreviewPanel resume={resume} templateId={templateId} />
                 </div>
               </div>
@@ -147,7 +183,7 @@ export default function CreatePage() {
             <div className="lg:hidden">
               {/* Mobile completeness */}
               <div className="mb-4">
-                <CompletenessBar resume={resume} />
+                <CompletenessBar resume={resume} onQuickScan={handleQuickScan} />
               </div>
 
               {/* Mobile preview toggle */}
