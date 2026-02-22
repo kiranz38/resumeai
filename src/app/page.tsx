@@ -121,7 +121,7 @@ export default function LandingPage() {
         {/* Background image — right-aligned, sharp, no wash-out */}
         <div className="absolute inset-0 hidden lg:block">
           <img
-            src="/images/hero-mockup.png"
+            src="/images/hero-mockup.png?v=2"
             alt=""
             className="absolute right-[10%] top-1/2 w-[55%] max-w-[780px] -translate-y-1/2"
           />
@@ -190,7 +190,7 @@ export default function LandingPage() {
           {/* Mobile: show full image below text */}
           <div className="mt-10 lg:hidden">
             <img
-              src="/images/hero-mockup.png"
+              src="/images/hero-mockup.png?v=2"
               alt="ResumeMate product screenshot showing a resume analysis with score improvement"
               className="mx-auto w-full max-w-sm rounded-lg"
             />

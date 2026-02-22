@@ -11,7 +11,7 @@ export default function HeroVisual() {
       </div>
 
       <img
-        src="/images/hero-mockup.png"
+        src="/images/hero-mockup.png?v=2"
         alt="ResumeMate product screenshot showing a resume analysis with score improvement from 47 to 84"
         className="w-full rounded-xl shadow-xl"
         width={480}
