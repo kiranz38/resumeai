@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 
-const WORDS = ["interviews", "callbacks", "your dream job", "noticed"];
+const WORDS = ["interviews", "callbacks", "hired", "noticed"];
 const TYPE_SPEED = 80; // ms per character typing
 const DELETE_SPEED = 50; // ms per character deleting
 const PAUSE_AFTER_TYPE = 2000; // pause when word is fully typed
