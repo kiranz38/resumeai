@@ -129,33 +129,34 @@ export default function LandingPage() {
           <div className="absolute inset-y-0 left-0 w-[42%] bg-gradient-to-r from-gray-50 from-70% to-transparent" />
         </div>
 
-        <div className="relative z-10 mx-auto max-w-6xl px-4 pb-6 pt-8 sm:pb-24 sm:pt-24 lg:pb-28 lg:pt-28">
+        <div className="relative z-10 mx-auto max-w-6xl px-4 pb-4 pt-6 sm:pb-24 sm:pt-24 lg:pb-28 lg:pt-28">
           <div className="max-w-xl text-center lg:max-w-lg lg:text-left">
             {/* Urgency hook */}
-            <p className="mb-3 inline-block rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold text-primary backdrop-blur-sm sm:mb-4 sm:text-sm">
+            <p className="mb-2 inline-block rounded-full border border-primary/20 bg-primary/5 px-3 py-0.5 text-[11px] font-semibold text-primary backdrop-blur-sm sm:mb-4 sm:py-1 sm:text-sm">
               Only 3% of resumes make it past the first screen
             </p>
             {/* min-h reserves space for the longest rotating word so layout doesn't shift */}
-            <h1 className="min-h-[3.5rem] text-[1.5rem] font-extrabold leading-[1.1] tracking-[-0.02em] text-gray-900 sm:min-h-[6rem] sm:text-[2.75rem] lg:min-h-[7.5rem] lg:text-[3.25rem]">
+            <h1 className="text-[1.4rem] font-extrabold leading-[1.15] tracking-[-0.02em] text-gray-900 sm:min-h-[6rem] sm:text-[2.75rem] lg:min-h-[7.5rem] lg:text-[3.25rem]">
               The resume that gets you{" "}
               <RotatingText />
             </h1>
-            <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-gray-500 sm:mt-5 sm:text-lg lg:mx-0">
+            {/* Subtitle — hidden on small mobile to save space */}
+            <p className="mx-auto mt-5 hidden max-w-md text-lg leading-relaxed text-gray-500 sm:block lg:mx-0">
               Upload your CV, see what&apos;s holding you back, and fix it instantly.
             </p>
 
             {/* Primary CTA */}
-            <div className="mt-5 flex flex-col items-center gap-2 sm:mt-10 sm:gap-3 lg:items-start">
+            <div className="mt-4 flex flex-col items-center gap-1.5 sm:mt-10 sm:gap-3 lg:items-start">
               <Link
                 href="/analyze?action=upload"
-                className="inline-flex items-center gap-2 rounded-xl bg-primary px-7 py-3 text-sm font-semibold text-white shadow-md shadow-primary/20 transition-all hover:-translate-y-0.5 hover:bg-primary-hover hover:shadow-lg hover:shadow-primary/25 sm:px-8 sm:py-3.5 sm:text-base"
+                className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white shadow-md shadow-primary/20 transition-all hover:-translate-y-0.5 hover:bg-primary-hover hover:shadow-lg hover:shadow-primary/25 sm:px-8 sm:py-3.5 sm:text-base"
               >
                 Upload my resume
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
               </Link>
-              <p className="text-xs text-gray-400 sm:text-sm">
+              <p className="text-[11px] text-gray-400 sm:text-sm">
                 Free · No signup required
               </p>
             </div>
@@ -187,12 +188,12 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Mobile: show full image below text */}
-          <div className="mt-5 lg:hidden">
+          {/* Mobile: show image right after CTA */}
+          <div className="mt-3 lg:hidden">
             <img
               src="/images/hero-mockup.png?v=2"
               alt="ResumeMate product screenshot showing a resume analysis with score improvement"
-              className="mx-auto w-full max-w-xs sm:max-w-sm rounded-lg"
+              className="mx-auto w-full max-w-[280px] sm:max-w-sm rounded-lg"
             />
           </div>
 
