@@ -146,7 +146,7 @@ export default function LandingPage() {
               <RotatingText />
             </h1>
             <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-gray-500 sm:mt-5 sm:text-lg lg:mx-0">
-              Upload your CV, see what&apos;s holding you back, and fix it instantly.
+              Build a professional resume from scratch or upload yours to optimize it — free, no signup.
             </p>
 
             {/* Primary CTA */}
@@ -224,7 +224,8 @@ export default function LandingPage() {
       {/* Interactive demo — right below hero, gradient bridges the color */}
       <section id="demo" className="scroll-mt-16 px-4 pb-16 pt-8 sm:pt-12" style={{ background: "linear-gradient(to bottom, #f0f2f7, #ffffff 30%)" }}>
         <div className="mx-auto max-w-2xl">
-          <h2 className="mb-6 text-center text-2xl font-bold text-gray-900">See it in action</h2>
+          <h2 className="mb-2 text-center text-2xl font-bold text-gray-900">See it in action</h2>
+          <p className="mb-6 text-center text-sm text-gray-500">Upload your existing resume, get scored against real market roles, and see exactly what to fix — in seconds.</p>
           <AnimatedDemo />
         </div>
       </section>
